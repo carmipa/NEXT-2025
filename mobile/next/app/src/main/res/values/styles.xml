@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- TextInputLayout escuro -->
+    <style name="Widget.App.TextInputLayout"
+        parent="Widget.MaterialComponents.TextInputLayout.FilledBox">
+        <item name="hintTextColor">@color/on_app_bg_60</item>
+        <item name="boxStrokeColor">@color/colorOutline</item>
+        <item name="boxBackgroundColor">@color/app_bg</item>
+        <item name="startIconTint">@color/on_app_bg</item>
+        <item name="endIconTint">@color/on_app_bg</item>
+        <item name="counterTextColor">@color/on_app_bg_60</item>
+        <item name="helperTextTextColor">@color/on_app_bg_60</item>
+    </style>
+
+    <!-- EditText dentro do TextInput -->
+    <style name="Widget.App.EditText"
+        parent="Widget.MaterialComponents.TextInputEditText.FilledBox">
+        <item name="android:textColor">@color/on_app_bg</item>
+        <item name="android:textColorHint">@color/on_app_bg_60</item>
+    </style>
+
+    <!-- Estilo de Texto Simplificado para o Card de Detalhes -->
+    <style name="VehicleDetailText" parent="Widget.AppCompat.TextView">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:textColor">@color/on_app_bg</item>
+        <item name="android:textSize">16sp</item>
+        <item name="android:layout_marginBottom">8dp</item>
+    </style>
+
+    <style name="VehicleDetailRow">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:orientation">horizontal</item>
+        <item name="android:gravity">center_vertical</item>
+        <item name="android:layout_marginBottom">8dp</item>
+    </style>
+
+    <style name="VehicleDetailIcon">
+        <item name="android:layout_width">24dp</item>
+        <item name="android:layout_height">24dp</item>
+        <item name="android:layout_marginEnd">8dp</item>
+        <item name="android:tint">@color/on_app_bg_60</item>
+    </style>
+
+</resources>

@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/mobile_navigation"
+    app:startDestination="@+id/navigation_home">
+
+    <fragment
+        android:id="@+id/navigation_home"
+        android:name="br.com.radarmottu.ui.home.HomeFragment"
+        android:label="@string/title_home" />
+
+    <fragment
+        android:id="@+id/navigation_search"
+        android:name="br.com.radarmottu.ui.search.SearchFragment"
+        android:label="@string/title_search">
+        <action
+            android:id="@+id/action_search_to_detail"
+            app:destination="@id/navigation_vehicle_detail" />
+        <action
+            android:id="@+id/action_search_to_register"
+            app:destination="@id/navigation_register_vehicle" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/navigation_tracking"
+        android:name="br.com.radarmottu.ui.tracking.TrackingFragment"
+        android:label="@string/title_tracking"
+        tools:layout="@layout/fragment_tracking" />
+
+    <fragment
+        android:id="@+id/navigation_cartesian"
+        android:name="br.com.radarmottu.ui.cartesian.CartesianFragment"
+        android:label="@string/title_cartesian"
+        tools:layout="@layout/fragment_cartesian" />
+
+    <fragment
+        android:id="@+id/navigation_about"
+        android:name="br.com.radarmottu.ui.about.AboutFragment"
+        android:label="@string/title_about"
+        tools:layout="@layout/fragment_about" />
+
+    <fragment
+        android:id="@+id/navigation_app_map"
+        android:name="br.com.radarmottu.ui.about.MapFragment"
+        android:label="Mapa do App"
+        tools:layout="@layout/fragment_app_map" />
+
+    <fragment
+        android:id="@+id/navigation_vehicle_detail"
+        android:name="br.com.radarmottu.ui.search.VehicleDetailFragment"
+        android:label="Detalhes do Veículo">
+        <argument
+            android:name="plate"
+            app:argType="string" />
+        <action
+            android:id="@+id/action_detail_to_register"
+            app:destination="@id/navigation_register_vehicle" />
+        <action
+            android:id="@+id/action_detail_to_search"
+            app:destination="@id/navigation_search"
+            app:popUpTo="@id/navigation_search"
+            app:popUpToInclusive="true" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/navigation_register_vehicle"
+        android:name="br.com.radarmottu.ui.search.RegisterVehicleFragment"
+        android:label="Cadastrar Veículo">
+        <argument
+            android:name="plate"
+            app:argType="string"
+            app:nullable="true"
+            android:defaultValue="" />
+        <action
+            android:id="@+id/action_register_to_detail"
+            app:destination="@id/navigation_vehicle_detail"
+            app:popUpTo="@id/navigation_search" />
+    </fragment>
+
+</navigation>

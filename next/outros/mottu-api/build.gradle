@@ -1,0 +1,73 @@
+plugins {
+    id 'java'
+    id 'org.springframework.boot' version '3.5.4'
+    id 'io.spring.dependency-management' version '1.1.7'
+}
+
+group = 'br.com.fiap'
+version = '0.0.1-SNAPSHOT'
+description = 'mottu-api'
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+ext {
+    mapstructVersion = '1.5.5.Final'
+    lombokVersion    = '1.18.38'
+    springdocVersion = '2.8.8'
+    // ojdbcVersion removido (não usamos Oracle)
+}
+
+configurations {
+    compileOnly { extendsFrom annotationProcessor }
+    developmentOnly
+    runtimeClasspath { extendsFrom developmentOnly }
+}
+
+dependencies {
+    // === SPRING CORE ===
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
+    implementation 'org.springframework.boot:spring-boot-starter-webflux'
+
+    // === DB / MIGRATIONS ===
+    implementation 'com.oracle.database.jdbc:ojdbc11'
+    implementation 'org.flywaydb:flyway-database-oracle'
+
+    // === DEVTOOLS / DOCKER COMPOSE ===
+    developmentOnly 'org.springframework.boot:spring-boot-devtools'
+    developmentOnly 'org.springframework.boot:spring-boot-docker-compose'
+
+    // === LOMBOK ===
+    compileOnly "org.projectlombok:lombok:${lombokVersion}"
+    annotationProcessor "org.projectlombok:lombok:${lombokVersion}"
+
+    // === MAPSTRUCT ===
+    implementation "org.mapstruct:mapstruct:${mapstructVersion}"
+    annotationProcessor "org.mapstruct:mapstruct-processor:${mapstructVersion}"
+
+    // === OPENAPI / SWAGGER ===
+    implementation "org.springdoc:springdoc-openapi-starter-webmvc-ui:${springdocVersion}"
+    implementation "org.springdoc:springdoc-openapi-starter-webmvc-api:${springdocVersion}"
+
+    // === TESTES ===
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'io.projectreactor:reactor-test'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+tasks.named('test') {
+    useJUnitPlatform()
+}
+
+springBoot {
+    mainClass = 'br.com.fiap.mottu.MottuApplication'
+}

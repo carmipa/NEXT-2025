@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Estado: Selecionado (verde) -->
+    <item android:state_checked="true" android:color="#0C8B4E"/>
+    <!-- Estado: Não selecionado (branco com 60% de opacidade) -->
+    <item android:color="@color/on_app_bg_60"/>
+</selector>

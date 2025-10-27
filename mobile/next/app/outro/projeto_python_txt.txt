@@ -1,0 +1,1114 @@
+# Script: converte-projeto-python-em-txt-unico (v1.1)
+# Projeto: radarmotu-api
+# Data de geração: 2025-10-01 11:41:08
+# Escopo: SOMENTE 'app/' ('.py',)
+# Arquivo gerado em: D:\FIAP-2025\1_semestre_fiap-2025\CP_2025_1SEM\Java_Advanced_CP_1SEM\projeto-semestral\outros\python_convert_java\converte-python\projeto_python_txt.txt
+
+# Hierarquia de diretórios (dentro de 'app/'):
+app/
+    routers/
+    services/
+
+# Lista de arquivos com caminhos relativos a 'app/':
+#   - app/__init__.py
+#   - app/database.py
+#   - app/estimator.py
+#   - app/main.py
+#   - app/models.py
+#   - app/routers/anchors.py
+#   - app/routers/auth.py
+#   - app/routers/locate.py
+#   - app/routers/parking.py
+#   - app/routers/tags.py
+#   - app/routers/vehicles.py
+#   - app/schemas.py
+#   - app/security.py
+#   - app/services/locator.py
+#   - app/services/mqtt.py
+
+##############################################################################################################
+# PASTA (relativa a 'app/'): .
+##############################################################################################################
+
+#――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+# ARQUIVO: app/__init__.py   |   MÓDULO: app.__init__   |   classes: 0   |   funções: 0
+#――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+
+
+
+
+#――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+# ARQUIVO: app/database.py   |   MÓDULO: app.database   |   classes: 0   |   funções: 0
+#――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker, declarative_base
+
+DATABASE_URL = "sqlite:///./radarmotu.db"
+
+engine = create_engine(
+    DATABASE_URL, connect_args={"check_same_thread": False}
+)
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+Base = declarative_base()
+
+
+#――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+# ARQUIVO: app/estimator.py   |   MÓDULO: app.estimator   |   classes: 0   |   funções: 3
+#――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+
+import numpy as np
+from scipy.optimize import least_squares
+
+TX_POWER = -61.0
+N_PATH = 2.5
+
+def rssi_to_dist(rssi: float) -> float:
+    return 10 ** ((TX_POWER - rssi) / (10 * N_PATH))
+
+def multilaterate(anchors: dict, readings: list[dict]) -> dict:
+    known_readings = [r for r in readings if r["anchorId"] in anchors]
+    if len(known_readings) < 3:
+        return {}
+
+    points = np.array([list(anchors[r["anchorId"]].values()) for r in known_readings])
+    distances = np.array([rssi_to_dist(r["rssi"]) for r in known_readings])
+    initial_guess = np.mean(points, axis=0)
+
+    def residuals(xy):
+        return np.linalg.norm(points - xy, axis=1) - distances
+
+    res = least_squares(residuals, initial_guess, method="lm")
+    return {"x": float(res.x[0]), "y": float(res.x[1])}
+
+
+#――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+# ARQUIVO: app/main.py   |   MÓDULO: app.main   |   classes: 0   |   funções: 7
+#――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+
+# app/main.py
+
+import asyncio
+
+import json
+
+import time
+
+from collections import defaultdict, deque
+
+from pathlib import Path
+ 
+import paho.mqtt.client as mqtt
+
+from fastapi import Depends, FastAPI, HTTPException, WebSocket, WebSocketDisconnect
+
+from fastapi.middleware.cors import CORSMiddleware
+
+from sqlalchemy.orm import Session
+
+from sqlalchemy import text
+
+from starlette.websockets import WebSocketState
+ 
+from . import models, schemas
+
+from .database import SessionLocal, engine
+
+from .estimator import multilaterate
+ 
+# ======== NOVO: routers REST (veículos, estacionamento, localizar, âncoras) ========
+
+from .routers import vehicles, parking, locate, anchors as anchors_router
+ 
+# -----------------------------------------------------------------------------------
+
+# Boot básico
+
+# -----------------------------------------------------------------------------------
+
+models.Base.metadata.create_all(bind=engine)
+
+app = FastAPI(title="Radarmottu API - Versão Final")
+ 
+# CORS (em dev pode deixar "*"; em prod restrinja)
+
+app.add_middleware(
+
+    CORSMiddleware,
+
+    allow_origins=["*"],
+
+    allow_credentials=True,
+
+    allow_methods=["*"],
+
+    allow_headers=["*"],
+
+)
+ 
+START_TS = time.time()
+ 
+# -----------------------------------------------------------------------------------
+
+# Configuração das âncoras (para o mapa do app)
+
+# -----------------------------------------------------------------------------------
+
+anchors_path = Path(__file__).parent / "anchors.json"
+
+try:
+
+    anchors = {k: v for k, v in json.loads(anchors_path.read_text(encoding="utf-8")).items()}
+
+    max_x = max(a["x"] for a in anchors.values())
+
+    max_y = max(a["y"] for a in anchors.values())
+
+    initial_position = {"x": max_x / 2, "y": max_y / 2}
+
+except Exception:
+
+    anchors = {}
+
+    initial_position = {"x": 0.0, "y": 0.0}
+ 
+# -----------------------------------------------------------------------------------
+
+# Estado em memória
+
+# -----------------------------------------------------------------------------------
+
+# Você está agregando por ÂNCORA (funciona bem para 1 tag)
+
+readings_history = defaultdict(lambda: deque(maxlen=5))
+
+is_in_cooldown = False
+ 
+# -----------------------------------------------------------------------------------
+
+# MQTT (buzzer)
+
+# -----------------------------------------------------------------------------------
+
+MQTT_SERVER = "broker.hivemq.com"
+
+MQTT_PORT = 1883
+
+mqtt_client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION1)
+ 
+def setup_mqtt():
+
+    def on_connect(client, userdata, flags, rc):
+
+        print("Backend conectado ao Broker MQTT!" if rc == 0 else f"Falha MQTT rc={rc}")
+
+    mqtt_client.on_connect = on_connect
+
+    mqtt_client.connect(MQTT_SERVER, MQTT_PORT, 60)
+
+    mqtt_client.loop_start()
+ 
+# -----------------------------------------------------------------------------------
+
+# DB helper (para /health)
+
+# -----------------------------------------------------------------------------------
+
+def get_db():
+
+    db = SessionLocal()
+
+    try:
+
+        yield db
+
+    finally:
+
+        db.close()
+ 
+# -----------------------------------------------------------------------------------
+
+# WebSocket manager
+
+# -----------------------------------------------------------------------------------
+
+class ConnectionManager:
+
+    def __init__(self):
+
+        self.active_connections: list[WebSocket] = []
+ 
+    async def connect(self, ws: WebSocket):
+
+        await ws.accept()
+
+        self.active_connections.append(ws)
+
+        # Envia setup inicial (anchors + posição inicial)
+
+        initial_payload = json.dumps({
+
+            "type": "initial_setup",
+
+            "payload": {"initial_pos": initial_position, "anchors": anchors}
+
+        })
+
+        try:
+
+            await ws.send_text(initial_payload)
+
+        except Exception:
+
+            pass
+ 
+    def disconnect(self, ws: WebSocket):
+
+        if ws in self.active_connections:
+
+            self.active_connections.remove(ws)
+ 
+    async def broadcast(self, msg: str):
+
+        for c in self.active_connections[:]:
+
+            try:
+
+                if c.client_state == WebSocketState.CONNECTED:
+
+                    await c.send_text(msg)
+
+                else:
+
+                    self.disconnect(c)
+
+            except Exception:
+
+                self.disconnect(c)
+ 
+manager = ConnectionManager()
+ 
+# -----------------------------------------------------------------------------------
+
+# Endpoints REST mínimos (BLE + buzzer + health)
+
+# -----------------------------------------------------------------------------------
+
+@app.post("/api/reading/ble")
+
+async def ingest_ble_reading(reading: schemas.BleReading):
+
+    """
+
+    Espera: { "tagId": "...", "anchorId": "A1", "rssi": -67 }
+
+    Obs: sua lógica atual agrega por âncora (readings_history[anchorId])
+
+    """
+
+    global is_in_cooldown
+
+    if not is_in_cooldown:
+
+        readings_history[reading.anchorId].append(reading.rssi)
+
+        print(f"[BLE] Âncora {reading.anchorId}: total leituras={len(readings_history[reading.anchorId])}")
+
+    return {"status": "ok"}
+ 
+@app.post("/api/tags/{tag_id}/alarm")
+
+def trigger_tag_alarm(tag_id: str):
+
+    topic = f"radarmottu/tags/{tag_id}/command"
+
+    mqtt_client.publish(topic, "TOGGLE_BUZZER")
+
+    return {"status": "comando toggle enviado", "tag_id": tag_id}
+ 
+@app.get("/health")
+
+def health(db: Session = Depends(get_db)):
+
+    db_ok = False
+
+    try:
+
+        db.execute(text("SELECT 1"))
+
+        db_ok = True
+
+    except Exception:
+
+        db_ok = False
+
+    return {
+
+        "status": "ok" if db_ok else "degraded",
+
+        "uptime_s": round(time.time() - START_TS, 1),
+
+        "db_ok": db_ok,
+
+        "ws_clients": len(manager.active_connections),
+
+        "anchors_count": len(anchors),
+
+    }
+ 
+# -----------------------------------------------------------------------------------
+
+# WebSocket
+
+# -----------------------------------------------------------------------------------
+
+@app.websocket("/ws/position")
+
+async def websocket_endpoint(websocket: WebSocket):
+
+    await manager.connect(websocket)
+
+    try:
+
+        while True:
+
+            await asyncio.sleep(1)
+
+    except WebSocketDisconnect:
+
+        manager.disconnect(websocket)
+ 
+# -----------------------------------------------------------------------------------
+
+# Tarefa de agregação/calculo (sua lógica mantida)
+
+# -----------------------------------------------------------------------------------
+
+async def aggregator_and_calculator_task():
+
+    global is_in_cooldown
+
+    while True:
+
+        await asyncio.sleep(5)
+
+        if is_in_cooldown:
+
+            continue
+ 
+        full_anchors = {k: v for k, v in readings_history.items() if len(v) == 5}
+
+        print(f"[AGG] Âncoras com 5 leituras: {list(full_anchors.keys())}")
+ 
+        if len(full_anchors) >= 3:
+
+            print(">>> Condição atingida! Calculando posição média...")
+
+            aggregated = [{"anchorId": k, "rssi": sum(v) / len(v)} for k, v in full_anchors.items()]
+
+            pos = multilaterate(anchors, aggregated)
+
+            if pos:
+
+                payload = json.dumps({
+
+                    "type": "position_update",
+
+                    "payload": {"id": "TAG01", "kind": "tag", "pos": pos}
+
+                })
+
+                await manager.broadcast(payload)
+
+                print(">>> Posição enviada. Iniciando ciclo de descanso...")
+
+                is_in_cooldown = True
+
+                readings_history.clear()
+
+                await asyncio.sleep(5)
+
+                is_in_cooldown = False
+
+                print(">>> Ciclo de descanso finalizado.")
+ 
+# -----------------------------------------------------------------------------------
+
+# Startup: MQTT + tasks + REGISTRO DOS ROUTERS (resolve 404 do app)
+
+# -----------------------------------------------------------------------------------
+
+@app.on_event("startup")
+
+async def on_startup():
+
+    setup_mqtt()
+
+    # tasks
+
+    asyncio.create_task(aggregator_and_calculator_task())
+
+    # routers REST (CRUD e estacionamento)
+
+    app.include_router(vehicles.router)
+
+    app.include_router(parking.router)
+
+    app.include_router(locate.router)
+
+    app.include_router(anchors_router.router)
+
+
+#――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+# ARQUIVO: app/models.py   |   MÓDULO: app.models   |   classes: 4   |   funções: 0
+#――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+
+# app/models.py
+
+from sqlalchemy import Column, Integer, String, Boolean, DateTime, func
+
+from .database import Base
+ 
+class User(Base):
+
+    __tablename__ = "users"
+
+    id = Column(Integer, primary_key=True, index=True)
+
+    email = Column(String, unique=True, index=True, nullable=False)
+
+    hashed_password = Column(String, nullable=False)
+
+    is_admin = Column(Boolean, default=False)
+ 
+class Vehicle(Base):
+
+    __tablename__ = "vehicles"
+
+    id = Column(Integer, primary_key=True, index=True)
+
+    plate = Column(String, unique=True, index=True, nullable=False)
+
+    brand = Column(String)
+
+    model = Column(String)
+
+    color = Column(String)
+
+    year_make = Column(String)
+
+    year_model = Column(String)
+
+    vin = Column(String)
+
+    tag_code = Column(String)
+
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+ 
+class ParkingSpot(Base):
+
+    __tablename__ = "parking_spots"
+
+    id = Column(Integer, primary_key=True)
+
+    zone = Column(String, index=True)
+
+    number = Column(Integer, index=True)
+
+    is_occupied = Column(Boolean, default=False)
+ 
+class ParkingSession(Base):
+
+    __tablename__ = "parking_sessions"
+
+    id = Column(Integer, primary_key=True)
+
+    plate = Column(String, index=True)
+
+    tag_code = Column(String)
+
+    zone = Column(String, index=True)
+
+    spot_number = Column(Integer)
+
+    start_ts = Column(DateTime(timezone=True), server_default=func.now())
+
+    end_ts = Column(DateTime(timezone=True), nullable=True)
+
+
+#――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+# ARQUIVO: app/schemas.py   |   MÓDULO: app.schemas   |   classes: 8   |   funções: 0
+#――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+
+from pydantic import BaseModel
+from typing import Optional, List
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+
+class UserCreate(BaseModel):
+    email: str
+    password: str
+    is_admin: bool = False
+
+class BleReading(BaseModel):
+    tagId: str
+    anchorId: str
+    rssi: int
+
+class VehicleIn(BaseModel):
+    plate: str
+    brand: str
+    model: str
+    color: str
+    year_make: str
+    year_model: str
+    vin: str
+    tag_code: Optional[str] = None
+    operational: bool = True
+
+class VehicleOut(BaseModel):
+    id: str
+    plate: str
+    model: Optional[str]
+    tag_code: Optional[str] = None
+    class Config: orm_mode = True
+
+class VehicleListItem(BaseModel):
+    plate: str
+    model: Optional[str]
+    brand: Optional[str]
+    color: Optional[str]
+    tag_code: Optional[str] = None
+
+class SpotOverview(BaseModel):
+    zone: Optional[str]
+    total: int
+    occupied: int
+    free: int
+
+class AnchorOut(BaseModel):
+    code: str
+    x: float
+    y: float
+    online: bool
+    lastSeenMs: Optional[int]
+
+
+#――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+# ARQUIVO: app/security.py   |   MÓDULO: app.security   |   classes: 0   |   funções: 3
+#――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+
+from datetime import datetime, timedelta, timezone
+from typing import Optional
+from fastapi.security import OAuth2PasswordBearer
+from jose import jwt
+from passlib.context import CryptContext
+
+SECRET_KEY = "radarmottu_secret_key_change_this"
+ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7
+
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+
+def verify_password(plain_password, hashed_password):
+    return pwd_context.verify(plain_password, hashed_password)
+
+def get_password_hash(password):
+    return pwd_context.hash(password)
+
+def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
+    to_encode = data.copy()
+    expire = datetime.now(timezone.utc) + (expires_delta or timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES))
+    to_encode.update({"exp": expire})
+    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+
+
+##############################################################################################################
+# PASTA (relativa a 'app/'): routers
+##############################################################################################################
+
+#――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+# ARQUIVO: app/routers/anchors.py   |   MÓDULO: app.routers.anchors   |   classes: 0   |   funções: 1
+#――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+
+from fastapi import APIRouter
+
+from pathlib import Path
+
+import json
+ 
+router = APIRouter(prefix="/api", tags=["anchors"])
+ 
+@router.get("/anchors")
+
+def get_anchors():
+
+    anchors_path = Path(__file__).resolve().parents[1] / "anchors.json"
+
+    if not anchors_path.exists():
+
+        return {}
+
+    return json.loads(anchors_path.read_text(encoding="utf-8"))
+
+
+#――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+# ARQUIVO: app/routers/auth.py   |   MÓDULO: app.routers.auth   |   classes: 0   |   funções: 3
+#――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+
+from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.security import OAuth2PasswordRequestForm
+from sqlalchemy.orm import Session
+from .. import schemas, models, security
+from ..database import SessionLocal
+
+router = APIRouter(tags=["auth"])
+
+def get_db():
+    db=SessionLocal()
+    try: yield db
+    finally: db.close()
+
+@router.post("/token", response_model=schemas.Token)
+def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
+    user = db.query(models.User).filter(models.User.email==form_data.username).first()
+    if not user or not security.verify_password(form_data.password, user.hashed_password):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Email ou senha incorretos")
+    access_token = security.create_access_token(data={"sub": user.email, "is_admin": user.is_admin})
+    return {"access_token": access_token, "token_type": "bearer"}
+
+@router.post("/users/")
+def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
+    exists = db.query(models.User).filter(models.User.email==user.email).first()
+    if exists:
+        raise HTTPException(status_code=400, detail="Email já registrado")
+    new_user = models.User(id=user.email, email=user.email,
+                           hashed_password=security.get_password_hash(user.password),
+                           is_admin=user.is_admin)
+    db.add(new_user); db.commit(); return {"id": new_user.id, "email": new_user.email}
+
+
+#――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+# ARQUIVO: app/routers/locate.py   |   MÓDULO: app.routers.locate   |   classes: 0   |   funções: 3
+#――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+
+from fastapi import APIRouter, Depends, HTTPException
+
+from sqlalchemy.orm import Session
+
+from sqlalchemy import and_
+
+from ..database import SessionLocal
+
+from .. import models
+ 
+router = APIRouter(prefix="/api", tags=["locate"])
+ 
+def get_db():
+
+    db = SessionLocal()
+
+    try:
+
+        yield db
+
+    finally:
+
+        db.close()
+ 
+def _norm_plate(p: str) -> str:
+
+    return (p or "").strip().upper()
+ 
+@router.get("/locate/{plate}")
+
+def locate(plate: str, db: Session = Depends(get_db)):
+
+    p = _norm_plate(plate)
+
+    s = db.query(models.ParkingSession).filter(
+
+        and_(models.ParkingSession.plate == p, models.ParkingSession.end_ts.is_(None))
+
+    ).first()
+
+    if not s:
+
+        raise HTTPException(status_code=404, detail="Not Found")
+
+    return {"zone": s.zone, "spot": s.spot_number}
+
+
+#――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+# ARQUIVO: app/routers/parking.py   |   MÓDULO: app.routers.parking   |   classes: 0   |   funções: 5
+#――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+
+from fastapi import APIRouter, Depends, HTTPException
+
+from sqlalchemy.orm import Session
+
+from sqlalchemy import and_
+
+from typing import Optional
+
+from datetime import datetime
+
+from ..database import SessionLocal
+
+from .. import models
+ 
+router = APIRouter(prefix="/api/parking", tags=["parking"])
+ 
+def get_db():
+
+    db = SessionLocal()
+
+    try:
+
+        yield db
+
+    finally:
+
+        db.close()
+ 
+def _norm_plate(p: str) -> str:
+
+    return (p or "").strip().upper()
+ 
+def ensure_spots(db: Session):
+
+    # cria 30 vagas na zona A se não existir nenhuma
+
+    total = db.query(models.ParkingSpot).count()
+
+    if total == 0:
+
+        for n in range(1, 31):
+
+            db.add(models.ParkingSpot(zone="A", number=n, is_occupied=False))
+
+        db.commit()
+ 
+@router.post("/store")
+
+def store(plate: str, db: Session = Depends(get_db)):
+
+    """
+
+    Aloca uma vaga para a PLACA.
+
+    Retorna: {zone, spot, sessionId}
+
+    """
+
+    plate = _norm_plate(plate)
+
+    v = db.query(models.Vehicle).filter(models.Vehicle.plate == plate).first()
+
+    if not v:
+
+        raise HTTPException(status_code=404, detail="Veículo não cadastrado")
+ 
+    # Se já tem sessão ativa, apenas retorna
+
+    active = db.query(models.ParkingSession).filter(
+
+        and_(models.ParkingSession.plate == plate, models.ParkingSession.end_ts.is_(None))
+
+    ).first()
+
+    if active:
+
+        return {"zone": active.zone, "spot": active.spot_number, "sessionId": active.id}
+ 
+    ensure_spots(db)
+
+    free = db.query(models.ParkingSpot).filter(models.ParkingSpot.is_occupied == False).order_by(
+
+        models.ParkingSpot.zone.asc(), models.ParkingSpot.number.asc()
+
+    ).first()
+
+    if not free:
+
+        raise HTTPException(status_code=409, detail="Sem vagas disponíveis")
+ 
+    # ocupa vaga e cria sessão
+
+    free.is_occupied = True
+
+    s = models.ParkingSession(
+
+        plate=plate, tag_code=v.tag_code, zone=free.zone, spot_number=free.number, start_ts=datetime.utcnow()
+
+    )
+
+    db.add(s)
+
+    db.commit(); db.refresh(s)
+ 
+    return {"zone": s.zone, "spot": s.spot_number, "sessionId": s.id}
+ 
+@router.post("/release")
+
+def release(plate: str, db: Session = Depends(get_db)):
+
+    """
+
+    Libera a vaga da PLACA (se tiver sessão ativa).
+
+    """
+
+    plate = _norm_plate(plate)
+
+    s: Optional[models.ParkingSession] = db.query(models.ParkingSession).filter(
+
+        and_(models.ParkingSession.plate == plate, models.ParkingSession.end_ts.is_(None))
+
+    ).first()
+
+    if not s:
+
+        raise HTTPException(status_code=404, detail="Sessão não encontrada")
+ 
+    # libera spot
+
+    spot = db.query(models.ParkingSpot).filter(
+
+        and_(models.ParkingSpot.zone == s.zone, models.ParkingSpot.number == s.spot_number)
+
+    ).first()
+
+    if spot:
+
+        spot.is_occupied = False
+ 
+    s.end_ts = datetime.utcnow()
+
+    db.commit()
+
+    return {"status": "released", "zone": s.zone, "spot": s.spot_number}
+
+
+#――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+# ARQUIVO: app/routers/tags.py   |   MÓDULO: app.routers.tags   |   classes: 0   |   funções: 1
+#――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+
+# app/routers/tags.py
+from fastapi import APIRouter
+from ..services.mqtt import mqtt_client
+
+router = APIRouter(prefix="/api/tags", tags=["tags"])
+
+@router.post("/{tag_id}/alarm")
+def trigger_tag_alarm(tag_id: str):
+    """
+    Envia comando de alarme (toggle) para a TAG via MQTT.
+    """
+    topic = f"radarmottu/tags/{tag_id}/command"
+    message = "TOGGLE_BUZZER"
+    print(f"Publicando MQTT -> tópico='{topic}', mensagem='{message}'")
+    mqtt_client.publish(topic, message)
+    return {"status": "comando toggle enviado", "tag_id": tag_id}
+
+
+#――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+# ARQUIVO: app/routers/vehicles.py   |   MÓDULO: app.routers.vehicles   |   classes: 0   |   funções: 6
+#――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+
+from fastapi import APIRouter, Depends, HTTPException
+
+from sqlalchemy.orm import Session
+
+from typing import Optional
+
+from ..database import SessionLocal
+
+from .. import models
+ 
+router = APIRouter(prefix="/api/vehicles", tags=["vehicles"])
+ 
+def get_db():
+
+    db = SessionLocal()
+
+    try:
+
+        yield db
+
+    finally:
+
+        db.close()
+ 
+def _norm_plate(p: str) -> str:
+
+    return (p or "").strip().upper()
+ 
+@router.post("")
+
+def create_vehicle(payload: dict, db: Session = Depends(get_db)):
+
+    """
+
+    Cria (ou atualiza se já existir) um veículo.
+
+    Espera: {plate, brand, model, color, year_make, year_model, vin, tag_code}
+
+    """
+
+    plate = _norm_plate(payload.get("plate", ""))
+
+    if not plate:
+
+        raise HTTPException(status_code=400, detail="plate é obrigatório")
+ 
+    v: Optional[models.Vehicle] = db.query(models.Vehicle).filter(models.Vehicle.plate == plate).first()
+
+    if v is None:
+
+        v = models.Vehicle(plate=plate)
+
+        db.add(v)
+ 
+    # atualiza campos
+
+    v.brand      = payload.get("brand", v.brand)
+
+    v.model      = payload.get("model", v.model)
+
+    v.color      = payload.get("color", v.color)
+
+    v.year_make  = payload.get("year_make", v.year_make)
+
+    v.year_model = payload.get("year_model", v.year_model)
+
+    v.vin        = payload.get("vin", v.vin)
+
+    v.tag_code   = payload.get("tag_code", v.tag_code)
+ 
+    db.commit()
+
+    db.refresh(v)
+
+    return {
+
+        "id": v.id, "plate": v.plate, "brand": v.brand, "model": v.model, "color": v.color,
+
+        "year_make": v.year_make, "year_model": v.year_model, "vin": v.vin, "tag_code": v.tag_code
+
+    }
+ 
+@router.get("/by-plate/{plate}")
+
+def get_by_plate(plate: str, db: Session = Depends(get_db)):
+
+    p = _norm_plate(plate)
+
+    v = db.query(models.Vehicle).filter(models.Vehicle.plate == p).first()
+
+    if not v:
+
+        raise HTTPException(status_code=404, detail="Not Found")
+
+    return {
+
+        "id": v.id, "plate": v.plate, "brand": v.brand, "model": v.model, "color": v.color,
+
+        "year_make": v.year_make, "year_model": v.year_model, "vin": v.vin, "tag_code": v.tag_code
+
+    }
+ 
+@router.put("/{plate}")
+
+def update_vehicle(plate: str, payload: dict, db: Session = Depends(get_db)):
+
+    p = _norm_plate(plate)
+
+    v = db.query(models.Vehicle).filter(models.Vehicle.plate == p).first()
+
+    if not v:
+
+        raise HTTPException(status_code=404, detail="Not Found")
+
+    for k in ["brand","model","color","year_make","year_model","vin","tag_code"]:
+
+        if k in payload:
+
+            setattr(v, k, payload[k])
+
+    db.commit(); db.refresh(v)
+
+    return {
+
+        "id": v.id, "plate": v.plate, "brand": v.brand, "model": v.model, "color": v.color,
+
+        "year_make": v.year_make, "year_model": v.year_model, "vin": v.vin, "tag_code": v.tag_code
+
+    }
+ 
+@router.delete("/{plate}")
+
+def delete_vehicle(plate: str, db: Session = Depends(get_db)):
+
+    p = _norm_plate(plate)
+
+    v = db.query(models.Vehicle).filter(models.Vehicle.plate == p).first()
+
+    if not v:
+
+        raise HTTPException(status_code=404, detail="Not Found")
+
+    db.delete(v); db.commit()
+
+    return {"status": "deleted"}
+
+
+##############################################################################################################
+# PASTA (relativa a 'app/'): services
+##############################################################################################################
+
+#――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+# ARQUIVO: app/services/locator.py   |   MÓDULO: app.services.locator   |   classes: 0   |   funções: 2
+#――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+
+from typing import Optional, Tuple
+
+def snap_to_zone(x: float, y: float) -> Optional[str]:
+    # stub: no futuro, use polígonos. Por ora, None
+    return None
+
+def snap_to_spot(x: float, y: float) -> Optional[str]:
+    # stub: idem
+    return None
+
+
+#――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+# ARQUIVO: app/services/mqtt.py   |   MÓDULO: app.services.mqtt   |   classes: 0   |   funções: 2
+#――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+
+# app/services/mqtt.py
+import paho.mqtt.client as mqtt
+
+# Configurações do broker
+MQTT_SERVER = "broker.hivemq.com"
+MQTT_PORT = 1883
+
+# Cliente MQTT único para todo o servidor
+mqtt_client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION1)
+
+def setup_mqtt():
+    """Conecta e inicia o loop do cliente MQTT (chame no startup do FastAPI)."""
+    def on_connect(client, userdata, flags, rc):
+        if rc == 0:
+            print("Backend conectado ao Broker MQTT!")
+        else:
+            print(f"Falha ao conectar ao MQTT, código de erro: {rc}")
+
+    mqtt_client.on_connect = on_connect
+    mqtt_client.connect(MQTT_SERVER, MQTT_PORT, 60)
+    mqtt_client.loop_start()
+
+

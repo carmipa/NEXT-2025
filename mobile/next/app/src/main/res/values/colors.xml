@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Dark base -->
+    <color name="app_bg">#363636</color>
+    <color name="on_app_bg">#FFFFFFFF</color>
+    <color name="on_app_bg_60">#99FFFFFF</color>
+    <color name="colorOutline">#66FFFFFF</color>
+
+    <!-- Primária (verde) -->
+    <color name="colorPrimary">#0C8B4E</color>
+    <color name="colorOnPrimary">#FFFFFFFF</color>
+    <color name="colorSecondary">#149D5B</color>
+    <color name="colorOnSecondary">#FFFFFFFF</color>
+
+    <!-- Superfície escura -->
+    <color name="colorSurface">@color/app_bg</color>
+    <color name="colorOnSurface">@color/on_app_bg</color>
+
+    <!-- Cores do gradiente do header -->
+    <color name="home_grad_start">#0C8B4E</color>
+    <color name="home_grad_end">#149D5B</color>
+    <color name="home_on_bg">#111111</color>
+
+</resources>

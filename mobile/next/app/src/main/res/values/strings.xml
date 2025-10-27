@@ -1,0 +1,43 @@
+<resources>
+    <string name="app_name">Radarmottu</string>
+    <string name="title_home">Home</string>
+    <string name="title_search">Buscar</string>
+    <string name="title_tracking">Sonar</string>
+    <string name="title_cartesian">Radar 2D</string>
+    <string name="title_about">Sobre</string>
+    <string name="home_title">Meta Mind · Mottu</string>
+    <string name="home_subtitle">Challenge - Mottu - FIAP/2025</string>
+
+    <string name="home_search_title">Buscar veículo por placa</string>
+    <string name="home_search_caption">Padrão Mercosul (ex.: ABC1D23). Toque para ir à tela de busca.</string>
+    <string name="home_btn_search">Ir para Busca</string>
+
+    <string name="home_action_store">Estacionar</string>
+    <string name="home_action_release">Liberar</string>
+
+    <string name="home_stat_vehicles">Veículos</string>
+    <string name="home_stat_anchors">Âncoras</string>
+
+    <string name="home_footer"></string>
+    <string name="home_btn_repo">Abrir repositório</string>
+    <string name="repo_url">https://github.com/carmipa/challenge_2025_2_semestre_mottu_parte_1/tree/main/Mobile_Application_Development</string>
+
+    <!-- Strings para o Card de Detalhes -->
+    <string name="detail_placa">Placa: %s</string>
+    <string name="detail_renavam">RENAVAM: %s</string>
+    <string name="detail_modelo">Modelo: %s</string>
+    <string name="detail_fabricante">Fabricante: %s</string>
+    <string name="detail_chassi">Chassi: %s</string>
+    <string name="detail_ano">Ano: %s</string>
+    <string name="detail_motor">Motor: %s</string>
+    <string name="detail_combustivel">Combustível: %s</string>
+    <string name="detail_status">Status: %s</string>
+    <string name="detail_tag_ble">Tag BLE: %s</string>
+
+    <!-- Strings para a tela de Tracking -->
+    <string name="cd_open_camera">Abrir câmera</string>
+    <string name="sound_on">Som Ligado</string>
+    <string name="sound_off">Som Desligado</string>
+    <string name="license_plate_hint">Placa do veículo</string>
+
+</resources>

@@ -1,0 +1,168 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/app_bg"
+    android:padding="16dp"
+    android:fitsSystemWindows="true"
+    tools:context="br.com.radarmottu.ui.about.MapFragment">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Mapa de Funcionalidades"
+            android:textAppearance="@style/TextAppearance.MaterialComponents.Headline5"
+            android:textStyle="bold"
+            android:layout_marginBottom="16dp"/>
+
+        <com.google.android.material.card.MaterialCardView
+            style="@style/Widget.Material3.CardView.Elevated"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp"
+            app:cardBackgroundColor="@color/colorSurface">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="1. Gestão de Veículos"
+                    android:textAppearance="@style/TextAppearance.MaterialComponents.Subtitle1"
+                    android:textColor="@color/colorPrimary"
+                    android:layout_marginBottom="8dp"/>
+
+                <LinearLayout style="@style/VehicleDetailRow">
+                    <ImageView style="@style/VehicleDetailIcon" app:tint="@color/colorPrimary" android:src="@drawable/ic_search_black_24dp"/>
+                    <TextView style="@style/VehicleDetailText" android:text="Buscar: Encontre veículos por placa. Toque na lupa ou use o ícone de câmera (OCR) para escanear."/>
+                </LinearLayout>
+
+                <LinearLayout style="@style/VehicleDetailRow">
+                    <ImageView style="@style/VehicleDetailIcon" app:tint="@color/colorPrimary" android:src="@drawable/ic_action_camera"/>
+                    <TextView style="@style/VehicleDetailText" android:text="OCR (Reconhecimento de Placa): Use a câmera para extrair automaticamente placas de veículos, simplificando a busca."/>
+                </LinearLayout>
+
+                <LinearLayout style="@style/VehicleDetailRow" android:layout_marginBottom="0dp">
+                    <ImageView style="@style/VehicleDetailIcon" app:tint="@color/colorPrimary" android:src="@drawable/ic_motorcycle_24"/>
+                    <TextView style="@style/VehicleDetailText" android:text="Cadastro: Registre novos veículos preenchendo todos os dados obrigatórios e gerando a Tag BLE."/>
+                </LinearLayout>
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <com.google.android.material.card.MaterialCardView
+            style="@style/Widget.Material3.CardView.Elevated"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp"
+            app:cardBackgroundColor="@color/colorSurface">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="2. Rastreamento (Sonar)"
+                    android:textAppearance="@style/TextAppearance.MaterialComponents.Subtitle1"
+                    android:textColor="@color/colorPrimary"
+                    android:layout_marginBottom="8dp"/>
+
+                <LinearLayout style="@style/VehicleDetailRow">
+                    <ImageView style="@style/VehicleDetailIcon" app:tint="@color/colorPrimary" android:src="@drawable/ic_tracking_black_24dp"/>
+                    <TextView style="@style/VehicleDetailText" android:text="Radar Sonar: Localiza a Tag BLE mais próxima em tempo real usando coordenadas (X, Y)."/>
+                </LinearLayout>
+
+                <LinearLayout style="@style/VehicleDetailRow">
+                    <ImageView style="@style/VehicleDetailIcon" app:tint="@color/colorPrimary" android:src="@drawable/ic_arrow_up"/>
+                    <TextView style="@style/VehicleDetailText" android:text="Seta Direcional: Usa o magnetômetro do celular para guiar você na direção exata da Tag."/>
+                </LinearLayout>
+
+                <LinearLayout style="@style/VehicleDetailRow" android:layout_marginBottom="0dp">
+                    <ImageView style="@style/VehicleDetailIcon" app:tint="@color/colorPrimary" android:src="@drawable/ic_bluetooth_24"/>
+                    <TextView style="@style/VehicleDetailText" android:text="Bip Sonoro: A frequência do bip aumenta quanto mais próximo você estiver da Tag BLE."/>
+                </LinearLayout>
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <com.google.android.material.card.MaterialCardView
+            style="@style/Widget.Material3.CardView.Elevated"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp"
+            app:cardBackgroundColor="@color/colorSurface">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="3. Radar Cartesiano (Radar 2D)"
+                    android:textAppearance="@style/TextAppearance.MaterialComponents.Subtitle1"
+                    android:textColor="@color/colorPrimary"
+                    android:layout_marginBottom="8dp"/>
+
+                <LinearLayout style="@style/VehicleDetailRow">
+                    <ImageView style="@style/VehicleDetailIcon" app:tint="@color/colorPrimary" android:src="@drawable/ic_grid_black_24dp"/>
+                    <TextView style="@style/VehicleDetailText" android:text="Visualização 2D: Mostra a posição da Tag (blip) e do seu celular (centro) em um plano cartesiano (X, Y)."/>
+                </LinearLayout>
+
+                <LinearLayout style="@style/VehicleDetailRow" android:layout_marginBottom="0dp">
+                    <ImageView style="@style/VehicleDetailIcon" app:tint="@color/colorPrimary" android:src="@drawable/ic_action_locate"/>
+                    <TextView style="@style/VehicleDetailText" android:text="Sua Posição GPS: Exibe sua Latitude e Longitude (necessita de permissão de Localização)."/>
+                </LinearLayout>
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <com.google.android.material.card.MaterialCardView
+            style="@style/Widget.Material3.CardView.Elevated"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp"
+            app:cardBackgroundColor="@color/colorSurface">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="4. Gestão de Pátio"
+                    android:textAppearance="@style/TextAppearance.MaterialComponents.Subtitle1"
+                    android:textColor="@color/colorPrimary"
+                    android:layout_marginBottom="8dp"/>
+
+                <LinearLayout style="@style/VehicleDetailRow">
+                    <ImageView style="@style/VehicleDetailIcon" app:tint="@color/colorPrimary" android:src="@drawable/ic_action_store"/>
+                    <TextView style="@style/VehicleDetailText" android:text="Estacionar: Registra o veículo em uma vaga específica (Zona/Spot)."/>
+                </LinearLayout>
+
+                <LinearLayout style="@style/VehicleDetailRow" android:layout_marginBottom="0dp">
+                    <ImageView style="@style/VehicleDetailIcon" app:tint="@color/colorPrimary" android:src="@drawable/ic_action_release"/>
+                    <TextView style="@style/VehicleDetailText" android:text="Liberar: Remove o veículo da vaga, atualizando o status para Operacional."/>
+                </LinearLayout>
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+    </LinearLayout>
+</ScrollView>
