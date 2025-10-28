@@ -34,71 +34,83 @@ export default function ComportamentalPage() {
     const carregarDadosComportamentais = async () => {
         setLoading(true);
         try {
-            // Tentar buscar dados reais do backend
-            try {
-                const response = await fetch('/api/relatorios/comportamental-detalhado');
-                if (response.ok) {
-                    const dadosComportamentais = await response.json();
-                    console.log('Dados comportamentais recebidos:', dadosComportamentais);
-                    
-                    // Gerar dados de clientes baseados nos dados reais da API
-                    const clientesProcessados: Cliente[] = [
-                        {
-                            id: '1',
-                            nome: 'João Silva',
-                            rating: 4,
-                            tags: ['frequente', 'vip'],
-                            visitas: 15,
-                            tempoMedio: '2h 0m',
-                            patioPreferido: 'Pátio Centro',
-                            percentualPreferido: 85,
-                            ultimaVisita: '22/10/2025 10:30',
-                            proximaVisita: undefined,
-                            nivel: 'MEDIO'
-                        },
-                        {
-                            id: '2',
-                            nome: 'Maria Santos',
-                            rating: 3,
-                            tags: ['ocasional'],
-                            visitas: 8,
-                            tempoMedio: '1h 30m',
-                            patioPreferido: 'Pátio Limão',
-                            percentualPreferido: 70,
-                            ultimaVisita: '21/10/2025 14:15',
-                            proximaVisita: undefined,
-                            nivel: 'BAIXO'
-                        },
-                        {
-                            id: '3',
-                            nome: 'Pedro Oliveira',
-                            rating: 5,
-                            tags: ['frequente', 'vip'],
-                            visitas: 25,
-                            tempoMedio: '3h 0m',
-                            patioPreferido: 'Pátio Guarulhos',
-                            percentualPreferido: 95,
-                            ultimaVisita: '20/10/2025 09:45',
-                            proximaVisita: undefined,
-                            nivel: 'ALTO'
-                        }
-                    ];
-                    
-                    console.log('Clientes processados:', clientesProcessados);
-                    setClientes(clientesProcessados);
-                    return;
-                }
-            } catch (apiError) {
-                console.error('Erro ao carregar dados da API:', apiError);
+            console.log('🔍 Buscando dados comportamentais REAIS do backend...');
+            
+            // Buscar dados REAIS de veículos e suas movimentações
+            const responseMovimentacoes = await fetch('/api/relatorios/movimentacao/detalhes?dataInicio=2024-01-01&dataFim=2025-12-31');
+            
+            if (!responseMovimentacoes.ok) {
+                console.warn('⚠️ Nenhum dado de movimentação disponível');
                 setClientes([]);
                 return;
             }
-            // Sem dados mockados - apenas dados reais
-            setClientes([]);
+            
+            const movimentacoes = await responseMovimentacoes.json();
+            console.log('📊 Movimentações recebidas:', movimentacoes.length);
+            
+            // Processar movimentações para criar análise comportamental REAL
+            const clientesData = new Map<string, {
+                nome: string;
+                visitas: number;
+                totalMinutos: number;
+                ultimaVisita: string;
+                pátios: Map<string, number>;
+            }>();
+            
+            movimentacoes.forEach((mov: any) => {
+                const placa = mov.placa || 'Desconhecido';
+                
+                if (!clientesData.has(placa)) {
+                    clientesData.set(placa, {
+                        nome: placa, // Usando placa como identificador
+                        visitas: 0,
+                        totalMinutos: 0,
+                        ultimaVisita: mov.dataHora,
+                        pátios: new Map()
+                    });
+                }
+                
+                const dados = clientesData.get(placa)!;
+                dados.visitas++;
+                
+                if (mov.tipo === 'ENTRADA') {
+                    dados.ultimaVisita = mov.dataHora;
+                    const patio = mov.patio || 'N/A';
+                    dados.pátios.set(patio, (dados.pátios.get(patio) || 0) + 1);
+                }
+                
+                // Calcular tempo médio (simulado por agora)
+                dados.totalMinutos += 120; // Valor médio
+            });
+            
+            // Converter para formato esperado pelo frontend
+            const clientesProcessados: Cliente[] = Array.from(clientesData.entries()).map(([placa, dados]) => {
+                const tempoMedioMinutos = dados.visitas > 0 ? dados.totalMinutos / dados.visitas : 0;
+                const visitaMaisComum = Array.from(dados.pátios.entries())
+                    .sort((a, b) => b[1] - a[1])[0];
+                const percentualPreferido = visitaMaisComum ? (visitaMaisComum[1] / dados.visitas) * 100 : 0;
+                
+                return {
+                    id: placa,
+                    nome: dados.nome,
+                    rating: calcularRating(dados.visitas, tempoMedioMinutos),
+                    tags: gerarTags(dados.visitas, tempoMedioMinutos),
+                    visitas: dados.visitas,
+                    tempoMedio: formatarTempo(tempoMedioMinutos),
+                    patioPreferido: visitaMaisComum?.[0] || 'N/A',
+                    percentualPreferido: Math.round(percentualPreferido),
+                    ultimaVisita: formatarUltimaVisita(dados.ultimaVisita),
+                    nivel: calcularNivel(dados.visitas, tempoMedioMinutos)
+                };
+            });
+            
+            console.log('✅ Clientes processados:', clientesProcessados.length);
+            setClientes(clientesProcessados);
+            
         } catch (error) {
-            console.error('Erro ao carregar dados comportamentais:', error);
+            console.error('❌ Erro ao carregar dados comportamentais:', error);
+            setClientes([]);
         } finally {
-            console.log('Finalizando carregamento, loading:', false);
             setLoading(false);
         }
     };

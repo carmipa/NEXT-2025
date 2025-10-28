@@ -37,6 +37,7 @@ function ZonaContent() {
   // Estados para paginação
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(9);
+  const [selectedPatioId, setSelectedPatioId] = useState<number | 'all'>('all');
 
   useEffect(() => {
     const patioId = searchParams.get('patioId');
@@ -87,10 +88,10 @@ function ZonaContent() {
 
   const getFilteredData = () => {
     return zonas.filter((item: ZonaResponseDto) => {
-      const searchFields = [item.nome, item.observacao];
-      return searchFields.some(field => 
-        field && field.toLowerCase().includes(searchTerm.toLowerCase())
-      );
+      const passesSearch = [item.nome, item.observacao, item.patio?.nomePatio]
+        .some(field => field && field.toLowerCase().includes(searchTerm.toLowerCase()));
+      const passesPatio = selectedPatioId === 'all' || item.patio?.idPatio === selectedPatioId;
+      return passesSearch && passesPatio;
     });
   };
 
@@ -117,6 +118,13 @@ function ZonaContent() {
   useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm]);
+
+  // Derivar lista de pátios a partir das zonas carregadas
+  const patiosDisponiveis = Array.from(new Map(
+    zonas
+      .filter(z => z.patio && z.patio.idPatio != null)
+      .map(z => [z.patio!.idPatio, { idPatio: z.patio!.idPatio, nomePatio: z.patio!.nomePatio }])
+  ).values()).sort((a, b) => a.nomePatio.localeCompare(b.nomePatio));
 
   if (loading) {
     return (
@@ -176,19 +184,43 @@ function ZonaContent() {
             </div>
           )}
 
-          {/* Search */}
+          {/* Filtros */}
           <div className="mb-8 neumorphic-container">
-            <div className="relative">
-              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5 z-10" />
-              <input
-                type="text"
-                placeholder=""
-                title="Buscar zonas"
-                aria-label="Buscar zonas"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="neumorphic-input pl-14 pr-4"
-              />
+            <div className="flex flex-col gap-3">
+              {/* Busca */}
+              <div className="relative">
+                <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5 z-10" />
+                <input
+                  type="text"
+                  placeholder=""
+                  title="Buscar zonas"
+                  aria-label="Buscar zonas"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="neumorphic-input pl-14 pr-4"
+                />
+              </div>
+              {/* Abas de pátio (abaixo da busca, em linha com wrap) */}
+              {patiosDisponiveis.length > 0 && (
+                <div className="flex flex-row flex-wrap items-center gap-2">
+                  <button
+                    onClick={() => setSelectedPatioId('all')}
+                    className={`px-2.5 py-1 rounded-full text-xs border transition-colors ${selectedPatioId === 'all' ? 'bg-emerald-600 text-white border-emerald-500' : 'border-slate-300 text-slate-700 hover:bg-slate-50'}`}
+                  >
+                    Todos os pátios
+                  </button>
+                  {patiosDisponiveis.map(p => (
+                    <button
+                      key={p.idPatio}
+                      onClick={() => setSelectedPatioId(p.idPatio)}
+                      className={`px-2.5 py-1 rounded-full text-xs border transition-colors ${selectedPatioId === p.idPatio ? 'bg-emerald-600 text-white border-emerald-500' : 'border-slate-300 text-slate-700 hover:bg-slate-50'}`}
+                      title={`Filtrar zonas do ${p.nomePatio}`}
+                    >
+                      {p.nomePatio}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 
@@ -247,6 +279,14 @@ function ZonaContent() {
                     {item.observacao && (
                       <p className="text-xs lg:text-sm text-slate-500 mb-3 line-clamp-2">{item.observacao}</p>
                     )}
+                    {/* Pátio da zona */}
+                    {item.patio?.nomePatio && (
+                      <div className="mt-2 text-xs lg:text-sm text-slate-700">
+                        <span className="inline-flex items-center gap-1 bg-slate-100 border border-slate-200 text-slate-700 px-2 py-0.5 rounded-full">
+                          <Building size={14} /> {item.patio.nomePatio}
+                        </span>
+                      </div>
+                    )}
                   </div>
                   
                   <div className="flex justify-end items-center gap-2 border-t border-slate-200 pt-3 mt-4">
@@ -270,6 +310,7 @@ function ZonaContent() {
                       <th className="px-3 lg:px-4 py-2 lg:py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">ID</th>
                       <th className="px-3 lg:px-4 py-2 lg:py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Nome</th>
                       <th className="px-3 lg:px-4 py-2 lg:py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Status</th>
+                      <th className="px-3 lg:px-4 py-2 lg:py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Pátio</th>
                       <th className="px-3 lg:px-4 py-2 lg:py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider hidden lg:table-cell">Observação</th>
                       <th className="px-3 lg:px-4 py-2 lg:py-3 text-center text-xs font-medium text-slate-500 uppercase tracking-wider">Ações</th>
                     </tr>
@@ -283,6 +324,9 @@ function ZonaContent() {
                           <span className={`font-semibold ${item.status === 'A' ? 'text-green-600' : 'text-red-600'}`}>
                             {item.status === 'A' ? 'Ativa' : 'Inativa'}
                           </span>
+                        </td>
+                        <td className="px-3 lg:px-4 py-3 lg:py-4 whitespace-nowrap text-xs lg:text-sm text-slate-900">
+                          {item.patio?.nomePatio || '-'}
                         </td>
                         <td className="px-3 lg:px-4 py-3 lg:py-4 text-xs lg:text-sm text-slate-900 max-w-xs truncate hidden lg:table-cell">{item.observacao || '-'}</td>
                         <td className="px-3 lg:px-4 py-3 lg:py-4 whitespace-nowrap text-center text-xs lg:text-sm font-medium">

@@ -27,6 +27,8 @@ export default function BuscarBoxesPage() {
     const [error, setError] = useState<string | null>(null);
     const [hasSearched, setHasSearched] = useState(false);
     const [filter, setFilter] = useState<BoxFilter>(initialFilterState);
+    const [quickField, setQuickField] = useState<'nome'|'observacao'|'status'|'patioNome'>('nome');
+    const [quickQuery, setQuickQuery] = useState('');
 
     const ITEMS_PER_PAGE = 9;
     const SORT_ORDER = 'idBox,asc';
@@ -61,12 +63,32 @@ export default function BuscarBoxesPage() {
 
     const handleSearch = (e: FormEvent) => {
         e.preventDefault();
+        // Não buscar quando o campo texto estiver vazio
+        if (!quickQuery.trim()) {
+            setBoxes([]);
+            setPageInfo(null);
+            setHasSearched(false);
+            return;
+        }
         setCurrentPage(0);
-        fetchData(0, filter);
+        const built: any = { ...initialFilterState };
+        if (quickQuery.trim()) {
+            if (quickField === 'status') {
+                const v = quickQuery.trim().toLowerCase();
+                built.status = v.startsWith('l') ? 'L' : v.startsWith('o') ? 'O' : undefined;
+            } else if (quickField === 'patioNome') {
+                built.patioNome = quickQuery.trim();
+            } else {
+                built[quickField] = quickQuery.trim();
+            }
+        }
+        fetchData(0, built);
     };
 
     const handleClearFilters = () => {
         setFilter(initialFilterState);
+        setQuickQuery('');
+        setQuickField('nome');
         setBoxes([]);
         setPageInfo(null);
         setCurrentPage(0);
@@ -77,6 +99,8 @@ export default function BuscarBoxesPage() {
     const handlePageChange = (newPage: number) => {
         fetchData(newPage, filter);
     };
+
+    // Busca manual apenas via botão BUSCAR: sem auto-busca ao digitar
 
     if (isLoading && !hasSearched) {
         return (
@@ -136,121 +160,70 @@ export default function BuscarBoxesPage() {
                     </div>
                   )}
 
-                  {/* Search Form */}
-                  <form onSubmit={handleSearch} className="mb-6 sm:mb-8 neumorphic-container">
-                    <div className="space-y-4 sm:space-y-6">
-                        {/* Primeira linha - Campos básicos */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-                            <div>
-                                <label className="block text-xs sm:text-sm font-medium text-white mb-2 flex items-center gap-2">
-                                    <i className="ion-ios-square text-orange-500 text-sm"></i>
-                                    Nome do Box
-                                </label>
-                                <input 
-                                    type="text" 
-                                    name="nome" 
-                                    value={filter.nome || ''} 
-                                    onChange={handleFilterChange} 
-                                    placeholder="Digite o nome do box..." 
-                                    className="neumorphic-input w-full h-10 sm:h-12 text-sm sm:text-base"
-                                    title="Nome do box"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-xs sm:text-sm font-medium text-white mb-2 flex items-center gap-2">
-                                    <i className="ion-ios-pulse text-green-500 text-sm"></i>
-                                    Status
-                                </label>
-                                <select 
-                                    name="status" 
-                                    value={filter.status || ''} 
-                                    onChange={handleFilterChange} 
-                                    className="neumorphic-select w-full h-10 sm:h-12 text-sm sm:text-base" 
-                                    aria-label="Filtrar por status"
-                                    title="Status do box"
-                                >
-                                    <option value="">Todos os status</option>
-                                    <option value="L">Livre</option>
-                                    <option value="O">Ocupado</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label className="block text-xs sm:text-sm font-medium text-white mb-2 flex items-center gap-2">
-                                    <i className="ion-ios-information-circle text-gray-500 text-sm"></i>
-                                    Observação
-                                </label>
-                                <input 
-                                    type="text" 
-                                    name="observacao" 
-                                    value={filter.observacao || ''} 
-                                    onChange={handleFilterChange} 
-                                    placeholder="Digite uma observação..." 
-                                    className="neumorphic-input w-full h-10 sm:h-12 text-sm sm:text-base"
-                                    title="Observação do box"
-                                />
-                            </div>
-                        </div>
-
-                        {/* Segunda linha - Campos de data */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                            <div>
-                                <label className="block text-xs sm:text-sm font-medium text-white mb-2 flex items-center gap-2" htmlFor="dataEntradaInicio">
-                                    <i className="ion-ios-calendar text-blue-500 text-sm"></i>
-                                    Data Entrada (Início)
-                                </label>
-                                <input 
-                                    id="dataEntradaInicio" 
-                                    type="date" 
-                                    name="dataEntradaInicio" 
-                                    value={filter.dataEntradaInicio || ''} 
-                                    onChange={handleFilterChange} 
-                                    className="neumorphic-input w-full h-10 sm:h-12 date-input-fix text-sm sm:text-base" 
-                                    title="Data de entrada inicial"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-xs sm:text-sm font-medium text-white mb-2 flex items-center gap-2" htmlFor="dataEntradaFim">
-                                    <i className="ion-ios-calendar text-blue-500 text-sm"></i>
-                                    Data Entrada (Fim)
-                                </label>
-                                <input 
-                                    id="dataEntradaFim" 
-                                    type="date" 
-                                    name="dataEntradaFim" 
-                                    value={filter.dataEntradaFim || ''} 
-                                    onChange={handleFilterChange} 
-                                    className="neumorphic-input w-full h-10 sm:h-12 date-input-fix text-sm sm:text-base" 
-                                    title="Data de entrada final"
-                                />
-                            </div>
-                        </div>
-
-                        {/* Terceira linha - Botões centralizados */}
-                        <div className="flex flex-col sm:flex-row justify-center gap-3 sm:gap-4 pt-2 sm:pt-4">
-                            <button 
-                                type="submit" 
-                                className="group relative bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-bold py-3 lg:py-4 px-6 lg:px-8 rounded-xl shadow-xl transform hover:scale-105 transition-all duration-300 border-2 border-emerald-400 hover:border-emerald-300 flex items-center justify-center gap-2"
-                                title="Buscar boxes"
-                            >
-                                <div className="absolute inset-0 bg-gradient-to-r from-emerald-400 to-emerald-500 rounded-xl opacity-0 group-hover:opacity-30 transition-opacity duration-300"></div>
-                                <div className="relative flex items-center gap-2">
-                                    <i className="ion-ios-search text-lg"></i>
-                                    <span className="text-sm lg:text-base font-black">BUSCAR</span>
-                                </div>
-                            </button>
-                            <button 
-                                type="button" 
-                                onClick={handleClearFilters} 
-                                className="group relative bg-gradient-to-r from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700 text-white font-bold py-3 lg:py-4 px-6 lg:px-8 rounded-xl shadow-xl transform hover:scale-105 transition-all duration-300 border-2 border-gray-400 hover:border-gray-300 flex items-center justify-center gap-2"
-                                title="Limpar filtros"
-                            >
-                                <div className="absolute inset-0 bg-gradient-to-r from-gray-400 to-gray-500 rounded-xl opacity-0 group-hover:opacity-30 transition-opacity duration-300"></div>
-                                <div className="relative flex items-center gap-2">
-                                    <i className="ion-ios-close text-lg"></i>
-                                    <span className="text-sm lg:text-base font-black">LIMPAR</span>
-                                </div>
-                            </button>
-                        </div>
+                  {/* Search Form - padrão igual zona/buscar */}
+                  <form onSubmit={handleSearch} className="mb-6 sm:mb-8 neumorphic-container p-4 lg:p-6">
+                    <div className="flex flex-col gap-3 md:flex-row md:items-center">
+                      <div className="flex-1">
+                        <label className="block text-xs lg:text-sm font-medium text-white mb-1 flex items-center gap-2">
+                          <i className="ion-ios-search text-blue-400 text-sm lg:text-base"></i>
+                          Valor
+                        </label>
+                        <input
+                          type="text"
+                          value={quickQuery}
+                          onChange={(e) => setQuickQuery(e.target.value)}
+                          className="neumorphic-input w-full text-sm lg:text-base"
+                          placeholder={quickField === 'nome' ? 'Digite o nome do box...'
+                            : quickField === 'observacao' ? 'Digite uma observação...'
+                            : quickField === 'status' ? 'Digite Livre ou Ocupado...'
+                            : 'Digite o nome do pátio...'}
+                        />
+                      </div>
+                      <div className="w-full md:w-52">
+                        <label className="block text-xs lg:text-sm font-medium text-white mb-1 flex items-center gap-2">
+                          <i className="ion-ios-funnel text-purple-400 text-sm lg:text-base"></i>
+                          Filtrar por
+                        </label>
+                        <select
+                          value={quickField}
+                          onChange={(e) => setQuickField(e.target.value as any)}
+                          className="neumorphic-input w-full text-sm lg:text-base"
+                        >
+                          <option value="nome">Nome do Box</option>
+                          <option value="observacao">Observação</option>
+                          <option value="status">Status (Livre/Ocupado)</option>
+                          <option value="patioNome">Nome do Pátio</option>
+                        </select>
+                      </div>
+                      <div className="mt-2 md:mt-6 flex flex-col sm:flex-row justify-center gap-3 sm:gap-4">
+                        <button 
+                          type="submit" 
+                          disabled={!quickQuery.trim()}
+                          className={`group relative text-white font-bold py-3 lg:py-4 px-6 lg:px-8 rounded-xl shadow-xl transform transition-all duration-300 border-2 flex items-center justify-center gap-2 btn-buscar-turquesa ${!quickQuery.trim() ? 'cursor-not-allowed' : 'hover:scale-105'}`}
+                          style={{
+                            opacity: !quickQuery.trim() ? 0.5 : 1
+                          }}
+                          title="Buscar boxes"
+                        >
+                          <div className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-20 transition-opacity duration-300" style={{backgroundColor: '#2BC49A'}}></div>
+                          <div className="relative flex items-center gap-2">
+                            <i className="ion-ios-search text-lg"></i>
+                            <span className="text-sm lg:text-base font-black">BUSCAR</span>
+                          </div>
+                        </button>
+                        <button 
+                          type="button" 
+                          onClick={handleClearFilters} 
+                          className="group relative bg-gradient-to-r from-gray-300 to-gray-400 hover:from-gray-400 hover:to-gray-500 text-white font-bold py-3 lg:py-4 px-6 lg:px-8 rounded-xl shadow-xl transform hover:scale-105 transition-all duration-300 border-2 border-gray-200 hover:border-gray-300 flex items-center justify-center gap-2"
+                          title="Limpar filtros"
+                        >
+                          <div className="absolute inset-0 bg-gradient-to-r from-gray-200 to-gray-300 rounded-xl opacity-0 group-hover:opacity-30 transition-opacity duration-300"></div>
+                          <div className="relative flex items-center gap-2">
+                            <i className="ion-ios-close text-lg"></i>
+                            <span className="text-sm lg:text-base font-black">LIMPAR</span>
+                          </div>
+                        </button>
+                      </div>
                     </div>
                   </form>
 

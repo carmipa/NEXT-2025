@@ -76,16 +76,23 @@ function MapaVagasContent() {
         const fetchMapa = async () => {
             // Se temos uma placa, tentar buscar o pátio correto
             let url = "/api/vagas/mapa";
-            let patioId = null;
+            let patioId: number | null = null;
             
             if (placaParam) {
                 console.log('🔍 Buscando pátio para placa:', placaParam);
                 try {
                     // Buscar em qual pátio o veículo está estacionado
-                    const buscaRes = await fetch(`/api/vagas/buscar-placa/${placaParam}`);
+                    const buscaRes = await fetch(`/api/vagas/buscar-placa/${placaParam}`, { cache: 'no-store' });
                     if (buscaRes.ok) {
                         const buscaData = await buscaRes.json();
                         console.log('📋 Dados da busca:', buscaData);
+                        console.log('🧭 Debug localizar → mapa:', {
+                            placa: buscaData?.placa,
+                            found: buscaData?.found,
+                            boxId: buscaData?.boxId,
+                            boxNome: buscaData?.boxNome,
+                            patioId: buscaData?.patioId,
+                        });
                         if (buscaData.found && buscaData.boxId) {
                             // Buscar informações do box para determinar o pátio
                             const boxNome = buscaData.boxNome || '';
@@ -108,12 +115,12 @@ function MapaVagasContent() {
             }
             
             console.log('🌐 Fazendo requisição para URL:', url);
-            const res = await fetch(url, { cache: "no-store" });
+            let res = await fetch(url, { cache: "no-store" });
             if (!res.ok) {
                 console.error('❌ Erro na requisição:', res.status, res.statusText);
                 return;
             }
-            const data = (await res.json()) as MapaResponse;
+            let data = (await res.json()) as MapaResponse;
             console.log('📊 Dados recebidos da API:', {
                 rows: data.rows,
                 cols: data.cols,
@@ -121,6 +128,24 @@ function MapaVagasContent() {
                 firstBox: data.boxes?.[0],
                 lastBox: data.boxes?.[data.boxes?.length - 1]
             });
+            // Fallback: se filtrou por pátio e veio vazio, tentar sem filtro
+            if (patioId && Array.isArray(data.boxes) && data.boxes.length === 0) {
+                console.warn('⚠️ Nenhum box retornado para patioId=', patioId, ' — tentando sem filtro...');
+                res = await fetch('/api/vagas/mapa', { cache: 'no-store' });
+                if (res.ok) {
+                    data = (await res.json()) as MapaResponse;
+                    console.log('🔁 Requisição sem filtro retornou:', {
+                        totalBoxes: data.boxes?.length,
+                        sample: data.boxes?.slice(0, 3)
+                    });
+                } else {
+                    console.error('❌ Falha também sem filtro:', res.status, res.statusText);
+                }
+            }
+            if (Array.isArray(data.boxes)) {
+                const sample = data.boxes.slice(0, 10).map(b => ({ idBox: b.idBox, nome: b.nome, status: b.status, placa: b.veiculo?.placa }));
+                console.log('🧪 Amostra de boxes (até 10):', sample);
+            }
             
             // Log dos primeiros 5 boxes para debug
             console.log('📦 Primeiros 5 boxes:', data.boxes?.slice(0, 5));
@@ -626,6 +651,54 @@ function MapaVagasContent() {
                             <span style={{fontFamily: 'Montserrat, sans-serif'}} className="sm:hidden">Mapa</span>
                         </Link>
                     </div>
+
+					{/* Acesso rápido aos novos relatórios */}
+					<div className="mt-4 sm:mt-8 rounded-2xl border border-zinc-700 bg-zinc-900 p-3 sm:p-4">
+						<div className="flex items-center justify-between flex-wrap gap-3 mb-3">
+							<h2 className="text-sm sm:text-base font-semibold text-zinc-200 flex items-center gap-2">
+								<i className="ion-ios-analytics text-emerald-400"></i>
+								Relatórios
+							</h2>
+							<Link href="/relatorios" className="text-emerald-400 hover:text-emerald-300 text-xs sm:text-sm flex items-center gap-1">
+								Ver todos
+								<i className="ion-ios-arrow-forward"></i>
+							</Link>
+						</div>
+						<div className="flex flex-wrap gap-2 sm:gap-3">
+							<Link href="/relatorios/ocupacao-diaria" className="px-3 py-1.5 rounded-lg bg-emerald-700/20 hover:bg-emerald-700/30 text-emerald-300 text-xs sm:text-sm flex items-center gap-1">
+								<i className="ion-ios-calendar"></i>
+								Ocupação Diária
+							</Link>
+							<Link href="/relatorios/movimentacao" className="px-3 py-1.5 rounded-lg bg-orange-700/20 hover:bg-orange-700/30 text-orange-300 text-xs sm:text-sm flex items-center gap-1">
+								<i className="ion-ios-swap"></i>
+								Movimentação
+							</Link>
+							<Link href="/relatorios/heatmap" className="px-3 py-1.5 rounded-lg bg-red-700/20 hover:bg-red-700/30 text-red-300 text-xs sm:text-sm flex items-center gap-1">
+								<i className="ion-ios-map"></i>
+								Heatmap
+							</Link>
+							<Link href="/relatorios/manutencao" className="px-3 py-1.5 rounded-lg bg-sky-700/20 hover:bg-sky-700/30 text-sky-300 text-xs sm:text-sm flex items-center gap-1">
+								<i className="ion-ios-construct"></i>
+								Manutenção
+							</Link>
+							<Link href="/relatorios/performance-sistema" className="px-3 py-1.5 rounded-lg bg-indigo-700/20 hover:bg-indigo-700/30 text-indigo-300 text-xs sm:text-sm flex items-center gap-1">
+								<i className="ion-ios-speedometer"></i>
+								Performance
+							</Link>
+							<Link href="/relatorios/analytics" className="px-3 py-1.5 rounded-lg bg-purple-700/20 hover:bg-purple-700/30 text-purple-300 text-xs sm:text-sm flex items-center gap-1">
+								<i className="ion-ios-analytics"></i>
+								Analytics
+							</Link>
+							<Link href="/relatorios/dashboard-ia" className="px-3 py-1.5 rounded-lg bg-fuchsia-700/20 hover:bg-fuchsia-700/30 text-fuchsia-300 text-xs sm:text-sm flex items-center gap-1">
+								<i className="ion-ios-bulb"></i>
+								Dashboard IA
+							</Link>
+							<Link href="/relatorios/notificacoes" className="px-3 py-1.5 rounded-lg bg-amber-700/20 hover:bg-amber-700/30 text-amber-300 text-xs sm:text-sm flex items-center gap-1">
+								<i className="ion-ios-notifications"></i>
+								Notificações
+							</Link>
+						</div>
+					</div>
                 </div>
 
                 {/* Modal com cores atualizadas */}

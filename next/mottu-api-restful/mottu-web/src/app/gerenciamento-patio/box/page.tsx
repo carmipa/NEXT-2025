@@ -3,8 +3,9 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { BoxService } from '@/utils/api';
+import { BoxService, PatioService } from '@/utils/api';
 import { BoxResponseDto } from '@/types/box';
+import { PatioResponseDto } from '@/types/patio';
 import { 
   Grid3X3, 
   Search, 
@@ -25,6 +26,7 @@ function BoxPageContent() {
   // Estados dos dados
   const [boxes, setBoxes] = useState<BoxResponseDto[]>([]);
   const [patioInfo, setPatioInfo] = useState<{id: number, nome: string, status: string} | null>(null);
+  const [availablePatios, setAvailablePatios] = useState<Array<{ idPatio: number; nomePatio: string; status: string }>>([]);
   
   // Estados de controle
   const [loading, setLoading] = useState(true);
@@ -35,32 +37,58 @@ function BoxPageContent() {
   // Estados para paginação
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(9);
+  const [selectedPatioId, setSelectedPatioId] = useState<number | 'all'>('all');
+  const normalize = (s: any) =>
+    (s ?? '')
+      .toString()
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/\p{Diacritic}+/gu, '')
+      .trim();
 
   useEffect(() => {
+    // Carregar lista de pátios para montar abas dinâmicas
+    const loadPatios = async () => {
+      try {
+        const patiosPage = await PatioService.listarPaginadoFiltrado({}, 0, 1000);
+        const patios = (patiosPage.content || []).map((p: PatioResponseDto) => ({ idPatio: p.idPatio, nomePatio: p.nomePatio, status: p.status }));
+        setAvailablePatios(patios);
+      } catch {}
+    };
+
     const patioId = searchParams.get('patioId');
     const patioStatus = searchParams.get('patioStatus');
     const patioNome = searchParams.get('patioNome');
-    
+
     if (patioId && patioStatus) {
-      setPatioInfo({
-        id: parseInt(patioId),
-        nome: patioNome || 'Pátio',
-        status: patioStatus
-      });
+      setPatioInfo({ id: parseInt(patioId), nome: patioNome || 'Pátio', status: patioStatus });
+      setSelectedPatioId(parseInt(patioId));
       loadBoxes(parseInt(patioId), patioStatus);
     } else {
-      // Se não há parâmetros, carregar todos os boxes
+      // Carregar todos os boxes (todas as páginas)
       loadAllBoxes();
     }
+
+    loadPatios();
   }, [searchParams]);
 
   const loadAllBoxes = async () => {
     try {
       setLoading(true);
       setError(null);
-      // Carregar todos os boxes sem filtro de pátio
-      const response = await BoxService.listarPaginadoFiltrado({}, 0, 100);
-      setBoxes(response.content || []);
+      // Buscar em lotes até acabar (páginas)
+      const pageSize = 200;
+      let page = 0;
+      let all: BoxResponseDto[] = [];
+      // Limite de segurança de 20 páginas (4000 itens)
+      for (let i = 0; i < 20; i++) {
+        const response = await BoxService.listarPaginadoFiltrado({}, page, pageSize);
+        const content = response.content || [];
+        all = all.concat(content);
+        if (response.last || content.length < pageSize) break;
+        page += 1;
+      }
+      setBoxes(all);
     } catch (err: any) {
       setError('Erro ao carregar boxes: ' + (err.message || 'Erro desconhecido'));
     } finally {
@@ -84,11 +112,20 @@ function BoxPageContent() {
   // Função de exclusão removida conforme solicitação
 
   const getFilteredData = () => {
+    const q = normalize(searchTerm);
     return boxes.filter((item: BoxResponseDto) => {
-      const searchFields = [item.nome, item.observacao];
-      return searchFields.some(field => 
-        field && field.toLowerCase().includes(searchTerm.toLowerCase())
-      );
+      const haystack = [
+        item.nome,
+        item.observacao,
+        item.patio?.nomePatio,
+        item.status,
+        String(item.idBox)
+      ]
+        .map(normalize)
+        .join(' ');
+      const passesSearch = q.length === 0 || haystack.includes(q);
+      const passesPatio = selectedPatioId === 'all' || item.patio?.idPatio === selectedPatioId;
+      return passesSearch && passesPatio;
     });
   };
 
@@ -113,6 +150,26 @@ function BoxPageContent() {
   useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm]);
+
+  // Abas virão da lista de pátios carregada do backend
+  const patiosDisponiveis = availablePatios;
+
+  // Reagir à troca de aba
+  useEffect(() => {
+    if (selectedPatioId === 'all') {
+      loadAllBoxes();
+    } else {
+      const patio = availablePatios.find(p => p.idPatio === selectedPatioId);
+      if (patio) {
+        setPatioInfo({ id: patio.idPatio, nome: patio.nomePatio, status: patio.status });
+        loadBoxes(patio.idPatio, patio.status);
+      } else if (typeof selectedPatioId === 'number') {
+        // fallback sem status
+        loadBoxes(selectedPatioId, 'A');
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedPatioId]);
 
   if (loading) {
     return (
@@ -172,19 +229,42 @@ function BoxPageContent() {
             </div>
           )}
 
-          {/* Search */}
+          {/* Filtros */}
           <div className="mb-6 sm:mb-8 neumorphic-container">
-            <div className="relative">
-              <Search className="absolute left-3 sm:left-4 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4 sm:w-5 sm:h-5 z-10" />
-              <input
-                type="text"
-                placeholder=""
-                title="Buscar boxes"
-                aria-label="Buscar boxes"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="neumorphic-input pl-10 sm:pl-14 pr-3 sm:pr-4 text-sm sm:text-base"
-              />
+            <div className="flex flex-col gap-3">
+              <div className="relative">
+                <Search className="absolute left-3 sm:left-4 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4 sm:w-5 sm:h-5 z-10" />
+                <input
+                  type="text"
+                  placeholder=""
+                  title="Buscar boxes"
+                  aria-label="Buscar boxes"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="neumorphic-input pl-10 sm:pl-14 pr-3 sm:pr-4 text-sm sm:text-base"
+                />
+              </div>
+              {/* Abas de pátio (dinâmicas) */}
+              {patiosDisponiveis.length > 0 && (
+                <div className="flex flex-row flex-wrap items-center gap-2">
+                  <button
+                    onClick={() => setSelectedPatioId('all')}
+                    className={`px-2.5 py-1 rounded-full text-xs border transition-colors ${selectedPatioId === 'all' ? 'bg-emerald-600 text-white border-emerald-500' : 'border-slate-300 text-slate-700 hover:bg-slate-50'}`}
+                  >
+                    Todos os pátios
+                  </button>
+                  {patiosDisponiveis.map(p => (
+                    <button
+                      key={p.idPatio}
+                      onClick={() => setSelectedPatioId(p.idPatio)}
+                      className={`px-2.5 py-1 rounded-full text-xs border transition-colors ${selectedPatioId === p.idPatio ? 'bg-emerald-600 text-white border-emerald-500' : 'border-slate-300 text-slate-700 hover:bg-slate-50'}`}
+                      title={`Filtrar boxes do ${p.nomePatio}`}
+                    >
+                      {p.nomePatio}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 
@@ -265,6 +345,15 @@ function BoxPageContent() {
                     {item.observacao && (
                       <p className="text-xs sm:text-sm text-slate-500 mb-3 line-clamp-2">{item.observacao}</p>
                     )}
+
+                    {/* Pátio do box */}
+                    {item.patio?.nomePatio && (
+                      <div className="mt-1 sm:mt-2 text-xs sm:text-sm text-slate-700">
+                        <span className="inline-flex items-center gap-1 bg-slate-100 border border-slate-200 text-slate-700 px-2 py-0.5 rounded-full">
+                          <Building size={14} /> {item.patio.nomePatio}
+                        </span>
+                      </div>
+                    )}
                   </div>
                   
                   <div className="flex justify-end items-center gap-1 sm:gap-2 border-t border-slate-200 pt-2 sm:pt-3 mt-3 sm:mt-4">
@@ -288,6 +377,7 @@ function BoxPageContent() {
                       <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">ID</th>
                       <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Nome</th>
                       <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Status</th>
+                      <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Pátio</th>
                       <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider hidden sm:table-cell">Observação</th>
                       <th className="px-2 sm:px-4 py-2 sm:py-3 text-center text-xs font-medium text-slate-500 uppercase tracking-wider">Ações</th>
                     </tr>
@@ -302,6 +392,7 @@ function BoxPageContent() {
                             {item.status === 'L' ? 'Livre' : 'Ocupado'}
                           </span>
                         </td>
+                        <td className="px-2 sm:px-4 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-slate-900">{item.patio?.nomePatio || '-'}</td>
                         <td className="px-2 sm:px-4 py-3 sm:py-4 text-xs sm:text-sm text-slate-900 max-w-xs truncate hidden sm:table-cell">{item.observacao || '-'}</td>
                         <td className="px-2 sm:px-4 py-3 sm:py-4 whitespace-nowrap text-center text-xs sm:text-sm font-medium">
                           <div className="flex justify-center items-center gap-1 sm:gap-2">

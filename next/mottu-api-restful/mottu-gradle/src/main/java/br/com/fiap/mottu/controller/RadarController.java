@@ -79,7 +79,7 @@ public class RadarController {
             log.info("Sessão {}: Imagem lida com {} bytes.", sessionId, imageBytes.length);
 
             // Dispara processamento assíncrono no motor configurado (OpenALPR @Primary por padrão).
-            plateRecognizer.extractPlate(sessionId, imageBytes); // compatível com o fluxo anterior  :contentReference[oaicite:13]{index=13}
+            plateRecognizer.extractPlate(sessionId, imageBytes);
 
             return ResponseEntity.accepted().body(Map.of("status", "Processamento da imagem iniciado."));
 

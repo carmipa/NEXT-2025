@@ -4,6 +4,8 @@ package br.com.fiap.mottu.exception.handler;
 import br.com.fiap.mottu.exception.DuplicatedResourceException;
 import br.com.fiap.mottu.exception.InvalidInputException;
 import br.com.fiap.mottu.exception.ResourceNotFoundException;
+import br.com.fiap.mottu.exception.ReportNotReadyException;
+import br.com.fiap.mottu.exception.DateRangeTooLargeException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -53,6 +55,28 @@ public class GlobalExceptionHandler {
         body.put("message", ex.getMessage());
         body.put("path", request.getDescription(false));
         return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(DateRangeTooLargeException.class)
+    public ResponseEntity<Object> handleDateRangeTooLargeException(DateRangeTooLargeException ex, WebRequest request) {
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("timestamp", LocalDateTime.now());
+        body.put("status", HttpStatus.BAD_REQUEST.value());
+        body.put("error", "Período muito grande");
+        body.put("message", ex.getMessage());
+        body.put("path", request.getDescription(false));
+        return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(ReportNotReadyException.class)
+    public ResponseEntity<Object> handleReportNotReadyException(ReportNotReadyException ex, WebRequest request) {
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("timestamp", LocalDateTime.now());
+        body.put("status", HttpStatus.ACCEPTED.value());
+        body.put("error", "Relatório ainda não pronto");
+        body.put("message", ex.getMessage());
+        body.put("path", request.getDescription(false));
+        return new ResponseEntity<>(body, HttpStatus.ACCEPTED);
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

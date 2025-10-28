@@ -33,4 +33,5 @@ export interface BoxFilter {
     dataSaidaInicio?: string;
     dataSaidaFim?: string;
     observacao?: string;
+    patioNome?: string;
 }

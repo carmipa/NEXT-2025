@@ -2,12 +2,15 @@ import { NextResponse } from 'next/server';
 
 export async function GET(request: Request) {
     try {
-        // Fazer proxy para o backend Java
-        const backendUrl = process.env.BACKEND_URL || 'http://localhost:8080';
+        // Fazer proxy para o backend Java (padronizado com NEXT_PUBLIC_BACKEND_ORIGIN/NEXT_PUBLIC_API_URL)
+        const backendOrigin =
+            process.env.NEXT_PUBLIC_BACKEND_ORIGIN
+            || (process.env.NEXT_PUBLIC_API_URL ? process.env.NEXT_PUBLIC_API_URL.replace(/\/?api\/?$/, '') : undefined)
+            || 'http://localhost:8080';
         const { searchParams } = new URL(request.url);
         
         // Construir URL com todos os parâmetros
-        const backendUrlWithParams = new URL(`${backendUrl}/api/vagas/mapa`);
+        const backendUrlWithParams = new URL(`${backendOrigin}/api/vagas/mapa`);
         searchParams.forEach((value, key) => {
             backendUrlWithParams.searchParams.set(key, value);
         });
@@ -19,10 +22,8 @@ export async function GET(request: Request) {
             headers: {
                 'Content-Type': 'application/json',
             },
-            next: {
-                revalidate: 60, // Cache por 1 minuto
-                tags: ['mapas', 'vagas']
-            }
+            // Evitar cache agressivo porque a página faz polling frequente
+            cache: 'no-store'
         });
 
         if (!response.ok) {

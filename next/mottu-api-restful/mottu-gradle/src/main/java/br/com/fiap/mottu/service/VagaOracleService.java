@@ -304,4 +304,23 @@ public class VagaOracleService {
         
         return boxesCorrigidos;
     }
+
+    /**
+     * Corrige a associação de boxes ao pátio.
+     * Retorna o número de boxes corrigidos.
+     */
+    @Transactional
+    public int corrigirAssociacaoPatio(String sql) {
+        log.info("🔧 Executando SQL para corrigir associação: {}", sql);
+        
+        int boxesCorrigidos = jdbc.update(sql);
+        
+        if (boxesCorrigidos > 0) {
+            log.info("✅ Corrigidos {} boxes para associação ao pátio", boxesCorrigidos);
+        } else {
+            log.info("ℹ️ Nenhum box precisou ser corrigido");
+        }
+        
+        return boxesCorrigidos;
+    }
 }

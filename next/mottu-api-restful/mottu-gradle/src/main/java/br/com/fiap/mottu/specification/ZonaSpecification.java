@@ -27,9 +27,10 @@ public class ZonaSpecification {
                 predicates.add(cb.like(cb.lower(root.get("observacao")), "%" + filter.observacao().toLowerCase() + "%"));
             }
 
-            // Filtro por relacionamento OneToMany (Boxes da Zona)
+            // Filtro por nome do box - busca boxes do mesmo pátio da zona
             if (filter.boxNome() != null && !filter.boxNome().isBlank()) {
-                Join<Zona, Box> boxJoin = root.join("boxes");
+                // Join com Box através do pátio (mesmo pátio da zona)
+                Join<Zona, Box> boxJoin = root.join("patio").join("boxes");
                 predicates.add(cb.like(cb.lower(boxJoin.get("nome")), "%" + filter.boxNome().toLowerCase() + "%"));
                 query.distinct(true);
             }
@@ -37,6 +38,12 @@ public class ZonaSpecification {
             // Filtro por pátio via FK da própria Zona
             if (filter.patioId() != null) {
                 predicates.add(cb.equal(root.get("patio").get("idPatio"), filter.patioId()));
+            }
+
+            // Filtro por nome do pátio (join direto Zona -> Patio)
+            if (filter.patioNome() != null && !filter.patioNome().isBlank()) {
+                predicates.add(cb.like(cb.lower(root.get("patio").get("nomePatio")), "%" + filter.patioNome().toLowerCase() + "%"));
+                query.distinct(true);
             }
 
             query.distinct(true); // Evitar duplicação de resultados

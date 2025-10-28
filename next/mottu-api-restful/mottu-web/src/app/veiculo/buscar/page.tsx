@@ -23,6 +23,10 @@ export default function BuscarVeiculosPage() {
     const [hasSearched, setHasSearched] = useState(false);
     const [filter, setFilter] = useState<VeiculoFilter>(initialFilterState);
     const [viewType, setViewType] = useState<'cards' | 'table'>('cards');
+    
+    // Estados para busca rápida
+    const [quickQuery, setQuickQuery] = useState('');
+    const [quickField, setQuickField] = useState<keyof VeiculoFilter>('placa');
 
     const ITEMS_PER_PAGE = 9;
     const SORT_ORDER = 'idVeiculo,asc';
@@ -59,18 +63,24 @@ export default function BuscarVeiculosPage() {
     const handleSearch = (e: FormEvent) => {
         e.preventDefault();
         setCurrentPage(0);
-        fetchData(0, filter);
+        
+        // Criar filtro baseado na busca rápida
+        const searchFilter: VeiculoFilter = {
+            ...initialFilterState,
+            [quickField]: quickQuery.trim()
+        };
+        
+        fetchData(0, searchFilter);
     };
 
     const handleClearFilters = () => {
-        setFilter(initialFilterState);
+        setQuickQuery('');
+        setQuickField('placa');
         setVeiculos([]);
         setPageInfo(null);
         setCurrentPage(0);
         setHasSearched(false);
         setError(null);
-        // Força uma nova busca com filtros limpos
-        fetchData(0, initialFilterState);
     };
 
     const handlePageChange = (newPage: number) => {
@@ -90,34 +100,71 @@ export default function BuscarVeiculosPage() {
 
                     <fieldset className="neumorphic-fieldset mb-6 sm:mb-8">
                         <legend className="neumorphic-legend text-sm sm:text-base" style={{fontFamily: 'Montserrat, sans-serif'}}>Filtros de Busca</legend>
-                        <form onSubmit={handleSearch} className="space-y-3 sm:space-y-4 mt-4 sm:mt-6">
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 items-end">
-                                <input type="text" name="placa" value={filter.placa || ''} onChange={(e) => {
-                                    const value = e.target.value.trim().toUpperCase();
-                                    setFilter(prev => ({ ...prev, placa: value }));
-                                }} className="neumorphic-input text-sm sm:text-base" placeholder="Placa" style={{fontFamily: 'Montserrat, sans-serif'}}/>
-                                <input type="text" name="modelo" value={filter.modelo || ''} onChange={handleFilterChange} className="neumorphic-input text-sm sm:text-base" placeholder="Modelo" style={{fontFamily: 'Montserrat, sans-serif'}}/>
-                                <input type="text" name="fabricante" value={filter.fabricante || ''} onChange={handleFilterChange} className="neumorphic-input text-sm sm:text-base" placeholder="Fabricante" style={{fontFamily: 'Montserrat, sans-serif'}}/>
-                                <input type="number" name="ano" value={filter.ano || ''} onChange={(e) => {
-                                    const value = e.target.value ? parseInt(e.target.value, 10) : undefined;
-                                    setFilter(prev => ({ ...prev, ano: value }));
-                                }} className="neumorphic-input text-sm sm:text-base" placeholder="Ano" style={{fontFamily: 'Montserrat, sans-serif'}}/>
-                                <input type="text" name="clienteCpf" value={filter.clienteCpf || ''} onChange={handleFilterChange} className="neumorphic-input text-sm sm:text-base" placeholder="CPF do Cliente" style={{fontFamily: 'Montserrat, sans-serif'}}/>
-                                <input type="text" name="tagBleId" value={filter.tagBleId || ''} onChange={handleFilterChange} className="neumorphic-input text-sm sm:text-base" placeholder="ID da Tag BLE" style={{fontFamily: 'Montserrat, sans-serif'}}/>
+                        
+                        {/* Search Form - padrão input + seletor + botões */}
+                        <form onSubmit={handleSearch} className="mt-4 sm:mt-6">
+                            <div className="flex flex-col gap-3 md:flex-row md:items-center">
+                                <div className="flex-1">
+                                    <label className="block text-xs lg:text-sm font-medium text-white mb-1 flex items-center gap-2">
+                                        <i className="ion-ios-search text-blue-400 text-sm lg:text-base"></i>
+                                        Valor
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={quickQuery}
+                                        onChange={(e) => setQuickQuery(e.target.value)}
+                                        className="neumorphic-input w-full text-sm lg:text-base"
+                                        placeholder={quickField === 'placa' ? 'Digite a placa...'
+                                            : quickField === 'modelo' ? 'Digite o modelo...'
+                                            : quickField === 'fabricante' ? 'Digite o fabricante...'
+                                            : quickField === 'ano' ? 'Digite o ano...'
+                                            : 'Digite o ID da tag BLE...'}
+                                    />
+                                </div>
+                                <div className="w-full md:w-52">
+                                    <label className="block text-xs lg:text-sm font-medium text-white mb-1 flex items-center gap-2">
+                                        <i className="ion-ios-funnel text-purple-400 text-sm lg:text-base"></i>
+                                        Filtrar por
+                                    </label>
+                                    <select
+                                        value={quickField}
+                                        onChange={(e) => setQuickField(e.target.value as keyof VeiculoFilter)}
+                                        className="neumorphic-input w-full text-sm lg:text-base"
+                                    >
+                                        <option value="placa">Placa</option>
+                                        <option value="modelo">Modelo</option>
+                                        <option value="fabricante">Fabricante</option>
+                                        <option value="ano">Ano</option>
+                                        <option value="tagBleId">ID da Tag BLE</option>
+                                    </select>
+                                </div>
 
-                                <div className="xl:col-span-full flex flex-col sm:flex-row justify-center items-center gap-2 sm:gap-3 pt-2">
-                                    <button type="submit" className="group relative bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-bold py-3 lg:py-4 px-6 lg:px-8 rounded-xl shadow-xl transform hover:scale-105 transition-all duration-300 border-2 border-emerald-400 hover:border-emerald-300 flex items-center justify-center gap-2">
-                                        <div className="absolute inset-0 bg-gradient-to-r from-emerald-400 to-emerald-500 rounded-xl opacity-0 group-hover:opacity-30 transition-opacity duration-300"></div>
+                                <div className="mt-2 md:mt-6 flex flex-col sm:flex-row justify-center gap-3 sm:gap-4">
+                                    <button 
+                                        type="submit" 
+                                        disabled={!quickQuery.trim()}
+                                        className={`group relative text-white font-bold py-3 lg:py-4 px-6 lg:px-8 rounded-xl shadow-xl transform transition-all duration-300 border-2 flex items-center justify-center gap-2 btn-buscar-turquesa ${!quickQuery.trim() ? 'cursor-not-allowed' : 'hover:scale-105'}`}
+                                        style={{
+                                            opacity: !quickQuery.trim() ? 0.5 : 1
+                                        }}
+                                        title="Buscar veículos"
+                                    >
+                                        <div className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-20 transition-opacity duration-300" style={{backgroundColor: '#2BC49A'}}></div>
                                         <div className="relative flex items-center gap-2">
-                                            <Search size={16} />
+                                            <i className="ion-ios-search text-lg"></i>
                                             <span className="text-sm lg:text-base font-black">BUSCAR</span>
                                         </div>
                                     </button>
-                                    <button type="button" onClick={handleClearFilters} className="group relative bg-gradient-to-r from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700 text-white font-bold py-3 lg:py-4 px-6 lg:px-8 rounded-xl shadow-xl transform hover:scale-105 transition-all duration-300 border-2 border-gray-400 hover:border-gray-300 flex items-center justify-center gap-2">
-                                        <div className="absolute inset-0 bg-gradient-to-r from-gray-400 to-gray-500 rounded-xl opacity-0 group-hover:opacity-30 transition-opacity duration-300"></div>
+                                    <button 
+                                        type="button" 
+                                        onClick={handleClearFilters} 
+                                        className="group relative bg-gradient-to-r from-gray-300 to-gray-400 hover:from-gray-400 hover:to-gray-500 text-white font-bold py-3 lg:py-4 px-6 lg:px-8 rounded-xl shadow-xl transform hover:scale-105 transition-all duration-300 border-2 border-gray-200 hover:border-gray-300 flex items-center justify-center gap-2"
+                                        title="Limpar filtros"
+                                    >
+                                        <div className="absolute inset-0 bg-gradient-to-r from-gray-200 to-gray-300 rounded-xl opacity-0 group-hover:opacity-30 transition-opacity duration-300"></div>
                                         <div className="relative flex items-center gap-2">
                                             <i className="ion-ios-close text-lg"></i>
-                                            <span className="text-sm lg:text-base font-black">LIMPAR FILTROS</span>
+                                            <span className="text-sm lg:text-base font-black">LIMPAR</span>
                                         </div>
                                     </button>
                                 </div>

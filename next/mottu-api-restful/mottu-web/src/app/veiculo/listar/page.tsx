@@ -25,6 +25,7 @@ export default function ListarVeiculosPage() {
     const [error, setError] = useState<string | null>(null);
     const [successMessage, setSuccessMessage] = useState<string | null>(null);
     const [viewType, setViewType] = useState<'cards' | 'table'>('cards');
+    const [searchTerm, setSearchTerm] = useState('');
     const ITEMS_PER_PAGE = 9;
     const SORT_ORDER = 'idVeiculo,asc';
 
@@ -69,6 +70,38 @@ export default function ListarVeiculosPage() {
     const handlePageChange = (newPage: number) => {
         fetchData(newPage, filtros);
     };
+
+    // Função para filtrar dados localmente como na página de pátios
+    const getFilteredData = () => {
+        return veiculos.filter((item: VeiculoResponseDto) => {
+            const searchFields = [
+                item.placa,
+                item.modelo,
+                item.fabricante
+            ];
+            return searchFields.some(field => 
+                field && field.toLowerCase().includes(searchTerm.toLowerCase())
+            );
+        });
+    };
+
+    // Funções de paginação para dados filtrados
+    const getPaginatedData = () => {
+        const filteredData = getFilteredData();
+        const startIndex = currentPage * ITEMS_PER_PAGE;
+        const endIndex = startIndex + ITEMS_PER_PAGE;
+        return filteredData.slice(startIndex, endIndex);
+    };
+
+    const getTotalPages = () => {
+        const filteredData = getFilteredData();
+        return Math.ceil(filteredData.length / ITEMS_PER_PAGE);
+    };
+
+    // Reset da página quando mudar o filtro
+    useEffect(() => {
+        setCurrentPage(0);
+    }, [searchTerm]);
 
     const handleDeleteVeiculo = async (veiculoId: number, placa: string) => {
         if (window.confirm(`Tem certeza que deseja excluir o veículo de placa "${placa}" (ID: ${veiculoId})?`)) {
@@ -127,31 +160,21 @@ export default function ListarVeiculosPage() {
                         </div>
                     )}
 
-                    <fieldset className="neumorphic-fieldset mb-6 sm:mb-8">
-                        <legend className="neumorphic-legend text-sm sm:text-base" style={{fontFamily: 'Montserrat, sans-serif'}}>Filtros de Busca</legend>
-                        <form onSubmit={handleFilterSubmit} className="space-y-3 sm:space-y-4 mt-4 sm:mt-6">
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 items-end">
-                                <input type="text" name="placa" value={filtros.placa || ''} onChange={handleFilterChange} className="neumorphic-input text-sm sm:text-base" placeholder="Filtrar por placa..." style={{fontFamily: 'Montserrat, sans-serif'}} />
-                                <input type="text" name="modelo" value={filtros.modelo || ''} onChange={handleFilterChange} className="neumorphic-input text-sm sm:text-base" placeholder="Filtrar por modelo..." style={{fontFamily: 'Montserrat, sans-serif'}} />
-                                <div className="flex flex-col sm:flex-row gap-2">
-                                    <button type="submit" className="group relative bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-bold py-3 lg:py-4 px-6 lg:px-8 rounded-xl shadow-xl transform hover:scale-105 transition-all duration-300 border-2 border-emerald-400 hover:border-emerald-300 flex items-center justify-center gap-2 flex-1">
-                                        <div className="absolute inset-0 bg-gradient-to-r from-emerald-400 to-emerald-500 rounded-xl opacity-0 group-hover:opacity-30 transition-opacity duration-300"></div>
-                                        <div className="relative flex items-center gap-2">
-                                            <Search size={16} />
-                                            <span className="text-sm lg:text-base font-black">BUSCAR</span>
-                                        </div>
-                                    </button>
-                                    <button type="button" onClick={handleClearFilters} className="group relative bg-gradient-to-r from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700 text-white font-bold py-3 lg:py-4 px-6 lg:px-8 rounded-xl shadow-xl transform hover:scale-105 transition-all duration-300 border-2 border-gray-400 hover:border-gray-300 flex items-center justify-center gap-2 flex-1">
-                                        <div className="absolute inset-0 bg-gradient-to-r from-gray-400 to-gray-500 rounded-xl opacity-0 group-hover:opacity-30 transition-opacity duration-300"></div>
-                                        <div className="relative flex items-center gap-2">
-                                            <i className="ion-ios-close text-lg"></i>
-                                            <span className="text-sm lg:text-base font-black">LIMPAR</span>
-                                        </div>
-                                    </button>
-                                </div>
-                            </div>
-                        </form>
-                    </fieldset>
+                    {/* Search */}
+                    <div className="mb-6 sm:mb-8 neumorphic-container">
+                        <div className="relative">
+                            <Search className="absolute left-3 sm:left-4 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4 sm:w-5 sm:h-5 z-10" />
+                            <input
+                                type="text"
+                                placeholder=""
+                                title="Buscar veículos"
+                                aria-label="Buscar veículos"
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="neumorphic-input pl-10 sm:pl-14 pr-3 sm:pr-4 text-sm sm:text-base"
+                            />
+                        </div>
+                    </div>
 
                     {/* Toggle de Visualização */}
                     <div className="flex justify-center mb-4 sm:mb-6">

@@ -12,5 +12,6 @@ public record BoxFilter(
         LocalDate dataSaidaFim,
         String observacao,
         Long patioId,
-        Long zonaId
+        Long zonaId,
+        String patioNome
 ) {}

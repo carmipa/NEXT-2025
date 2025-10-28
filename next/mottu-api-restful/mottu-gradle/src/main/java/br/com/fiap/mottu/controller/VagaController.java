@@ -187,23 +187,31 @@ public class VagaController {
         }
     }
 
-    @GetMapping("/teste")
-    @Operation(summary = "Teste simples", description = "Teste básico para verificar se o serviço está funcionando")
-    public ResponseEntity<Map<String, Object>> teste() {
+    @PostMapping("/corrigir-associacao-patio")
+    @Operation(summary = "Corrigir associação de boxes ao pátio", description = "Associa boxes Gru001-Gru020 ao pátio Guarulhos (ID 2)")
+    public ResponseEntity<Map<String, Object>> corrigirAssociacaoPatio() {
         try {
-            log.info("🧪 Teste: Iniciando teste simples");
-            var boxes = service.listarBoxesComDetalhesVeiculo(3L);
-            log.info("🧪 Teste: Encontrados {} boxes", boxes.size());
+            log.info("🔧 Corrigindo associação de boxes ao pátio Guarulhos");
+            
+            // SQL para associar boxes Gru001-Gru020 ao pátio ID 2 (mesmo que já tenham outro pátio)
+            String sql = """
+                UPDATE TB_BOX 
+                SET TB_PATIO_ID_PATIO = 2 
+                WHERE NOME LIKE 'Gru%'
+                """;
+            
+            int boxesCorrigidos = service.corrigirAssociacaoPatio(sql);
             
             Map<String, Object> response = new HashMap<>();
-            response.put("totalBoxes", boxes.size());
-            response.put("boxes", boxes);
-            response.put("mensagem", "Teste executado com sucesso");
+            response.put("boxesCorrigidos", boxesCorrigidos);
+            response.put("mensagem", "Associação de boxes ao pátio Guarulhos corrigida com sucesso");
+            
+            log.info("✅ Corrigidos {} boxes para o pátio Guarulhos", boxesCorrigidos);
             return ResponseEntity.ok(response);
         } catch (Exception e) {
-            log.error("❌ Teste: Erro no teste", e);
+            log.error("❌ Erro ao corrigir associação de boxes", e);
             Map<String, Object> error = new HashMap<>();
-            error.put("erro", "Falha no teste: " + e.getMessage());
+            error.put("erro", "Falha ao corrigir associação: " + e.getMessage());
             return ResponseEntity.internalServerError().body(error);
         }
     }

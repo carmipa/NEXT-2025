@@ -6,5 +6,6 @@ public record ZonaFilter(
         String status,
         String observacao,
         String boxNome,
-        Long patioId
+        Long patioId,
+        String patioNome
 ) {}

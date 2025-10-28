@@ -100,6 +100,12 @@ public interface LogMovimentacaoRepository extends JpaRepository<LogMovimentacao
     List<Object[]> findTopVeiculosFrequentes(Pageable pageable);
 
     /**
+     * Busca os pátios com mais movimentações
+     */
+    @Query("SELECT l.patio.idPatio, l.patio.nomePatio, COUNT(l) as total FROM LogMovimentacao l GROUP BY l.patio.idPatio, l.patio.nomePatio ORDER BY total DESC")
+    List<Object[]> findTopPatios(Pageable pageable);
+
+    /**
      * Busca movimentações com paginação
      */
     Page<LogMovimentacao> findByDataHoraMovimentacaoBetweenOrderByDataHoraMovimentacaoDesc(

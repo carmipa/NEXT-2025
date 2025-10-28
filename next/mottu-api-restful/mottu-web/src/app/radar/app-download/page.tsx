@@ -75,7 +75,7 @@ export default function AppDownloadPage() {
               Ou acesse diretamente:
             </p>
             <a 
-              href="https://drive.google.com/uc?export=download&id=1IG54Ssz1REkK6KeF8hti0OJ-Mp4oh_rB"
+              href="https://drive.google.com/uc?export=download&id=1al4guk5SOes3WPa6gA8NmosqM4G6MpAq"
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 sm:gap-3 bg-green-600 hover:bg-green-700 text-white px-6 sm:px-8 py-3 sm:py-4 rounded-lg font-semibold transition-all duration-300 hover:scale-105 hover:shadow-lg text-sm sm:text-base"

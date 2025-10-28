@@ -28,65 +28,61 @@ export default function MovimentacaoPage() {
     const [stats, setStats] = useState<MovimentacaoStats>({ entradasHoje: 0, saidasHoje: 0, saldoLiquido: 0 });
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
+    const [ultimaAtualizacao, setUltimaAtualizacao] = useState<Date | null>(null);
 
-    // Carregar estatísticas ao montar o componente
+    // Carregar estatísticas ao montar o componente e atualizar automaticamente
     useEffect(() => {
         carregarEstatisticas();
+        
+        // Atualizar a cada 30 segundos para dados dinâmicos
+        const interval = setInterval(() => {
+            console.log('🔄 Atualizando dados de movimentação automaticamente...');
+            carregarEstatisticas();
+        }, 30000); // 30 segundos
+        
+        return () => clearInterval(interval);
     }, []);
 
     const carregarEstatisticas = async () => {
         try {
             setLoading(true);
             const hoje = new Date().toISOString().split('T')[0];
-            const response = await fetch(`/api/relatorios/movimentacao/diaria?dataInicio=${hoje}&dataFim=${hoje}`);
-            if (response.ok) {
-                const data = await response.json();
-                console.log('Dados recebidos da API:', data);
+            
+            // Buscar dados agregados
+            const responseAgregados = await fetch(`/api/relatorios/movimentacao/diaria?dataInicio=${hoje}&dataFim=${hoje}`);
+            
+            // Buscar detalhes REAIS para a tabela
+            const responseDetalhes = await fetch(`/api/relatorios/movimentacao/detalhes?dataInicio=${hoje}&dataFim=${hoje}`);
+            
+            if (responseAgregados.ok && responseDetalhes.ok) {
+                const data = await responseAgregados.json();
+                const detalhes = await responseDetalhes.json();
+                console.log('Dados REAIS recebidos:', detalhes);
                 
                 // Processar dados agregados do backend
                 if (data && data.length > 0) {
-                    const dadosHoje = data[0]; // Primeiro item (hoje)
+                    const dadosHoje = data[0];
                     setStats({
                         entradasHoje: dadosHoje.entradas || 0,
                         saidasHoje: dadosHoje.saidas || 0,
                         saldoLiquido: (dadosHoje.entradas || 0) - (dadosHoje.saidas || 0)
                     });
-                    
-                    // Converter dados agregados para formato de tabela
-                    const dadosTabela = [];
-                    for (let i = 0; i < (dadosHoje.entradas || 0); i++) {
-                        dadosTabela.push({
-                            id: `entrada-${i}`,
-                            placa: `ABC-${String(i + 1).padStart(4, '0')}`,
-                            tipo: 'Entrada',
-                            dataHora: new Date().toISOString(),
-                            patio: 'Pátio Mottu',
-                            box: `Box ${i + 1}`,
-                            status: 'Concluído'
-                        });
-                    }
-                    for (let i = 0; i < (dadosHoje.saidas || 0); i++) {
-                        dadosTabela.push({
-                            id: `saida-${i}`,
-                            placa: `XYZ-${String(i + 1).padStart(4, '0')}`,
-                            tipo: 'Saída',
-                            dataHora: new Date().toISOString(),
-                            patio: 'Pátio Mottu',
-                            box: `Box ${i + 1}`,
-                            status: 'Concluído'
-                        });
-                    }
-                    setDadosMovimentacao(dadosTabela);
-                } else {
-                    setStats({
-                        entradasHoje: 0,
-                        saidasHoje: 0,
-                        saldoLiquido: 0
-                    });
-                    setDadosMovimentacao([]);
                 }
+                
+                // Usar dados REAIS do banco
+                const dadosReais = detalhes.map((item: any) => ({
+                    id: item.id,
+                    placa: item.placa || 'N/A',
+                    tipo: item.tipo,
+                    dataHora: item.dataHora,
+                    patio: item.patio || 'N/A',
+                    box: item.box || 'N/A',
+                    status: item.status || 'Concluído'
+                }));
+                
+                setDadosMovimentacao(dadosReais);
             } else {
-                console.error('Erro ao carregar estatísticas:', response.status);
+                console.error('Erro ao carregar estatísticas:', responseAgregados.status);
                 setDadosMovimentacao([]);
                 setStats({
                     entradasHoje: 0,
@@ -120,47 +116,42 @@ export default function MovimentacaoPage() {
             setLoading(true);
             setError('');
             
-            const response = await fetch(`/api/relatorios/movimentacao/diaria?dataInicio=${dataInicio}&dataFim=${dataFim}`);
-            if (response.ok) {
-                const data = await response.json();
-                console.log('Dados filtrados recebidos:', data);
+            // Buscar dados agregados para estatísticas
+            const responseAgregados = await fetch(`/api/relatorios/movimentacao/diaria?dataInicio=${dataInicio}&dataFim=${dataFim}`);
+            
+            // Buscar detalhes completos REAIS para a tabela
+            const responseDetalhes = await fetch(`/api/relatorios/movimentacao/detalhes?dataInicio=${dataInicio}&dataFim=${dataFim}`);
+            
+            if (responseDetalhes.ok) {
+                const detalhes = await responseDetalhes.json();
+                console.log('Dados REAIS recebidos:', detalhes);
                 
-                // Processar dados agregados do backend
-                if (data && data.length > 0) {
-                    // Converter dados agregados para formato de tabela
-                    const dadosTabela = [];
-                    data.forEach((dia: any, diaIndex: number) => {
-                        // Adicionar entradas
-                        for (let i = 0; i < (dia.entradas || 0); i++) {
-                            dadosTabela.push({
-                                id: `entrada-${diaIndex}-${i}`,
-                                placa: `ABC-${String(i + 1).padStart(4, '0')}`,
-                                tipo: 'Entrada',
-                                dataHora: new Date(dia.data).toISOString(),
-                                patio: 'Pátio Mottu',
-                                box: `Box ${i + 1}`,
-                                status: 'Concluído'
-                            });
-                        }
-                        // Adicionar saídas
-                        for (let i = 0; i < (dia.saidas || 0); i++) {
-                            dadosTabela.push({
-                                id: `saida-${diaIndex}-${i}`,
-                                placa: `XYZ-${String(i + 1).padStart(4, '0')}`,
-                                tipo: 'Saída',
-                                dataHora: new Date(dia.data).toISOString(),
-                                patio: 'Pátio Mottu',
-                                box: `Box ${i + 1}`,
-                                status: 'Concluído'
-                            });
-                        }
-                    });
-                    setDadosMovimentacao(dadosTabela);
-                } else {
-                    setDadosMovimentacao([]);
+                if (responseAgregados.ok) {
+                    const data = await responseAgregados.json();
+                    if (data && data.length > 0) {
+                        const dadosHoje = data[0];
+                        setStats({
+                            entradasHoje: dadosHoje.entradas || 0,
+                            saidasHoje: dadosHoje.saidas || 0,
+                            saldoLiquido: (dadosHoje.entradas || 0) - (dadosHoje.saidas || 0)
+                        });
+                    }
                 }
+                
+                // Usar dados REAIS do banco em vez de gerar fake
+                const dadosReais = detalhes.map((item: any) => ({
+                    id: item.id,
+                    placa: item.placa || 'N/A',
+                    tipo: item.tipo,
+                    dataHora: item.dataHora,
+                    patio: item.patio || 'N/A',
+                    box: item.box || 'N/A',
+                    status: item.status || 'Concluído'
+                }));
+                
+                setDadosMovimentacao(dadosReais);
             } else {
-                setError('Erro ao carregar movimentação');
+                setError('Erro ao carregar detalhes de movimentação');
             }
         } catch (err) {
             console.error('Erro ao filtrar movimentação:', err);
@@ -277,8 +268,19 @@ export default function MovimentacaoPage() {
                             </div>
                         </div>
                         <div className="text-right">
-                            <div className="text-xl lg:text-2xl font-bold text-green-600">5</div>
+                            <div className="flex items-center justify-end gap-2 mb-2">
+                                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                    <span className="w-2 h-2 bg-green-500 rounded-full mr-1 animate-pulse"></span>
+                                    Tempo Real
+                                </span>
+                            </div>
+                            <div className="text-xl lg:text-2xl font-bold text-green-600">{stats.entradasHoje + stats.saidasHoje}</div>
                             <div className="text-xs lg:text-sm text-gray-600">Movimentações Hoje</div>
+                            {ultimaAtualizacao && (
+                                <div className="text-xs text-blue-600 mt-1">
+                                    🔄 Atualizado: {ultimaAtualizacao.toLocaleTimeString()}
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>

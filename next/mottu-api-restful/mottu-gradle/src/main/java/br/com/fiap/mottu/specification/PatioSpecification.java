@@ -34,40 +34,38 @@ public class PatioSpecification {
                 predicates.add(cb.like(cb.lower(root.get("observacao")), "%" + filter.observacao().toLowerCase() + "%"));
             }
 
-            // Filtro por relacionamento ManyToMany (VeiculoPatio)
+            // Filtro por veículo via relacionamento direto (Patio tem contato e endereco diretos)
             if (filter.veiculoPlaca() != null && !filter.veiculoPlaca().isBlank()) {
                 Join<Patio, VeiculoPatio> veiculoPatioJoin = root.join("veiculoPatios");
                 predicates.add(cb.equal(veiculoPatioJoin.get("veiculo").get("placa"), filter.veiculoPlaca()));
             }
 
-            // Filtro por relacionamento ManyToMany (EnderecoPatio)
+            // Filtro por cidade do endereço (relacionamento direto)
             if (filter.enderecoCidade() != null && !filter.enderecoCidade().isBlank()) {
-                Join<Patio, EnderecoPatio> enderecoPatioJoin = root.join("enderecoPatios");
-                predicates.add(cb.like(cb.lower(enderecoPatioJoin.get("endereco").get("cidade")), "%" + filter.enderecoCidade().toLowerCase() + "%"));
+                predicates.add(cb.like(cb.lower(root.get("endereco").get("cidade")), "%" + filter.enderecoCidade().toLowerCase() + "%"));
             }
 
-            // Filtro por relacionamento ManyToMany (ContatoPatio)
+            // Filtro por email do contato (relacionamento direto)
             if (filter.contatoEmail() != null && !filter.contatoEmail().isBlank()) {
-                Join<Patio, ContatoPatio> contatoPatioJoin = root.join("contatoPatios");
-                predicates.add(cb.like(cb.lower(contatoPatioJoin.get("contato").get("email")), "%" + filter.contatoEmail().toLowerCase() + "%"));
+                predicates.add(cb.like(cb.lower(root.get("contato").get("email")), "%" + filter.contatoEmail().toLowerCase() + "%"));
             }
 
             // Filtro por relacionamento OneToMany (Zona)
             if (filter.zonaNome() != null && !filter.zonaNome().isBlank()) {
                 Join<Patio, Zona> zonaJoin = root.join("zonas");
                 predicates.add(cb.like(cb.lower(zonaJoin.get("nome")), "%" + filter.zonaNome().toLowerCase() + "%"));
-                query.distinct(true);
             }
 
-            // Filtro por Box via Zona
+            // Filtro por Box via relação direta Patio -> Boxes
             if (filter.boxNome() != null && !filter.boxNome().isBlank()) {
-                Join<Patio, Zona> zonaJoin = root.join("zonas");
-                Join<Zona, Box> boxJoin = zonaJoin.join("boxes");
+                Join<Patio, Box> boxJoin = root.join("boxes");
                 predicates.add(cb.like(cb.lower(boxJoin.get("nome")), "%" + filter.boxNome().toLowerCase() + "%"));
-                query.distinct(true);
             }
 
-            query.distinct(true); // Evitar duplicação de resultados
+            // Aplicar distinct apenas se houver joins que possam causar duplicação
+            if (filter.zonaNome() != null || filter.boxNome() != null || filter.veiculoPlaca() != null) {
+                query.distinct(true);
+            }
 
             return cb.and(predicates.toArray(new Predicate[0]));
         };

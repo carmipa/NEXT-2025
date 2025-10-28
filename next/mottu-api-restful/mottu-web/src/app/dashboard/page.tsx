@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import { VeiculoService, PatioService } from "@/utils/api";
 import { DashboardApi } from "@/utils/api/dashboard";
 import { VeiculoLocalizacaoResponseDto, VeiculoResponseDto } from "@/types/veiculo";
@@ -46,9 +46,11 @@ export default function DashboardPage() {
     const [viewType, setViewType] = useState<'cards' | 'list'>('list');
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(10);
+    const [enableRealtime, setEnableRealtime] = useState<boolean>(true);
+    const [pollingMs, setPollingMs] = useState<number>(5000);
+    const [isLogScale, setIsLogScale] = useState<boolean>(false);
 
-    useEffect(() => {
-        const fetchData = async () => {
+    const fetchData = useCallback(async () => {
             console.log("🔄 Iniciando carregamento do dashboard...");
             setIsLoading(true);
             setError(null);
@@ -97,9 +99,20 @@ export default function DashboardPage() {
             } finally {
                 setIsLoading(false);
             }
-        };
+        }, [rangeDias]);
+
+    useEffect(() => {
         fetchData();
-    }, [rangeDias]);
+    }, [fetchData]);
+
+    useEffect(() => {
+        if (!enableRealtime) return;
+        const id = setInterval(() => {
+            console.log("⏱️ Polling dashboard...");
+            fetchData();
+        }, Math.max(2000, pollingMs));
+        return () => clearInterval(id);
+    }, [enableRealtime, pollingMs, fetchData]);
 
     const pieData = useMemo(() => {
         console.log("📊 Processando dados do gráfico pizza:", resumo);
@@ -252,14 +265,40 @@ export default function DashboardPage() {
                                             {n}d
                                         </button>
                                     ))}
+                                <span className="ml-3 text-slate-600" style={{fontFamily: 'Montserrat, sans-serif'}}>Tempo real:</span>
+                                <button
+                                    onClick={() => setEnableRealtime(v => !v)}
+                                    className={`px-2 py-1 rounded border transition-all duration-200 ${enableRealtime ? 'bg-emerald-100 border-emerald-400 text-emerald-800' : 'border-slate-300 hover:bg-slate-50 text-slate-600'}`}
+                                    title="Ativar/desativar atualização automática"
+                                >
+                                    {enableRealtime ? 'ON' : 'OFF'}
+                                </button>
+                                <span className="ml-3 text-slate-600" style={{fontFamily: 'Montserrat, sans-serif'}}>Escala log:</span>
+                                <button
+                                    onClick={() => setIsLogScale(v => !v)}
+                                    className={`px-2 py-1 rounded border transition-all duration-200 ${isLogScale ? 'bg-purple-100 border-purple-400 text-purple-800' : 'border-slate-300 hover:bg-slate-50 text-slate-600'}`}
+                                    title="Alternar escala logarítmica no eixo Y"
+                                >
+                                    {isLogScale ? 'LOG' : 'LIN'}
+                                </button>
                                 </div>
                             </div>
                             <div className="w-full h-96">
                                 <ResponsiveContainer width="100%" height="100%" minHeight={350}>
-                                    <LineChart data={lineData}>
+                                <LineChart data={lineData}>
                                         <CartesianGrid strokeDasharray="3 3" />
                                         <XAxis dataKey="diaLabel" />
+                                    {isLogScale ? (
+                                        <YAxis
+                                            allowDecimals={false}
+                                            scale="log"
+                                            domain={[1, 'auto']}
+                                            allowDataOverflow
+                                            tickFormatter={(v) => `${Math.round(v as number)}`}
+                                        />
+                                    ) : (
                                         <YAxis allowDecimals={false} />
+                                    )}
                                         <Tooltip contentStyle={{ background: "#ffffff", border: "1px solid #e5e7eb", color: "#111827" }} />
                                         <Legend />
                                         <Line type="monotone" dataKey="ocupados" name="Ocupados" stroke={COLORS.red} strokeWidth={2} dot={{ r: 2 }} activeDot={{ r: 6 }} />

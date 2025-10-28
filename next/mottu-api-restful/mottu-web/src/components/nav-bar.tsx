@@ -69,7 +69,9 @@ const navItems: Array<{
             { href: "/relatorios/heatmap", label: "Heatmap de Ocupação", icon: "ion-ios-map" },
             { href: "/relatorios/comportamental", label: "Análise Comportamental", icon: "ion-ios-people" },
             { href: "/relatorios/dashboard-ia", label: "Dashboard IA", icon: "ion-ios-analytics" },
-            { href: "/relatorios/avancados", label: "Relatórios Avançados", icon: "ion-ios-flash" },
+            { href: "/relatorios/performance-sistema", label: "Performance do Sistema", icon: "ion-ios-speedometer" },
+            { href: "/relatorios/manutencao", label: "Relatório de Manutenção", icon: "ion-ios-construct" },
+            { href: "/relatorios/analytics", label: "Analytics Avançado", icon: "ion-ios-analytics" },
             { href: "/relatorios/notificacoes", label: "Central de Notificações", icon: "ion-ios-notifications" }
         ]
     },

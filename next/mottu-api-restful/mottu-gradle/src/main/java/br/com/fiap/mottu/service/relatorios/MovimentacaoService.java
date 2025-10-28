@@ -27,26 +27,53 @@ public class MovimentacaoService {
     }
 
     /**
-     * Obtém movimentação diária por período
+     * Obtém movimentação diária por período - DADOS REAIS DO BANCO
      */
     public List<MovimentacaoDiariaDto> getMovimentacaoDiaria(LocalDate dataInicio, LocalDate dataFim) {
-        log.info("Gerando relatório de movimentação diária entre {} e {}", dataInicio, dataFim);
+        log.info("Gerando relatório de movimentação diária REAL entre {} e {}", dataInicio, dataFim);
         
-        // Por enquanto, retornar dados simulados para resolver o problema
-        log.warn("Retornando dados simulados para teste - problema com relacionamentos JPA");
+        // Buscar logs reais do banco de dados
+        LocalDateTime inicio = dataInicio.atStartOfDay();
+        LocalDateTime fim = dataFim.atTime(23, 59, 59);
         
-        List<MovimentacaoDiariaDto> dadosSimulados = new ArrayList<>();
+        List<LogMovimentacao> movimentacoes = logMovimentacaoRepository
+                .findByDataHoraMovimentacaoBetweenOrderByDataHoraMovimentacaoDesc(inicio, fim);
+        
+        log.info("Encontradas {} movimentações reais no período", movimentacoes.size());
+        
+        // Agrupar movimentações por data
+        Map<LocalDate, List<LogMovimentacao>> movimentacoesPorData = movimentacoes.stream()
+                .collect(Collectors.groupingBy(mov -> mov.getDataHoraMovimentacao().toLocalDate()));
+        
+        List<MovimentacaoDiariaDto> resultado = new ArrayList<>();
+        
+        // Processar cada dia no período
         LocalDate data = dataInicio;
         while (!data.isAfter(dataFim)) {
-            dadosSimulados.add(MovimentacaoDiariaDto.builder()
+            List<LogMovimentacao> movsDoDia = movimentacoesPorData.getOrDefault(data, new ArrayList<>());
+            
+            long entradas = movsDoDia.stream()
+                    .filter(mov -> mov.getTipoMovimentacao() == LogMovimentacao.TipoMovimentacao.ENTRADA)
+                    .count();
+            
+            long saidas = movsDoDia.stream()
+                    .filter(mov -> mov.getTipoMovimentacao() == LogMovimentacao.TipoMovimentacao.SAIDA)
+                    .count();
+            
+            resultado.add(MovimentacaoDiariaDto.builder()
                     .data(data)
-                    .entradas(2)
-                    .saidas(1)
-                    .totalMovimentacoes(3)
+                    .entradas((int) entradas)
+                    .saidas((int) saidas)
+                    .totalMovimentacoes((int) (entradas + saidas))
                     .build());
+            
             data = data.plusDays(1);
         }
-        return dadosSimulados;
+        
+        log.info("Relatório gerado com sucesso. {} dias processados, total de {} movimentações", 
+                resultado.size(), movimentacoes.size());
+        
+        return resultado;
     }
 
     /**
@@ -83,6 +110,36 @@ public class MovimentacaoService {
                             .build();
                 })
                 .sorted((a, b) -> a.getData().compareTo(b.getData()))
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Obtém detalhes completos de movimentações - DADOS REAIS PARA FRONTEND
+     */
+    public List<Object> getDetalhesCompletos(LocalDate dataInicio, LocalDate dataFim) {
+        log.info("Gerando detalhes completos de movimentação entre {} e {}", dataInicio, dataFim);
+        
+        // Buscar logs reais do banco
+        LocalDateTime inicio = dataInicio.atStartOfDay();
+        LocalDateTime fim = dataFim.atTime(23, 59, 59);
+        
+        List<LogMovimentacao> movimentacoes = logMovimentacaoRepository
+                .findByDataHoraMovimentacaoBetweenOrderByDataHoraMovimentacaoDesc(inicio, fim);
+        
+        log.info("Encontradas {} movimentações reais para detalhes", movimentacoes.size());
+        
+        // Converter para formato que o frontend precisa
+        return movimentacoes.stream()
+                .map(mov -> Map.of(
+                        "id", mov.getIdLogMovimentacao(),
+                        "placa", mov.getVeiculo() != null ? mov.getVeiculo().getPlaca() : "N/A",
+                        "tipo", mov.getTipoMovimentacao().toString(),
+                        "dataHora", mov.getDataHoraMovimentacao().toString(),
+                        "patio", mov.getPatio() != null ? mov.getPatio().getNomePatio() : "N/A",
+                        "box", mov.getBox() != null ? mov.getBox().getNome() : "N/A",
+                        "status", "Concluído",
+                        "observacoes", mov.getObservacoes() != null ? mov.getObservacoes() : ""
+                ))
                 .collect(Collectors.toList());
     }
 }

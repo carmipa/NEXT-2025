@@ -25,6 +25,8 @@ export default function BuscarClientesPage() {
     const [error, setError] = useState<string | null>(null);
     const [hasSearched, setHasSearched] = useState(false);
     const [filter, setFilter] = useState<ClienteFilter>(initialFilterState);
+    const [quickField, setQuickField] = useState<'nome'|'sobrenome'|'cpf'|'contatoEmail'|'enderecoCidade'|'enderecoEstado'>('nome');
+    const [quickQuery, setQuickQuery] = useState('');
     const [viewType, setViewType] = useState<'cards' | 'table'>('cards');
 
     const ITEMS_PER_PAGE = 9;
@@ -67,26 +69,27 @@ export default function BuscarClientesPage() {
         }
     };
 
-    const handleSearch = (e: FormEvent<HTMLFormElement>) => {
+    const handleSearch = (e: FormEvent) => {
         e.preventDefault();
+        if (!quickQuery.trim()) {
+            setClientes([]);
+            setPageInfo(null);
+            setHasSearched(false);
+            return;
+        }
         setCurrentPage(0);
-        fetchData(0, filter);
-    };
-
-    const handleFilterChange = (e: ChangeEvent<HTMLInputElement>) => {
-        const { name, value } = e.target;
-        setFilter(prev => ({ ...prev, [name]: value === '' ? undefined : value }));
-    };
-
-    const handleMaskedFilterChange = (name: string, value: string) => {
-        setFilter(prev => ({ ...prev, [name]: value === '' ? undefined : value }));
+        const built: any = { ...initialFilterState };
+        built[quickField] = quickQuery.trim();
+        fetchData(0, built);
     };
 
     const handleClearFilters = () => {
         setFilter(initialFilterState);
-        setCurrentPage(0);
+        setQuickQuery('');
+        setQuickField('nome');
         setClientes([]);
         setPageInfo(null);
+        setCurrentPage(0);
         setHasSearched(false);
         setError(null);
     };
@@ -96,154 +99,279 @@ export default function BuscarClientesPage() {
     };
 
     return (
-        <main className="min-h-screen text-white p-3 sm:p-4 md:p-6 lg:p-8 pb-24 sm:pb-32">
-                <div className="container mx-auto">
-                    <div className="neumorphic-container p-4 sm:p-6 md:p-8">
-                        <h1 className="flex items-center justify-center gap-2 text-xl sm:text-2xl md:text-3xl font-bold mb-4 sm:mb-6 text-center text-slate-800" style={{fontFamily: 'Montserrat, sans-serif'}}>
-                            <Search size={24} className="text-blue-500 sm:hidden" />
-                            <Search size={28} className="text-blue-500 hidden sm:block md:hidden" />
-                            <Search size={32} className="text-blue-500 hidden md:block" />
-                            <span className="hidden sm:inline">Buscar Clientes</span>
-                            <span className="sm:hidden">Buscar</span>
+        <>
+            <main className="min-h-screen text-white p-4 md:p-8">
+                <div className="container mx-auto neumorphic-container p-6 md:p-8">
+                  
+                  {/* Header */}
+                  <div className="bg-white/10 backdrop-blur-lg rounded-2xl shadow-2xl p-4 lg:p-8 mb-8 border border-white/20">
+                    <div className="flex flex-col lg:flex-row items-center justify-between space-y-4 lg:space-y-0">
+                      <div className="flex items-center mb-4 lg:mb-0">
+                        <div className="p-3 lg:p-4 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl mr-4 lg:mr-6">
+                          <i className="ion-ios-search text-white text-2xl lg:text-3xl"></i>
+                        </div>
+                        <div>
+                          <h1 className="text-2xl lg:text-4xl font-bold text-white mb-2" style={{fontFamily: 'Montserrat, sans-serif'}}>
+                            Buscar Clientes
                         </h1>
+                          <p className="text-gray-300 text-sm lg:text-lg" style={{fontFamily: 'Montserrat, sans-serif'}}>
+                            Pesquise clientes por diferentes critérios
+                          </p>
+                        </div>
+                      </div>
+                      
+                      <Link
+                        href="/clientes/listar"
+                        className="group relative bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-bold py-3 lg:py-4 px-4 lg:px-8 rounded-xl shadow-xl transform hover:scale-105 transition-all duration-300 border-2 border-orange-400 hover:border-orange-300 w-full lg:w-auto"
+                      >
+                        <div className="absolute inset-0 bg-gradient-to-r from-orange-400 to-orange-500 rounded-xl opacity-0 group-hover:opacity-30 transition-opacity duration-300"></div>
+                        <div className="relative flex items-center gap-2 lg:gap-3">
+                          <div className="p-1.5 lg:p-2 bg-white/25 rounded-full">
+                            <i className="ion-ios-arrow-back text-lg lg:text-xl"></i>
+                          </div>
+                          <div className="text-left flex-1">
+                            <div className="text-sm lg:text-lg font-black">VOLTAR</div>
+                            <div className="text-xs text-orange-100 font-semibold hidden lg:block">À Lista</div>
+                          </div>
+                        </div>
+                      </Link>
+                    </div>
+                  </div>
 
-                        <fieldset className="neumorphic-fieldset mb-6 sm:mb-8">
-                            <legend className="neumorphic-legend text-sm sm:text-base" style={{fontFamily: 'Montserrat, sans-serif'}}>Filtros de Busca</legend>
-                            <form onSubmit={handleSearch} className="space-y-3 sm:space-y-4 mt-4 sm:mt-6">
-                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 items-end">
-                                    {/* Linha 1 */}
-                                    <input type="text" name="nome" value={filter.nome || ''} onChange={handleFilterChange} className="neumorphic-input text-sm sm:text-base" placeholder="Nome" style={{fontFamily: 'Montserrat, sans-serif'}} />
-                                    <input type="text" name="sobrenome" value={filter.sobrenome || ''} onChange={handleFilterChange} className="neumorphic-input text-sm sm:text-base" placeholder="Sobrenome" style={{fontFamily: 'Montserrat, sans-serif'}} />
-                                    <IMaskInput mask="000.000.000-00" name="cpf" value={filter.cpf || ''} onAccept={(value) => handleMaskedFilterChange('cpf', value)} className="neumorphic-input text-sm sm:text-base" placeholder="CPF" style={{fontFamily: 'Montserrat, sans-serif'}} />
-                                    <input type="email" name="contatoEmail" value={filter.contatoEmail || ''} onChange={handleFilterChange} className="neumorphic-input text-sm sm:text-base" placeholder="Email do contato" style={{fontFamily: 'Montserrat, sans-serif'}} />
+                  {/* Error Message */}
+                  {error && (
+                    <div className="mb-4 text-center text-red-700 p-3 rounded-md bg-red-100">
+                      {error}
+                    </div>
+                  )}
 
-                                    {/* Linha 2 */}
-                                    <input type="text" name="enderecoCidade" value={filter.enderecoCidade || ''} onChange={handleFilterChange} className="neumorphic-input text-sm sm:text-base" placeholder="Cidade" style={{fontFamily: 'Montserrat, sans-serif'}} />
-                                    <input type="text" name="enderecoEstado" value={filter.enderecoEstado || ''} onChange={handleFilterChange} className="neumorphic-input text-sm sm:text-base" placeholder="Estado (UF)" maxLength={2} style={{fontFamily: 'Montserrat, sans-serif'}}/>
-                                    <input type="text" name="veiculoPlaca" value={filter.veiculoPlaca || ''} onChange={handleFilterChange} className="neumorphic-input text-sm sm:text-base" placeholder="Placa do Veículo" style={{fontFamily: 'Montserrat, sans-serif'}} />
-                                    <input type="text" name="veiculoModelo" value={filter.veiculoModelo || ''} onChange={handleFilterChange} className="neumorphic-input text-sm sm:text-base" placeholder="Modelo do Veículo" style={{fontFamily: 'Montserrat, sans-serif'}} />
-
-                                    <div className="sm:col-span-2 lg:col-span-4 flex flex-col sm:flex-row justify-center items-center gap-2 sm:gap-3 pt-2">
-                                        <button type="submit" className="group relative bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-bold py-3 lg:py-4 px-6 lg:px-8 rounded-xl shadow-xl transform hover:scale-105 transition-all duration-300 border-2 border-emerald-400 hover:border-emerald-300 flex items-center justify-center gap-2">
-                                            <div className="absolute inset-0 bg-gradient-to-r from-emerald-400 to-emerald-500 rounded-xl opacity-0 group-hover:opacity-30 transition-opacity duration-300"></div>
-                                            <div className="relative flex items-center gap-2">
-                                                <Search size={16} />
-                                                <span className="text-sm lg:text-base font-black">BUSCAR CLIENTES</span>
-                                            </div>
-                                        </button>
-                                        <button type="button" onClick={handleClearFilters} className="group relative bg-gradient-to-r from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700 text-white font-bold py-3 lg:py-4 px-6 lg:px-8 rounded-xl shadow-xl transform hover:scale-105 transition-all duration-300 border-2 border-gray-400 hover:border-gray-300 flex items-center justify-center gap-2">
-                                            <div className="absolute inset-0 bg-gradient-to-r from-gray-400 to-gray-500 rounded-xl opacity-0 group-hover:opacity-30 transition-opacity duration-300"></div>
-                                            <div className="relative flex items-center gap-2">
-                                                <i className="ion-ios-close text-lg"></i>
-                                                <span className="text-sm lg:text-base font-black">LIMPAR FILTROS</span>
-                                            </div>
-                                        </button>
-                                    </div>
-                                </div>
-                            </form>
-                        </fieldset>
+                  {/* Search Form - padrão input + seletor + botões */}
+                  <form onSubmit={handleSearch} className="mb-8 neumorphic-container p-4 lg:p-6">
+                    <div className="flex flex-col gap-3 md:flex-row md:items-center">
+                      <div className="flex-1">
+                        <label className="block text-xs lg:text-sm font-medium text-white mb-1 flex items-center gap-2">
+                          <i className="ion-ios-search text-blue-400 text-sm lg:text-base"></i>
+                          Valor
+                        </label>
+                        <input
+                          type="text"
+                          value={quickQuery}
+                          onChange={(e) => setQuickQuery(e.target.value)}
+                          className="neumorphic-input w-full text-sm lg:text-base"
+                          placeholder={quickField === 'nome' ? 'Digite o nome...'
+                            : quickField === 'sobrenome' ? 'Digite o sobrenome...'
+                            : quickField === 'cpf' ? 'Digite o CPF...'
+                            : quickField === 'contatoEmail' ? 'Digite o email...'
+                            : quickField === 'enderecoCidade' ? 'Digite a cidade...'
+                            : 'Digite o estado (UF)...'}
+                        />
+                      </div>
+                      <div className="w-full md:w-52">
+                        <label className="block text-xs lg:text-sm font-medium text-white mb-1 flex items-center gap-2">
+                          <i className="ion-ios-funnel text-purple-400 text-sm lg:text-base"></i>
+                          Filtrar por
+                        </label>
+                        <select
+                          value={quickField}
+                          onChange={(e) => setQuickField(e.target.value as any)}
+                          className="neumorphic-input w-full text-sm lg:text-base"
+                        >
+                          <option value="nome">Nome</option>
+                          <option value="sobrenome">Sobrenome</option>
+                          <option value="cpf">CPF</option>
+                          <option value="contatoEmail">Email do Contato</option>
+                          <option value="enderecoCidade">Cidade do Endereço</option>
+                          <option value="enderecoEstado">Estado do Endereço</option>
+                        </select>
+                      </div>
+                      <div className="mt-2 md:mt-6 flex flex-col sm:flex-row justify-center gap-3 sm:gap-4">
+                        <button 
+                          type="submit" 
+                          disabled={!quickQuery.trim()}
+                          className={`group relative text-white font-bold py-3 lg:py-4 px-6 lg:px-8 rounded-xl shadow-xl transform transition-all duration-300 border-2 flex items-center justify-center gap-2 btn-buscar-turquesa ${!quickQuery.trim() ? 'cursor-not-allowed' : 'hover:scale-105'}`}
+                          style={{
+                            opacity: !quickQuery.trim() ? 0.5 : 1
+                          }}
+                          title="Buscar clientes"
+                        >
+                          <div className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-20 transition-opacity duration-300" style={{backgroundColor: '#2BC49A'}}></div>
+                          <div className="relative flex items-center gap-2">
+                            <i className="ion-ios-search text-lg"></i>
+                            <span className="text-sm lg:text-base font-black">BUSCAR</span>
+                          </div>
+                        </button>
+                        <button 
+                          type="button" 
+                          onClick={handleClearFilters} 
+                          className="group relative bg-gradient-to-r from-gray-300 to-gray-400 hover:from-gray-400 hover:to-gray-500 text-white font-bold py-3 lg:py-4 px-6 lg:px-8 rounded-xl shadow-xl transform hover:scale-105 transition-all duration-300 border-2 border-gray-200 hover:border-gray-300 flex items-center justify-center gap-2"
+                          title="Limpar filtros"
+                        >
+                          <div className="absolute inset-0 bg-gradient-to-r from-gray-200 to-gray-300 rounded-xl opacity-0 group-hover:opacity-30 transition-opacity duration-300"></div>
+                          <div className="relative flex items-center gap-2">
+                            <i className="ion-ios-close text-lg"></i>
+                            <span className="text-sm lg:text-base font-black">LIMPAR</span>
+                          </div>
+                        </button>
+                      </div>
+                    </div>
+                  </form>
 
                         {/* Toggle de Visualização */}
-                        {hasSearched && !isLoading && (
-                            <div className="flex justify-center mb-4 sm:mb-6">
+                  {!isLoading && clientes.length > 0 && (
+                    <div className="flex justify-center mb-6">
                                 <div className="flex bg-zinc-800 rounded-lg p-1">
                                     <button
                                         onClick={() => setViewType('cards')}
-                                        className={`flex items-center gap-1 sm:gap-2 px-3 sm:px-4 py-2 rounded-md transition-colors text-sm sm:text-base ${
+                          className={`flex items-center gap-2 px-4 py-2 rounded-md transition-colors ${
                                             viewType === 'cards' 
                                                 ? 'bg-emerald-600 text-white' 
                                                 : 'text-zinc-400 hover:text-white'
                                         }`}
-                                        style={{fontFamily: 'Montserrat, sans-serif'}}
+                          title="Visualização em Cards"
                                     >
-                                        <i className="ion-ios-apps text-sm sm:text-base"></i>
-                                        <span className="hidden sm:inline">Cards</span>
-                                        <span className="sm:hidden">Cards</span>
+                          <i className="ion-ios-grid"></i>
+                          Cards
                                     </button>
                                     <button
                                         onClick={() => setViewType('table')}
-                                        className={`flex items-center gap-1 sm:gap-2 px-3 sm:px-4 py-2 rounded-md transition-colors text-sm sm:text-base ${
+                          className={`flex items-center gap-2 px-4 py-2 rounded-md transition-colors ${
                                             viewType === 'table' 
                                                 ? 'bg-emerald-600 text-white' 
                                                 : 'text-zinc-400 hover:text-white'
                                         }`}
-                                        style={{fontFamily: 'Montserrat, sans-serif'}}
+                          title="Visualização em Tabela"
                                     >
-                                        <i className="ion-ios-list text-sm sm:text-base"></i>
-                                        <span className="hidden sm:inline">Tabela</span>
-                                        <span className="sm:hidden">Lista</span>
+                          <i className="ion-ios-list"></i>
+                          Tabela
                                     </button>
                                 </div>
                             </div>
                         )}
 
-                        {isLoading && <p className="text-center text-slate-100 py-10">Buscando...</p>}
-                        {error && <div className="text-center text-red-400 p-4 bg-red-900/50 rounded-md">{error}</div>}
-
-                        {!isLoading && hasSearched && clientes.length === 0 && !error && (
-                            <div className="text-center py-10">
-                                <i className="ion-ios-information-circle text-slate-300 mb-2" style={{fontSize: '48px'}}></i>
-                                <p className="text-slate-300" style={{fontFamily: 'Montserrat, sans-serif'}}>Nenhum cliente encontrado.</p>
+                  {/* Loading State */}
+                  {isLoading && (
+                    <div className="neumorphic-container text-center py-12">
+                      <div className="flex flex-col items-center gap-4">
+                        <i className="ion-ios-loading text-4xl text-emerald-400 animate-spin"></i>
+                        <p className="text-slate-300 font-montserrat">Buscando clientes...</p>
+                      </div>
                             </div>
                         )}
 
-                        {!isLoading && clientes.length > 0 && (
-                            <>
-                                {viewType === 'cards' ? (
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
-                                        {clientes.map((cliente) => (
-                                            <div key={cliente.idCliente} className="neumorphic-card-gradient p-4 sm:p-6 flex flex-col justify-between transition-all duration-300 hover:shadow-2xl hover:scale-105 transform hover:-translate-y-2 cursor-pointer">
+                  {/* Empty State */}
+                  {!isLoading && hasSearched && clientes.length === 0 && !error && (
+                    <div className="neumorphic-container text-center py-12">
+                      <div className="flex flex-col items-center gap-4">
+                        <i className="ion-ios-search text-4xl text-slate-400"></i>
                                                 <div>
-                                                    <div className="flex items-center justify-between mb-3 sm:mb-4">
-                                                        <div className="flex items-center gap-2">
-                                                            <span className="text-xs font-semibold bg-[var(--neumorphic-bg)] text-[var(--color-mottu-dark)] px-2 sm:px-3 py-1 rounded-full shadow-inner" style={{fontFamily: 'Montserrat, sans-serif'}}>ID: {cliente.idCliente}</span>
-                                                            <h2 className="text-lg sm:text-xl font-bold text-[var(--color-mottu-dark)] truncate" title={`${cliente.nome} ${cliente.sobrenome}`} style={{fontFamily: 'Montserrat, sans-serif'}}>{cliente.nome} {cliente.sobrenome}</h2>
+                          <h3 className="text-lg font-semibold text-slate-300 mb-2 font-montserrat">Nenhum cliente encontrado</h3>
+                          <p className="text-slate-400 font-montserrat">Nenhum cliente encontrado para os critérios informados.</p>
                                                         </div>
                                                     </div>
-                                                    <div className="space-y-2 text-xs sm:text-sm mb-3 sm:mb-4">
-                                                        <div className="flex items-center">
-                                                            <span className="font-semibold text-[var(--color-mottu-dark)] w-10 sm:w-12" style={{fontFamily: 'Montserrat, sans-serif'}}>CPF:</span> 
-                                                            <span className="text-slate-600 ml-1 sm:ml-2 text-xs sm:text-sm" style={{fontFamily: 'Montserrat, sans-serif'}}>{cliente.cpf}</span>
                                                         </div>
-                                                        <div className="flex items-center">
-                                                            <span className="font-semibold text-[var(--color-mottu-dark)] w-10 sm:w-12" style={{fontFamily: 'Montserrat, sans-serif'}}>Email:</span> 
-                                                            <span className="text-slate-600 truncate ml-1 sm:ml-2 text-xs sm:text-sm" style={{fontFamily: 'Montserrat, sans-serif'}}>{cliente.contatoResponseDto?.email || '-'}</span>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                                <div className="flex justify-end items-center gap-1 sm:gap-2 pt-3 sm:pt-4 mt-auto">
-                                                    <Link href={`/clientes/detalhes/${cliente.idCliente}`} className="p-1.5 sm:p-2 rounded-full text-blue-600 hover:bg-blue-100 hover:scale-110 transition-all duration-300 hover:-translate-y-1" title="Ver Detalhes"><i className="ion-ios-eye text-lg sm:text-xl"></i></Link>
-                                                    <Link href={`/clientes/alterar/${cliente.idCliente}`} className="p-1.5 sm:p-2 rounded-full text-yellow-500 hover:bg-yellow-100 hover:scale-110 transition-all duration-300 hover:-translate-y-1" title="Editar Cliente"><i className="ion-ios-create text-lg sm:text-xl"></i></Link>
-                                                    <Link href={`/clientes/deletar/${cliente.idCliente}`} className="p-1.5 sm:p-2 rounded-full text-red-500 hover:bg-red-100 hover:scale-110 transition-all duration-300 hover:-translate-y-1" title="Excluir Cliente"><i className="ion-ios-trash text-lg sm:text-xl"></i></Link>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
+                  )}
+
+                  {/* Results */}
+                  {!isLoading && clientes.length > 0 && (
+                    viewType === 'cards' ? (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+                        {clientes.map((cliente) => (
+                          <div key={cliente.idCliente} className="neumorphic-card-gradient p-5 flex flex-col justify-between transition-all duration-300 hover:shadow-2xl hover:scale-105 transform hover:-translate-y-2 cursor-pointer">
+                            <div>
+                              <div className="flex items-center mb-3">
+                                <span className="text-xs font-semibold bg-[var(--neumorphic-bg)] text-[var(--color-mottu-dark)] px-2 py-0.5 rounded-full mr-2">
+                                  ID: {cliente.idCliente}
+                                </span>
+                                <h2 className="text-xl font-bold text-[var(--color-mottu-dark)] truncate font-montserrat">
+                                  {cliente.nome} {cliente.sobrenome}
+                                </h2>
+                              </div>
+                              
+                              <div className="text-sm text-slate-600 mt-2 space-y-1">
+                                <p className="flex items-center">
+                                  <span className="font-semibold text-[var(--color-mottu-dark)] w-10 sm:w-12" style={{fontFamily: 'Montserrat, sans-serif'}}>CPF:</span> 
+                                  <span className="text-slate-600 ml-1 sm:ml-2 text-xs sm:text-sm" style={{fontFamily: 'Montserrat, sans-serif'}}>{cliente.cpf}</span>
+                                </p>
+                                <p className="flex items-center">
+                                  <span className="font-semibold text-[var(--color-mottu-dark)] w-10 sm:w-12" style={{fontFamily: 'Montserrat, sans-serif'}}>Email:</span> 
+                                  <span className="text-slate-600 truncate ml-1 sm:ml-2 text-xs sm:text-sm" style={{fontFamily: 'Montserrat, sans-serif'}}>{cliente.contatoResponseDto?.email || 'N/A'}</span>
+                                </p>
+                                <p className="flex items-center">
+                                  <span className="font-semibold text-[var(--color-mottu-dark)] w-10 sm:w-12" style={{fontFamily: 'Montserrat, sans-serif'}}>Cidade:</span> 
+                                  <span className="text-slate-600 ml-1 sm:ml-2 text-xs sm:text-sm" style={{fontFamily: 'Montserrat, sans-serif'}}>{cliente.enderecoResponseDto?.cidade || 'N/A'}</span>
+                                </p>
+                              </div>
+                            </div>
+                            
+                            <div className="flex justify-end items-center gap-2 border-t border-slate-200 pt-3 mt-4">
+                              <Link 
+                                href={`/clientes/detalhes/${cliente.idCliente}`}
+                                className="p-2 rounded-full text-blue-600 hover:bg-blue-100 transition-all duration-300 transform hover:-translate-y-1" 
+                                title="Ver Detalhes"
+                              >
+                                <i className="ion-ios-eye text-lg"></i>
+                              </Link>
+                              <Link 
+                                href={`/clientes/alterar/${cliente.idCliente}`}
+                                className="p-2 rounded-full text-yellow-500 hover:bg-yellow-100 transition-all duration-300 transform hover:-translate-y-1" 
+                                title="Editar"
+                              >
+                                <i className="ion-ios-create text-lg"></i>
+                              </Link>
+                              <Link 
+                                href={`/clientes/deletar/${cliente.idCliente}`}
+                                className="p-2 rounded-full text-red-500 hover:bg-red-100 transition-all duration-300 transform hover:-translate-y-1" 
+                                title="Excluir"
+                              >
+                                <i className="ion-ios-trash text-lg"></i>
+                              </Link>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
                                 ) : (
-                                    <div className="neumorphic-container p-4 sm:p-6 mb-6 sm:mb-8">
+                      <div className="neumorphic-container overflow-hidden mb-8">
                                         <div className="overflow-x-auto">
-                                            <table className="w-full text-xs sm:text-sm">
-                                                <thead>
-                                                    <tr>
-                                                        <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-xs sm:text-sm font-semibold text-[var(--color-mottu-dark)]" style={{fontFamily: 'Montserrat, sans-serif'}}>ID</th>
-                                                        <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-xs sm:text-sm font-semibold text-[var(--color-mottu-dark)]" style={{fontFamily: 'Montserrat, sans-serif'}}>Nome</th>
-                                                        <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-xs sm:text-sm font-semibold text-[var(--color-mottu-dark)] hidden sm:table-cell" style={{fontFamily: 'Montserrat, sans-serif'}}>CPF</th>
-                                                        <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-xs sm:text-sm font-semibold text-[var(--color-mottu-dark)] hidden md:table-cell" style={{fontFamily: 'Montserrat, sans-serif'}}>Email</th>
-                                                        <th className="px-2 sm:px-4 py-2 sm:py-3 text-center text-xs sm:text-sm font-semibold text-[var(--color-mottu-dark)]" style={{fontFamily: 'Montserrat, sans-serif'}}>Ações</th>
+                          <table className="w-full">
+                            <thead className="bg-slate-50">
+                              <tr>
+                                <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider font-montserrat">Nome</th>
+                                <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider font-montserrat">CPF</th>
+                                <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider font-montserrat">Email</th>
+                                <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider font-montserrat">Cidade</th>
+                                <th className="px-4 py-3 text-center text-xs font-medium text-slate-500 uppercase tracking-wider font-montserrat">Ações</th>
                                                     </tr>
                                                 </thead>
-                                                <tbody className="divide-y divide-slate-200">
+                            <tbody className="bg-white divide-y divide-slate-200">
                                                     {clientes.map((cliente) => (
-                                                        <tr key={cliente.idCliente} className="hover:bg-slate-50 transition-colors">
-                                                            <td className="px-2 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm text-slate-600" style={{fontFamily: 'Montserrat, sans-serif'}}>{cliente.idCliente}</td>
-                                                            <td className="px-2 sm:px-4 py-2 sm:py-3 font-semibold text-[var(--color-mottu-dark)] text-xs sm:text-sm" style={{fontFamily: 'Montserrat, sans-serif'}}>{cliente.nome} {cliente.sobrenome}</td>
-                                                            <td className="px-2 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm text-slate-900 hidden sm:table-cell" style={{fontFamily: 'Montserrat, sans-serif'}}>{cliente.cpf}</td>
-                                                            <td className="px-2 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm text-slate-600 hidden md:table-cell" style={{fontFamily: 'Montserrat, sans-serif'}}>{cliente.contatoResponseDto?.email || '-'}</td>
-                                                            <td className="px-2 sm:px-4 py-2 sm:py-3">
-                                                                <div className="flex justify-center items-center gap-1 sm:gap-2">
-                                                                    <Link href={`/clientes/detalhes/${cliente.idCliente}`} className="p-1 rounded text-blue-600 hover:bg-blue-100 hover:scale-110 transition-all duration-300 hover:-translate-y-1" title="Ver Detalhes"><i className="ion-ios-eye text-sm sm:text-base"></i></Link>
-                                                                    <Link href={`/clientes/alterar/${cliente.idCliente}`} className="p-1 rounded text-yellow-500 hover:bg-yellow-100 hover:scale-110 transition-all duration-300 hover:-translate-y-1" title="Editar Cliente"><i className="ion-ios-create text-sm sm:text-base"></i></Link>
-                                                                    <Link href={`/clientes/deletar/${cliente.idCliente}`} className="p-1 rounded text-red-500 hover:bg-red-100 hover:scale-110 transition-all duration-300 hover:-translate-y-1" title="Excluir Cliente"><i className="ion-ios-trash text-sm sm:text-base"></i></Link>
+                                <tr key={cliente.idCliente} className="hover:bg-slate-50 transition-all duration-300 hover:shadow-lg">
+                                  <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-slate-900 font-montserrat">{cliente.nome} {cliente.sobrenome}</td>
+                                  <td className="px-4 py-4 whitespace-nowrap text-sm text-slate-600 font-montserrat">{cliente.cpf}</td>
+                                  <td className="px-4 py-4 whitespace-nowrap text-sm text-slate-600 font-montserrat">{cliente.contatoResponseDto?.email || '-'}</td>
+                                  <td className="px-4 py-4 whitespace-nowrap text-sm text-slate-600 font-montserrat">{cliente.enderecoResponseDto?.cidade || '-'}</td>
+                                  <td className="px-4 py-4 whitespace-nowrap text-center text-sm font-medium">
+                                    <div className="flex justify-center items-center gap-2">
+                                      <Link 
+                                        href={`/clientes/detalhes/${cliente.idCliente}`} 
+                                        className="p-1 rounded-full text-blue-600 hover:bg-blue-100 transition-all duration-300 transform hover:-translate-y-1" 
+                                        title="Ver Detalhes"
+                                      >
+                                        <i className="ion-ios-eye text-lg"></i>
+                                      </Link>
+                                      <Link 
+                                        href={`/clientes/alterar/${cliente.idCliente}`} 
+                                        className="p-1 rounded-full text-yellow-500 hover:bg-yellow-100 transition-all duration-300 transform hover:-translate-y-1" 
+                                        title="Editar Cliente"
+                                      >
+                                        <i className="ion-ios-create text-lg"></i>
+                                      </Link>
+                                      <Link 
+                                        href={`/clientes/deletar/${cliente.idCliente}`} 
+                                        className="p-1 rounded-full text-red-500 hover:bg-red-100 transition-all duration-300 transform hover:-translate-y-1" 
+                                        title="Excluir Cliente"
+                                      >
+                                        <i className="ion-ios-trash text-lg"></i>
+                                      </Link>
                                                                 </div>
                                                             </td>
                                                         </tr>
@@ -252,45 +380,39 @@ export default function BuscarClientesPage() {
                                             </table>
                                         </div>
                                     </div>
+                    )
                                 )}
 
                                 {/* Paginação */}
-                                {pageInfo && pageInfo.totalPages > 1 && (
-                                    <div className="flex flex-col sm:flex-row items-center justify-between bg-slate-800 rounded-lg p-3 sm:p-4 gap-3 sm:gap-0">
-                                        <div className="flex items-center text-xs sm:text-sm text-slate-300">
-                                            <span>Mostrando {clientes.length} de {pageInfo.totalElements} resultados</span>
-                                        </div>
-                                        <div className="flex items-center gap-1 sm:gap-2">
+                  {!isLoading && pageInfo && pageInfo.totalPages > 1 && (
+                    <div className="mt-8 flex justify-between items-center text-sm text-slate-100">
+                      <span className="font-montserrat">
+                        Página {pageInfo.number + 1} de {pageInfo.totalPages}
+                      </span>
+                      <div className="flex gap-2">
                                             <button
+                          title="Página anterior" 
                                                 onClick={() => handlePageChange(currentPage - 1)}
-                                                disabled={currentPage === 0}
-                                                className="flex items-center gap-1 px-2 sm:px-3 py-2 text-xs sm:text-sm font-medium text-slate-300 bg-slate-700 rounded-md hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed"
-                                                style={{fontFamily: 'Montserrat, sans-serif'}}
+                          disabled={pageInfo.first} 
+                          className="neumorphic-button text-sm font-medium transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-lg transform hover:-translate-y-1"
                                             >
-                                                <i className="ion-ios-arrow-back text-sm sm:text-base"></i>
-                                                <span className="hidden sm:inline">Anterior</span>
-                                                <span className="sm:hidden">Ant</span>
+                          <i className="ion-ios-arrow-back"></i>
+                          Anterior
                                             </button>
-                                            <span className="px-2 sm:px-3 py-2 text-xs sm:text-sm text-slate-300" style={{fontFamily: 'Montserrat, sans-serif'}}>
-                                                {currentPage + 1} de {pageInfo.totalPages}
-                                            </span>
                                             <button
+                          title="Próxima página" 
                                                 onClick={() => handlePageChange(currentPage + 1)}
-                                                disabled={currentPage >= pageInfo.totalPages - 1}
-                                                className="flex items-center gap-1 px-2 sm:px-3 py-2 text-xs sm:text-sm font-medium text-slate-300 bg-slate-700 rounded-md hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed"
-                                                style={{fontFamily: 'Montserrat, sans-serif'}}
+                          disabled={pageInfo.last} 
+                          className="neumorphic-button text-sm font-medium transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-lg transform hover:-translate-y-1"
                                             >
-                                                <span className="hidden sm:inline">Próxima</span>
-                                                <span className="sm:hidden">Próx</span>
-                                                <i className="ion-ios-arrow-forward text-sm sm:text-base"></i>
+                          Próximo
+                          <i className="ion-ios-arrow-forward"></i>
                                             </button>
                                         </div>
                                     </div>
                                 )}
-                            </>
-                        )}
-                    </div>
                 </div>
             </main>
+        </>
     );
 }

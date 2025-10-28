@@ -16,6 +16,24 @@ export default function RelatoriosPage() {
             status: 'ativo'
         },
         {
+            id: 'performance-sistema',
+            title: 'Performance do Sistema',
+            description: 'Métricas de CPU, memória, threads e processo (tempo real)',
+            icon: 'ion-ios-speedometer',
+            href: '/relatorios/performance-sistema',
+            color: 'bg-emerald-600',
+            status: 'novo'
+        },
+        {
+            id: 'manutencao',
+            title: 'Relatório de Manutenção',
+            description: 'Status de veículos e boxes por pátio em tempo real',
+            icon: 'ion-ios-construct',
+            href: '/relatorios/manutencao',
+            color: 'bg-emerald-500',
+            status: 'novo'
+        },
+        {
             id: 'movimentacao',
             title: 'Movimentação',
             description: 'Relatório de entrada e saída de veículos em tempo real',
@@ -52,14 +70,15 @@ export default function RelatoriosPage() {
             status: 'novo'
         },
         {
-            id: 'avancados',
-            title: 'Relatórios Avançados',
-            description: 'Relatórios técnicos e análises detalhadas',
-            icon: 'ion-ios-flash',
-            href: '/relatorios/avancados',
-            color: 'bg-yellow-500',
+            id: 'analytics',
+            title: 'Analytics Avançado',
+            description: 'KPIs, top listas e evolução em tempo real',
+            icon: 'ion-ios-analytics',
+            href: '/relatorios/analytics',
+            color: 'bg-sky-500',
             status: 'novo'
         },
+        // removido Avançados; substituído por páginas específicas
         {
             id: 'notificacoes',
             title: 'Central de Notificações',

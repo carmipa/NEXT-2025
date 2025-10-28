@@ -18,10 +18,26 @@ public class ClienteSpecification {
             List<Predicate> predicates = new ArrayList<>();
 
             if (filter.nome() != null && !filter.nome().isBlank()) {
-                predicates.add(cb.like(cb.lower(root.get("nome")), "%" + filter.nome().toLowerCase() + "%"));
+                // Usar TRANSLATE para remover acentos e tornar a busca case-insensitive
+                predicates.add(cb.like(
+                    cb.function("TRANSLATE", String.class, 
+                        cb.lower(root.get("nome")),
+                        cb.literal("áàâãäéèêëíìîïóòôõöúùûüçñ"),
+                        cb.literal("aaaaaeeeeiiiiooooouuuucn")
+                    ), 
+                    "%" + filter.nome().toLowerCase() + "%"
+                ));
             }
             if (filter.sobrenome() != null && !filter.sobrenome().isBlank()) {
-                predicates.add(cb.like(cb.lower(root.get("sobrenome")), "%" + filter.sobrenome().toLowerCase() + "%"));
+                // Usar TRANSLATE para remover acentos e tornar a busca case-insensitive
+                predicates.add(cb.like(
+                    cb.function("TRANSLATE", String.class, 
+                        cb.lower(root.get("sobrenome")),
+                        cb.literal("áàâãäéèêëíìîïóòôõöúùûüçñ"),
+                        cb.literal("aaaaaeeeeiiiiooooouuuucn")
+                    ), 
+                    "%" + filter.sobrenome().toLowerCase() + "%"
+                ));
             }
             if (filter.cpf() != null && !filter.cpf().isBlank()) {
                 predicates.add(cb.equal(root.get("cpf"), filter.cpf()));
@@ -30,7 +46,15 @@ public class ClienteSpecification {
                 predicates.add(cb.equal(root.get("sexo"), filter.sexo()));
             }
             if (filter.profissao() != null && !filter.profissao().isBlank()) {
-                predicates.add(cb.like(cb.lower(root.get("profissao")), "%" + filter.profissao().toLowerCase() + "%"));
+                // Usar TRANSLATE para remover acentos e tornar a busca case-insensitive
+                predicates.add(cb.like(
+                    cb.function("TRANSLATE", String.class, 
+                        cb.lower(root.get("profissao")),
+                        cb.literal("áàâãäéèêëíìîïóòôõöúùûüçñ"),
+                        cb.literal("aaaaaeeeeiiiiooooouuuucn")
+                    ), 
+                    "%" + filter.profissao().toLowerCase() + "%"
+                ));
             }
             if (filter.estadoCivil() != null && !filter.estadoCivil().isBlank()) {
                 predicates.add(cb.equal(root.get("estadoCivil"), filter.estadoCivil()));
@@ -50,7 +74,15 @@ public class ClienteSpecification {
 
             // Filtro por relacionamento ManyToOne (Endereco)
             if (filter.enderecoCidade() != null && !filter.enderecoCidade().isBlank()) {
-                predicates.add(cb.like(cb.lower(root.get("endereco").get("cidade")), "%" + filter.enderecoCidade().toLowerCase() + "%"));
+                // Usar TRANSLATE para remover acentos e tornar a busca case-insensitive
+                predicates.add(cb.like(
+                    cb.function("TRANSLATE", String.class, 
+                        cb.lower(root.get("endereco").get("cidade")),
+                        cb.literal("áàâãäéèêëíìîïóòôõöúùûüçñ"),
+                        cb.literal("aaaaaeeeeiiiiooooouuuucn")
+                    ), 
+                    "%" + filter.enderecoCidade().toLowerCase() + "%"
+                ));
             }
             if (filter.enderecoEstado() != null && !filter.enderecoEstado().isBlank()) {
                 predicates.add(cb.equal(root.get("endereco").get("estado"), filter.enderecoEstado()));

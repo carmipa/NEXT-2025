@@ -16,19 +16,55 @@ public class BoxSpecification {
             List<Predicate> predicates = new ArrayList<>();
 
             if (filter.nome() != null && !filter.nome().isBlank()) {
-                predicates.add(cb.like(cb.lower(root.get("nome")), "%" + filter.nome().toLowerCase() + "%"));
+                // Busca acento-insensível usando TRANSLATE no Oracle
+                jakarta.persistence.criteria.Path<String> nomePath = root.get("nome");
+                jakarta.persistence.criteria.Expression<String> translatedField = cb.function(
+                        "TRANSLATE",
+                        String.class,
+                        cb.lower(nomePath),
+                        cb.literal("ÁÀÃÂÄáàãâäÉÈÊËéèêëÍÌÎÏíìîïÓÒÕÔÖóòõôöÚÙÛÜúùûüÇçÑñ"),
+                        cb.literal("AAAAAaaaaaEEEEeeeeIIIIiiiiOOOOOoooooUUUUuuuuCcNn")
+                );
+                jakarta.persistence.criteria.Expression<String> translatedParam = cb.function(
+                        "TRANSLATE",
+                        String.class,
+                        cb.literal("%" + filter.nome().toLowerCase() + "%"),
+                        cb.literal("ÁÀÃÂÄáàãâäÉÈÊËéèêëÍÌÎÏíìîïÓÒÕÔÖóòõôöÚÙÛÜúùûüÇçÑñ"),
+                        cb.literal("AAAAAaaaaaEEEEeeeeIIIIiiiiOOOOOoooooUUUUuuuuCcNn")
+                );
+                predicates.add(cb.like(translatedField, translatedParam));
             }
             if (filter.status() != null && !filter.status().isBlank()) {
                 predicates.add(cb.equal(root.get("status"), filter.status()));
             }
             // datas de Box são transient no modelo atual (script Oracle não possui essas colunas)
             if (filter.observacao() != null && !filter.observacao().isBlank()) {
-                predicates.add(cb.like(cb.lower(root.get("observacao")), "%" + filter.observacao().toLowerCase() + "%"));
+                jakarta.persistence.criteria.Path<String> obsPath = root.get("observacao");
+                jakarta.persistence.criteria.Expression<String> translatedField = cb.function(
+                        "TRANSLATE",
+                        String.class,
+                        cb.lower(obsPath),
+                        cb.literal("ÁÀÃÂÄáàãâäÉÈÊËéèêëÍÌÎÏíìîïÓÒÕÔÖóòõôöÚÙÛÜúùûüÇçÑñ"),
+                        cb.literal("AAAAAaaaaaEEEEeeeeIIIIiiiiOOOOOoooooUUUUuuuuCcNn")
+                );
+                jakarta.persistence.criteria.Expression<String> translatedParam = cb.function(
+                        "TRANSLATE",
+                        String.class,
+                        cb.literal("%" + filter.observacao().toLowerCase() + "%"),
+                        cb.literal("ÁÀÃÂÄáàãâäÉÈÊËéèêëÍÌÎÏíìîïÓÒÕÔÖóòõôöÚÙÛÜúùûüÇçÑñ"),
+                        cb.literal("AAAAAaaaaaEEEEeeeeIIIIiiiiOOOOOoooooUUUUuuuuCcNn")
+                );
+                predicates.add(cb.like(translatedField, translatedParam));
             }
 
             // filtro por pátio via FK direta
             if (filter.patioId() != null) {
                 predicates.add(cb.equal(root.get("patio").get("idPatio"), filter.patioId()));
+            }
+
+            // filtro por nome do pátio (join direto Box -> Patio)
+            if (filter.patioNome() != null && !filter.patioNome().isBlank()) {
+                predicates.add(cb.like(cb.lower(root.get("patio").get("nomePatio")), "%" + filter.patioNome().toLowerCase() + "%"));
             }
 
             // filtro por zona - Box não tem zona diretamente, apenas via pátio

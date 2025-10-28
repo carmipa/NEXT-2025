@@ -24,6 +24,8 @@ export default function BuscarPatiosPage() {
     const [error, setError] = useState<string | null>(null);
     const [hasSearched, setHasSearched] = useState(false);
     const [filter, setFilter] = useState<PatioFilter>(initialFilterState);
+    const [quickField, setQuickField] = useState<'nomePatio'|'veiculoPlaca'|'enderecoCidade'|'contatoEmail'|'zonaNome'|'boxNome'|'observacao'>('nomePatio');
+    const [quickQuery, setQuickQuery] = useState('');
     const [viewType, setViewType] = useState<'cards'|'table'>('cards');
 
     const ITEMS_PER_PAGE = 9;
@@ -58,12 +60,26 @@ export default function BuscarPatiosPage() {
 
     const handleSearch = (e: FormEvent) => {
         e.preventDefault();
+        if (!quickQuery.trim()) {
+            setPatios([]);
+            setPageInfo(null);
+            setHasSearched(false);
+            return;
+        }
         setCurrentPage(0);
-        fetchData(0, filter);
+        const built: any = { ...initialFilterState };
+        if (quickField === 'veiculoPlaca') {
+            built[quickField] = quickQuery.trim().toUpperCase();
+        } else {
+            built[quickField] = quickQuery.trim();
+        }
+        fetchData(0, built);
     };
 
     const handleClearFilters = () => {
         setFilter(initialFilterState);
+        setQuickQuery('');
+        setQuickField('nomePatio');
         setPatios([]);
         setPageInfo(null);
         setCurrentPage(0);
@@ -133,121 +149,76 @@ export default function BuscarPatiosPage() {
                     </div>
                   )}
 
-                  {/* Search Form */}
-                  <form onSubmit={handleSearch} className="mb-8 neumorphic-container">
-                    <div className="space-y-6">
-                        {/* Primeira linha - Campos básicos */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                            <div>
-                                <label className="block text-sm font-medium text-white mb-2 flex items-center gap-2">
-                                    <i className="ion-ios-business text-green-400"></i>
-                                    Nome do Pátio
-                                </label>
-                                <input 
-                                    type="text" 
-                                    name="nomePatio" 
-                                    value={filter.nomePatio || ''} 
-                                    onChange={handleFilterChange} 
-                                    placeholder="Digite o nome do pátio..." 
-                                    className="neumorphic-input w-full h-12"
-                                    title="Nome do pátio"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-white mb-2 flex items-center gap-2">
-                                    <i className="ion-ios-car text-blue-400"></i>
-                                    Placa do Veículo
-                                </label>
-                                <input 
-                                    type="text" 
-                                    name="veiculoPlaca" 
-                                    value={filter.veiculoPlaca || ''} 
-                                    onChange={(e) => {
-                                        const value = e.target.value.trim().toUpperCase();
-                                        handleFilterChange({...e, target: {...e.target, value}});
-                                    }} 
-                                    placeholder="Digite a placa do veículo..." 
-                                    className="neumorphic-input w-full h-12"
-                                    title="Placa do veículo"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-white mb-2 flex items-center gap-2">
-                                    <i className="ion-ios-home text-red-400"></i>
-                                    Cidade do Endereço
-                                </label>
-                                <input 
-                                    type="text" 
-                                    name="enderecoCidade" 
-                                    value={filter.enderecoCidade || ''} 
-                                    onChange={handleFilterChange} 
-                                    placeholder="Digite a cidade..." 
-                                    className="neumorphic-input w-full h-12"
-                                    title="Cidade do endereço"
-                                />
-                            </div>
-                        </div>
-
-                        {/* Segunda linha - Campos adicionais */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <div>
-                                <label className="block text-sm font-medium text-white mb-2 flex items-center gap-2">
-                                    <i className="ion-ios-mail text-purple-400"></i>
-                                    Email do Contato
-                                </label>
-                                <input 
-                                    type="text" 
-                                    name="contatoEmail" 
-                                    value={filter.contatoEmail || ''} 
-                                    onChange={handleFilterChange} 
-                                    placeholder="Digite o email do contato..." 
-                                    className="neumorphic-input w-full h-12"
-                                    title="Email do contato"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-white mb-2 flex items-center gap-2">
-                                    <i className="ion-ios-map text-orange-400"></i>
-                                    Nome da Zona
-                                </label>
-                                <input 
-                                    type="text" 
-                                    name="zonaNome" 
-                                    value={filter.zonaNome || ''} 
-                                    onChange={handleFilterChange} 
-                                    placeholder="Digite o nome da zona..." 
-                                    className="neumorphic-input w-full h-12"
-                                    title="Nome da zona"
-                                />
-                            </div>
-                        </div>
-
-                        {/* Terceira linha - Botões centralizados */}
-                        <div className="flex justify-center gap-4 pt-4">
-                            <button 
-                                type="submit" 
-                                className="group relative bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-bold py-3 px-8 rounded-xl shadow-xl transform hover:scale-105 transition-all duration-300 border-2 border-green-400 hover:border-green-300 flex items-center justify-center gap-2"
-                                title="Buscar pátios"
-                            >
-                                <div className="absolute inset-0 bg-gradient-to-r from-green-400 to-green-500 rounded-xl opacity-0 group-hover:opacity-30 transition-opacity duration-300"></div>
-                                <div className="relative flex items-center gap-2">
-                                    <i className="ion-ios-search text-lg"></i>
-                                    <span>Buscar</span>
-                                </div>
-                            </button>
-                            <button 
-                                type="button" 
-                                onClick={handleClearFilters} 
-                                className="group relative bg-gradient-to-r from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700 text-white font-bold py-3 px-8 rounded-xl shadow-xl transform hover:scale-105 transition-all duration-300 border-2 border-gray-400 hover:border-gray-300 flex items-center justify-center gap-2"
-                                title="Limpar filtros"
-                            >
-                                <div className="absolute inset-0 bg-gradient-to-r from-gray-400 to-gray-500 rounded-xl opacity-0 group-hover:opacity-30 transition-opacity duration-300"></div>
-                                <div className="relative flex items-center gap-2">
-                                    <i className="ion-ios-close text-lg"></i>
-                                    <span>Limpar</span>
-                                </div>
-                            </button>
-                        </div>
+                  {/* Search Form - padrão input + seletor + botões */}
+                  <form onSubmit={handleSearch} className="mb-8 neumorphic-container p-4 lg:p-6">
+                    <div className="flex flex-col gap-3 md:flex-row md:items-center">
+                      <div className="flex-1">
+                        <label className="block text-xs lg:text-sm font-medium text-white mb-1 flex items-center gap-2">
+                          <i className="ion-ios-search text-blue-400 text-sm lg:text-base"></i>
+                          Valor
+                        </label>
+                        <input
+                          type="text"
+                          value={quickQuery}
+                          onChange={(e) => setQuickQuery(e.target.value)}
+                          className="neumorphic-input w-full text-sm lg:text-base"
+                          placeholder={quickField === 'nomePatio' ? 'Digite o nome do pátio...'
+                            : quickField === 'veiculoPlaca' ? 'Digite a placa do veículo...'
+                            : quickField === 'enderecoCidade' ? 'Digite a cidade...'
+                            : quickField === 'contatoEmail' ? 'Digite o email do contato...'
+                            : quickField === 'zonaNome' ? 'Digite o nome da zona...'
+                            : quickField === 'boxNome' ? 'Digite o nome do box...'
+                            : 'Digite uma observação...'}
+                        />
+                      </div>
+                      <div className="w-full md:w-52">
+                        <label className="block text-xs lg:text-sm font-medium text-white mb-1 flex items-center gap-2">
+                          <i className="ion-ios-funnel text-purple-400 text-sm lg:text-base"></i>
+                          Filtrar por
+                        </label>
+                        <select
+                          value={quickField}
+                          onChange={(e) => setQuickField(e.target.value as any)}
+                          className="neumorphic-input w-full text-sm lg:text-base"
+                        >
+                          <option value="nomePatio">Nome do Pátio</option>
+                          <option value="veiculoPlaca">Placa do Veículo</option>
+                          <option value="enderecoCidade">Cidade do Endereço</option>
+                          <option value="contatoEmail">Email do Contato</option>
+                          <option value="zonaNome">Nome da Zona</option>
+                          <option value="boxNome">Nome do Box</option>
+                          <option value="observacao">Observação</option>
+                        </select>
+                      </div>
+                      <div className="mt-2 md:mt-6 flex flex-col sm:flex-row justify-center gap-3 sm:gap-4">
+                        <button 
+                          type="submit" 
+                          disabled={!quickQuery.trim()}
+                          className={`group relative text-white font-bold py-3 lg:py-4 px-6 lg:px-8 rounded-xl shadow-xl transform transition-all duration-300 border-2 flex items-center justify-center gap-2 btn-buscar-turquesa ${!quickQuery.trim() ? 'cursor-not-allowed' : 'hover:scale-105'}`}
+                          style={{
+                            opacity: !quickQuery.trim() ? 0.5 : 1
+                          }}
+                          title="Buscar pátios"
+                        >
+                          <div className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-20 transition-opacity duration-300" style={{backgroundColor: '#2BC49A'}}></div>
+                          <div className="relative flex items-center gap-2">
+                            <i className="ion-ios-search text-lg"></i>
+                            <span className="text-sm lg:text-base font-black">BUSCAR</span>
+                          </div>
+                        </button>
+                        <button 
+                          type="button" 
+                          onClick={handleClearFilters} 
+                          className="group relative bg-gradient-to-r from-gray-300 to-gray-400 hover:from-gray-400 hover:to-gray-500 text-white font-bold py-3 lg:py-4 px-6 lg:px-8 rounded-xl shadow-xl transform hover:scale-105 transition-all duration-300 border-2 border-gray-200 hover:border-gray-300 flex items-center justify-center gap-2"
+                          title="Limpar filtros"
+                        >
+                          <div className="absolute inset-0 bg-gradient-to-r from-gray-200 to-gray-300 rounded-xl opacity-0 group-hover:opacity-30 transition-opacity duration-300"></div>
+                          <div className="relative flex items-center gap-2">
+                            <i className="ion-ios-close text-lg"></i>
+                            <span className="text-sm lg:text-base font-black">LIMPAR</span>
+                          </div>
+                        </button>
+                      </div>
                     </div>
                   </form>
 

@@ -24,5 +24,12 @@ export interface PatioResponseDto {
 
 export interface PatioFilter {
     nomePatio?: string;
-    // ... outros filtros se houver
+    veiculoPlaca?: string;
+    enderecoCidade?: string;
+    contatoEmail?: string;
+    zonaNome?: string;
+    boxNome?: string;
+    observacao?: string;
+    dataCadastroInicio?: string;
+    dataCadastroFim?: string;
 }

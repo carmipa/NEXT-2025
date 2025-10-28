@@ -96,4 +96,34 @@ public class MovimentacaoController {
             return ResponseEntity.notFound().build();
         }
     }
+
+    @Operation(
+            summary = "Obter detalhes completos de movimentações",
+            description = "Retorna lista completa de movimentações com todos os detalhes (placa, pátio, box, etc.)"
+    )
+    @GetMapping("/detalhes")
+    public ResponseEntity<List<Object>> getDetalhesCompletos(
+            @Parameter(description = "Data de início (formato: yyyy-MM-dd)", example = "2024-01-01")
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dataInicio,
+            @Parameter(description = "Data de fim (formato: yyyy-MM-dd)", example = "2024-01-31")
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dataFim) {
+        
+        if (dataInicio == null) {
+            dataInicio = LocalDate.now().minusDays(7);
+        }
+        if (dataFim == null) {
+            dataFim = LocalDate.now();
+        }
+        
+        log.info("Solicitação de detalhes completos de movimentação entre {} e {}", dataInicio, dataFim);
+        
+        try {
+            List<Object> detalhes = movimentacaoService.getDetalhesCompletos(dataInicio, dataFim);
+            log.info("Detalhes completos retornados com sucesso. {} registros", detalhes.size());
+            return ResponseEntity.ok(detalhes);
+        } catch (Exception e) {
+            log.error("Erro ao obter detalhes de movimentação", e);
+            return ResponseEntity.status(500).build();
+        }
+    }
 }

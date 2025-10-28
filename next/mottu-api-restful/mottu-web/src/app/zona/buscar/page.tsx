@@ -12,10 +12,6 @@ import '@/styles/neumorphic.css';
 
 const initialFilterState: ZonaFilter = {
     nome: '',
-    dataEntradaInicio: '',
-    dataEntradaFim: '',
-    dataSaidaInicio: '',
-    dataSaidaFim: '',
     observacao: '',
     boxNome: '',
     veiculoPlaca: '',
@@ -30,6 +26,8 @@ export default function BuscarZonasPage() {
     const [error, setError] = useState<string | null>(null);
     const [hasSearched, setHasSearched] = useState(false);
     const [filter, setFilter] = useState<ZonaFilter>(initialFilterState);
+    const [quickField, setQuickField] = useState<'nome'|'observacao'|'patioNome'>('nome');
+    const [quickQuery, setQuickQuery] = useState('');
 
     const ITEMS_PER_PAGE = 9;
     const SORT_ORDER = 'idZona,asc';
@@ -65,11 +63,20 @@ export default function BuscarZonasPage() {
     const handleSearch = (e: FormEvent) => {
         e.preventDefault();
         setCurrentPage(0);
-        fetchData(0, filter);
+        // Montar filtro a partir do select + input rápido
+        const f: any = { ...initialFilterState };
+        if (quickQuery && quickQuery.trim().length > 0) {
+            f[quickField] = quickQuery.trim();
+        } else {
+            Object.assign(f, filter);
+        }
+        fetchData(0, f);
     };
 
     const handleClearFilters = () => {
         setFilter(initialFilterState);
+        setQuickQuery('');
+        setQuickField('nome');
         setZonas([]);
         setPageInfo(null);
         setCurrentPage(0);
@@ -122,94 +129,60 @@ export default function BuscarZonasPage() {
                 {/* Search Form */}
                 <div className="mb-6 lg:mb-8 neumorphic-container p-4 lg:p-6">
                     <form onSubmit={handleSearch}>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 lg:gap-4">
-                            <div>
+                        <div className="flex flex-col gap-3 md:flex-row md:items-center">
+                            <div className="flex-1">
                                 <label className="block text-xs lg:text-sm font-medium text-white mb-1 flex items-center gap-2">
-                                    <i className="ion-ios-pricetag text-purple-400 text-sm lg:text-base"></i>
-                                    Nome da Zona
+                                    <i className="ion-ios-search text-blue-400 text-sm lg:text-base"></i>
+                                    Valor
                                 </label>
-                                <input 
-                                    type="text" 
-                                    name="nome" 
-                                    value={filter.nome || ''} 
-                                    onChange={handleFilterChange} 
-                                    placeholder="Digite o nome da zona..."
+                                <input
+                                    type="text"
+                                    value={quickQuery}
+                                    onChange={(e) => setQuickQuery(e.target.value)}
                                     className="neumorphic-input w-full text-sm lg:text-base"
+                                    placeholder={quickField === 'nome' ? 'Digite o nome da zona...'
+                                        : quickField === 'observacao' ? 'Digite uma observação...'
+                                        : 'Digite o nome do pátio...'}
                                 />
                             </div>
-                            <div>
+                            <div className="w-full md:w-52">
                                 <label className="block text-xs lg:text-sm font-medium text-white mb-1 flex items-center gap-2">
-                                    <i className="ion-ios-business text-green-400 text-sm lg:text-base"></i>
-                                    Nome do Pátio
+                                    <i className="ion-ios-funnel text-purple-400 text-sm lg:text-base"></i>
+                                    Filtrar por
                                 </label>
-                                <input 
-                                    type="text" 
-                                    name="patioNome" 
-                                    value={filter.patioNome || ''} 
-                                    onChange={handleFilterChange} 
-                                    placeholder="Digite o nome do pátio..."
+                                <select 
+                                    value={quickField} 
+                                    onChange={(e) => setQuickField(e.target.value as any)} 
                                     className="neumorphic-input w-full text-sm lg:text-base"
-                                />
+                                >
+                                    <option value="nome">Nome da Zona</option>
+                                    <option value="observacao">Observação</option>
+                                    <option value="patioNome">Nome do Pátio</option>
+                                </select>
                             </div>
-                            <div>
-                                <label className="block text-xs lg:text-sm font-medium text-white mb-1 flex items-center gap-2">
-                                    <i className="ion-ios-square text-orange-500 text-sm lg:text-base"></i>
-                                    Nome do Box
-                                </label>
-                                <input 
-                                    type="text" 
-                                    name="boxNome" 
-                                    value={filter.boxNome || ''} 
-                                    onChange={handleFilterChange} 
-                                    placeholder="Digite o nome do box..."
-                                    className="neumorphic-input w-full text-sm lg:text-base"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-xs lg:text-sm font-medium text-white mb-1 flex items-center gap-2">
-                                    <i className="ion-ios-car text-blue-500 text-sm lg:text-base"></i>
-                                    Placa do Veículo
-                                </label>
-                                <input 
-                                    type="text" 
-                                    name="veiculoPlaca" 
-                                    value={filter.veiculoPlaca || ''} 
-                                    onChange={handleFilterChange} 
-                                    placeholder="Digite a placa do veículo..."
-                                    className="neumorphic-input w-full text-sm lg:text-base"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-xs lg:text-sm font-medium text-white mb-1 flex items-center gap-2">
-                                    <i className="ion-ios-information-circle text-gray-500 text-sm lg:text-base"></i>
-                                    Observação
-                                </label>
-                                <input 
-                                    type="text" 
-                                    name="observacao" 
-                                    value={filter.observacao || ''} 
-                                    onChange={handleFilterChange} 
-                                    placeholder="Digite uma observação..."
-                                    className="neumorphic-input w-full text-sm lg:text-base"
-                                />
-                            </div>
-                            <div className="flex flex-col sm:flex-row gap-2 items-end sm:col-span-2 lg:col-span-1">
+                      <div className="mt-2 md:mt-6 flex flex-col sm:flex-row justify-center gap-3 sm:gap-4">
                                 <button 
                                     type="submit" 
-                                    className="btn btn-primary-green flex-1 text-sm lg:text-base px-3 lg:px-4 py-2 lg:py-3"
+                                    className="group relative text-white font-bold py-3 lg:py-4 px-6 lg:px-8 rounded-xl shadow-xl transform hover:scale-105 transition-all duration-300 border-2 flex items-center justify-center gap-2 btn-buscar-turquesa"
+                                    title="Buscar zonas"
                                 >
-                                    <SearchIconLucide size={16} className="lg:w-5 lg:h-5" /> 
-                                    <span className="hidden sm:inline">Buscar</span>
-                                    <span className="sm:hidden">Buscar</span>
+                                    <div className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-20 transition-opacity duration-300" style={{backgroundColor: '#2BC49A'}}></div>
+                                    <div className="relative flex items-center gap-2">
+                                        <i className="ion-ios-search text-lg"></i>
+                                        <span className="text-sm lg:text-base font-black">BUSCAR</span>
+                                    </div>
                                 </button>
                                 <button 
                                     type="button" 
                                     onClick={handleClearFilters} 
-                                    className="btn btn-ghost flex-1 text-sm lg:text-base px-3 lg:px-4 py-2 lg:py-3"
+                                    className="group relative bg-gradient-to-r from-gray-300 to-gray-400 hover:from-gray-400 hover:to-gray-500 text-white font-bold py-3 lg:py-4 px-6 lg:px-8 rounded-xl shadow-xl transform hover:scale-105 transition-all duration-300 border-2 border-gray-200 hover:border-gray-300 flex items-center justify-center gap-2"
+                                    title="Limpar filtros"
                                 >
-                                    <MdClear size={16} className="lg:w-5 lg:h-5" /> 
-                                    <span className="hidden sm:inline">Limpar</span>
-                                    <span className="sm:hidden">Limpar</span>
+                                    <div className="absolute inset-0 bg-gradient-to-r from-gray-200 to-gray-300 rounded-xl opacity-0 group-hover:opacity-30 transition-opacity duration-300"></div>
+                                    <div className="relative flex items-center gap-2">
+                                        <i className="ion-ios-close text-lg"></i>
+                                        <span className="text-sm lg:text-base font-black">LIMPAR</span>
+                                    </div>
                                 </button>
                             </div>
                         </div>

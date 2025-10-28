@@ -24,6 +24,8 @@ export default function HeatmapPage() {
     const [filtroPatio, setFiltroPatio] = useState<string>('todos');
     const [visualizacao, setVisualizacao] = useState<'heatmap' | 'grafico' | 'tabela'>('heatmap');
     const [loading, setLoading] = useState(false);
+    const [paginaAtual, setPaginaAtual] = useState(1);
+    const cardsPorPagina = 12;
 
     useEffect(() => {
         carregarDadosHeatmap();
@@ -218,6 +220,17 @@ export default function HeatmapPage() {
         ? patios 
         : patios.filter(p => p.id.toString() === filtroPatio);
 
+    // Paginação: mostrar máximo 12 cards por página
+    const totalPaginas = Math.ceil(patiosFiltrados.length / cardsPorPagina);
+    const indiceInicio = (paginaAtual - 1) * cardsPorPagina;
+    const indiceFim = indiceInicio + cardsPorPagina;
+    const patiosPaginados = patiosFiltrados.slice(indiceInicio, indiceFim);
+
+    // Resetar página quando mudar filtro
+    useEffect(() => {
+        setPaginaAtual(1);
+    }, [filtroPatio]);
+
     return (
         <div className="min-h-screen bg-black relative">
             <ParticleBackground />
@@ -324,26 +337,63 @@ export default function HeatmapPage() {
                 ) : (
                     <>
                         {visualizacao === 'heatmap' && (
-                            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-                                {patiosFiltrados.map((patio, index) => (
-                                    <HeatmapVisual 
-                                        key={`patio-${patio.id}-${index}`}
-                                        patio={patio}
-                                        showNumbers={true}
-                                        showPlacas={false}
-                                    />
-                                ))}
-                            </div>
+                            <>
+                                <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+                                    {patiosPaginados.map((patio, index) => (
+                                        <HeatmapVisual 
+                                            key={`patio-${patio.id}-${index}`}
+                                            patio={patio}
+                                            showNumbers={true}
+                                            showPlacas={false}
+                                        />
+                                    ))}
+                                </div>
+                                
+                                {/* Controles de Paginação */}
+                                {totalPaginas > 1 && (
+                                    <div className="flex items-center justify-center mt-8 gap-4">
+                                        <button
+                                            onClick={() => setPaginaAtual(pag => Math.max(1, pag - 1))}
+                                            disabled={paginaAtual === 1}
+                                            className={`px-4 py-2 rounded-lg transition-colors ${
+                                                paginaAtual === 1 
+                                                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed' 
+                                                    : 'bg-red-600 text-white hover:bg-red-700'
+                                            }`}
+                                        >
+                                            <i className="ion-ios-arrow-back mr-2"></i>
+                                            Anterior
+                                        </button>
+                                        
+                                        <span className="text-gray-700 font-medium">
+                                            Página {paginaAtual} de {totalPaginas}
+                                        </span>
+                                        
+                                        <button
+                                            onClick={() => setPaginaAtual(pag => Math.min(totalPaginas, pag + 1))}
+                                            disabled={paginaAtual === totalPaginas}
+                                            className={`px-4 py-2 rounded-lg transition-colors ${
+                                                paginaAtual === totalPaginas 
+                                                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed' 
+                                                    : 'bg-red-600 text-white hover:bg-red-700'
+                                            }`}
+                                        >
+                                            Próxima
+                                            <i className="ion-ios-arrow-forward ml-2"></i>
+                                        </button>
+                                    </div>
+                                )}
+                            </>
                         )}
 
                         {visualizacao === 'grafico' && (
-                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            <div className="space-y-6">
                                 {/* Gráfico de Barras - Ocupação por Pátio */}
                                 <div className="neumorphic-container">
                                     <h3 className="text-lg font-semibold text-gray-800 mb-4" style={{fontFamily: 'Montserrat, sans-serif'}}>
                                         Ocupação por Pátio
                                     </h3>
-                                    <div className="h-64">
+                                    <div className="h-80">
                                         <ResponsiveContainer width="100%" height="100%">
                                             <BarChart data={patiosFiltrados}>
                                                 <CartesianGrid strokeDasharray="3 3" />
@@ -361,7 +411,7 @@ export default function HeatmapPage() {
                                     <h3 className="text-lg font-semibold text-gray-800 mb-4" style={{fontFamily: 'Montserrat, sans-serif'}}>
                                         Distribuição de Ocupação
                                     </h3>
-                                    <div className="h-64">
+                                    <div className="h-80">
                                         <ResponsiveContainer width="100%" height="100%">
                                             <PieChart>
                                                 <Pie
@@ -394,11 +444,11 @@ export default function HeatmapPage() {
                                 </div>
 
                                 {/* Gráfico de Linha - Tendências */}
-                                <div className="neumorphic-container lg:col-span-2">
+                                <div className="neumorphic-container">
                                     <h3 className="text-lg font-semibold text-gray-800 mb-4" style={{fontFamily: 'Montserrat, sans-serif'}}>
                                         Comparação de Métricas
                                     </h3>
-                                    <div className="h-64">
+                                    <div className="h-80">
                                         <ResponsiveContainer width="100%" height="100%">
                                             <LineChart data={patiosFiltrados}>
                                                 <CartesianGrid strokeDasharray="3 3" />

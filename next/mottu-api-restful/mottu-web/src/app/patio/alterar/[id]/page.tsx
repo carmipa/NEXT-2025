@@ -201,7 +201,7 @@ export default function AlterarPatioPage() {
 
     const etapaAnterior = () => {
         if (etapaAtual > 1) {
-            setEtapaAtual(etapaAtual - 1);
+            setEtapaAtual(etapaAtual + 1);
         }
     };
 
@@ -281,8 +281,8 @@ export default function AlterarPatioPage() {
                         const boxPayload = {
                             nome: box.nome,
                             status: box.status || 'L',
-                            dataEntrada: box.dataEntrada || new Date().toISOString().split('T')[0], // Data atual se não especificada
-                            dataSaida: box.dataSaida || new Date().toISOString().split('T')[0], // Data atual se não especificada
+                            dataEntrada: box.dataEntrada || new Date().toISOString(), // Data atual se não especificada
+                            dataSaida: box.dataSaida || new Date().toISOString(), // Data atual se não especificada
                             observacao: box.observacao || '',
                             zonaNome: 'Padrão', // Zona padrão se não especificada
                             patioId: id!,

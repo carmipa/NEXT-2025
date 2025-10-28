@@ -3,16 +3,59 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import ParticleBackground from '@/components/particula/ParticleBackground';
+import { PatioService, ZonaService, BoxService } from '@/utils/api';
 
 export default function GerenciamentoPatioPage() {
     const [loading, setLoading] = useState(false);
-  const [metrics, setMetrics] = useState({
-        totalPatios: 3,
-        totalZonas: 12,
-        totalBoxes: 45,
-        boxesOcupados: 8,
-        taxaOcupacao: 17.8
+    const [lastSync, setLastSync] = useState<string>('--:--:--');
+    const [metrics, setMetrics] = useState({
+        totalPatios: 0,
+        totalZonas: 0,
+        totalBoxes: 0,
+        boxesOcupados: 0,
+        taxaOcupacao: 0,
     });
+
+    useEffect(() => {
+        let alive = true;
+        const POLLING_MS = 3000;
+
+        const fetchMetrics = async () => {
+            try {
+                setLoading(true);
+                const [patiosPage, zonasPage, boxesPage, boxesOcupPage] = await Promise.all([
+                    PatioService.listarPaginadoFiltrado({}, 0, 1),
+                    ZonaService.listarPaginadoFiltrado({}, 0, 1),
+                    BoxService.listarPaginadoFiltrado({}, 0, 1),
+                    BoxService.listarPaginadoFiltrado({ status: 'O' } as any, 0, 1),
+                ]);
+
+                const totalPatios = (patiosPage as any).totalElements ?? patiosPage.content.length;
+                const totalZonas = (zonasPage as any).totalElements ?? zonasPage.content.length;
+                const totalBoxes = (boxesPage as any).totalElements ?? boxesPage.content.length;
+                const boxesOcupados = (boxesOcupPage as any).totalElements ?? boxesOcupPage.content.length;
+                const taxaOcupacao = totalBoxes > 0 ? Number(((boxesOcupados / totalBoxes) * 100).toFixed(1)) : 0;
+
+                if (alive) {
+                    setMetrics({ totalPatios, totalZonas, totalBoxes, boxesOcupados, taxaOcupacao });
+                    setLastSync(new Date().toLocaleTimeString('pt-BR'));
+                }
+            } catch (e) {
+                // mantém últimos valores em caso de erro
+            } finally {
+                if (alive) setLoading(false);
+            }
+        };
+
+        // Set initial time on client mount
+        if (typeof window !== 'undefined') {
+            setLastSync(new Date().toLocaleTimeString('pt-BR'));
+        }
+
+        fetchMetrics();
+        const t = setInterval(fetchMetrics, POLLING_MS);
+        return () => { alive = false; clearInterval(t); };
+    }, []);
 
     const menuItems = [
         {
@@ -129,7 +172,7 @@ export default function GerenciamentoPatioPage() {
                                         <i className={`${stat.icon} ${stat.color} text-lg lg:text-2xl`}></i>
                                     </div>
                                     <div className="text-right">
-                                        <div className="text-lg lg:text-2xl font-bold text-gray-800">{stat.value}</div>
+                                        <div className="text-lg lg:text-2xl font-bold text-gray-800">{loading ? '...' : stat.value}</div>
                                         <div className="text-xs lg:text-sm text-gray-600">{stat.title}</div>
                                     </div>
                                 </div>
@@ -191,7 +234,7 @@ export default function GerenciamentoPatioPage() {
                             </span>
                         </div>
                         <p className="text-gray-600 text-sm text-center" style={{fontFamily: 'Montserrat, sans-serif'}}>
-                            Dados atualizados em tempo real • Última sincronização: {new Date().toLocaleTimeString('pt-BR')}
+                            Dados atualizados em tempo real • Última sincronização: {lastSync}
                         </p>
                     </div>
                 </div>

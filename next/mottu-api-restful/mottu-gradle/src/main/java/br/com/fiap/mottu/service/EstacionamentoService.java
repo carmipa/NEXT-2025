@@ -9,7 +9,6 @@ import br.com.fiap.mottu.repository.BoxRepository;
 import br.com.fiap.mottu.repository.VeiculoRepository;
 import br.com.fiap.mottu.repository.relacionamento.VeiculoBoxRepository;
 import br.com.fiap.mottu.service.ocr.PlateUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,13 +18,16 @@ public class EstacionamentoService {
     private final VeiculoRepository veiculoRepository;
     private final BoxRepository boxRepository;
     private final VeiculoBoxRepository veiculoBoxRepository;
+    private final LogMovimentacaoService logMovimentacaoService;
 
     public EstacionamentoService(VeiculoRepository veiculoRepository,
                                  BoxRepository boxRepository,
-                                 VeiculoBoxRepository veiculoBoxRepository) {
+                                 VeiculoBoxRepository veiculoBoxRepository,
+                                 LogMovimentacaoService logMovimentacaoService) {
         this.veiculoRepository = veiculoRepository;
         this.boxRepository = boxRepository;
         this.veiculoBoxRepository = veiculoBoxRepository;
+        this.logMovimentacaoService = logMovimentacaoService;
     }
 
     @Transactional
@@ -66,6 +68,9 @@ public class EstacionamentoService {
         VeiculoBox associacao = new VeiculoBox(veiculo, vagaParaOcupar);
         veiculoBoxRepository.save(associacao);
 
+        // ✅ CORRIGIDO: Registrar movimento de ENTRADA no LogMovimentacao
+        logMovimentacaoService.registrarEntrada(veiculo, vagaParaOcupar);
+
         return vagaParaOcupar;
     }
 
@@ -82,6 +87,10 @@ public class EstacionamentoService {
                 .findFirst()
                 .orElseThrow(() -> new ResourceNotFoundException("Veículo com placa " + placa + " não está estacionado em nenhum box."));
         Box boxOcupado = associacao.getBox();
+        
+        // ✅ CORRIGIDO: Registrar movimento de SAÍDA no LogMovimentacao ANTES de liberar
+        logMovimentacaoService.registrarSaida(veiculo, boxOcupado);
+        
         // Liberar volta para LIVRE = 'L'
         boxOcupado.setStatus("L");
         boxRepository.save(boxOcupado);

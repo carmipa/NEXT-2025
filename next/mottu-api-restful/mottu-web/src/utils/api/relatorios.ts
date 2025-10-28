@@ -69,6 +69,65 @@ export interface AvancadosData {
   };
 }
 
+// Performance do Sistema (backend: /api/relatorios/performance)
+export interface SystemPerformance {
+  pid: number;
+  uptimeMs: number;
+  availableProcessors: number;
+  systemCpuLoad?: number | null;
+  processCpuLoad?: number | null;
+  heapUsedBytes: number;
+  heapMaxBytes: number;
+  nonHeapUsedBytes: number;
+  threadCount: number;
+  daemonThreadCount: number;
+}
+
+export interface ThreadInfo {
+  id: number;
+  name: string;
+  state: string;
+  cpuTimeNanos?: number | null;
+  userTimeNanos?: number | null;
+}
+
+// Manutenção
+export interface ManutencaoResumoPatio {
+  patioId: number;
+  patioNome: string;
+  boxesLivres: number;
+  boxesOcupados: number;
+  boxesManutencao: number;
+  veiculosOperacionais: number;
+  veiculosEmManutencao: number;
+  veiculosInativos: number;
+}
+
+// Analytics
+export interface AnalyticsKpi {
+  totalEventos: number;
+  veiculosUnicos: number;
+  conversao: number; // %
+  latenciaMediaMs?: number;
+  throughput?: number;
+}
+
+export interface TopVeiculo {
+  placa: string;
+  eventos: number;
+}
+
+export interface TopBox {
+  boxId: number;
+  eventos: number;
+}
+
+export interface TopPatio {
+  patioId: number;
+  patioNome: string;
+  eventos: number;
+}
+
 export interface NotificacoesData {
   content: Array<{
     id: number;
@@ -139,5 +198,44 @@ export const RelatoriosApi = {
   async getNotificacoes(page = 0, size = 10): Promise<NotificacoesData> {
     const url = `${BASE}/notificacoes?page=${page}&size=${size}`;
     return fetchRelatorios<NotificacoesData>(url);
+  },
+
+  // Performance do Sistema
+  async getPerformanceSystem(): Promise<SystemPerformance> {
+    const url = `${BASE}/relatorios/performance/system`;
+    return fetchRelatorios<SystemPerformance>(url);
+  },
+
+  async getPerformanceThreads(): Promise<ThreadInfo[]> {
+    const url = `${BASE}/relatorios/performance/threads`;
+    return fetchRelatorios<ThreadInfo[]>(url);
+  },
+
+  // Manutenção
+  async getManutencaoResumoPorPatio(): Promise<ManutencaoResumoPatio[]> {
+    const url = `${BASE}/relatorios/manutencao/resumo-por-patio`;
+    return fetchRelatorios<ManutencaoResumoPatio[]>(url);
+  },
+
+  // Analytics
+  async getAnalyticsKpis(params?: { inicio?: string; fim?: string; dias?: number }): Promise<AnalyticsKpi> {
+    const q = params ? new URLSearchParams(params as any).toString() : '';
+    const url = `${BASE}/relatorios/analytics/kpis${q ? `?${q}` : ''}`;
+    return fetchRelatorios<AnalyticsKpi>(url);
+  },
+  async getAnalyticsTopVeiculos(params?: { limite?: number; inicio?: string; fim?: string; dias?: number }): Promise<TopVeiculo[]> {
+    const q = params ? new URLSearchParams(params as any).toString() : '';
+    const url = `${BASE}/relatorios/analytics/top-veiculos${q ? `?${q}` : ''}`;
+    return fetchRelatorios<TopVeiculo[]>(url);
+  },
+  async getAnalyticsTopBoxes(params?: { limite?: number; inicio?: string; fim?: string; dias?: number }): Promise<TopBox[]> {
+    const q = params ? new URLSearchParams(params as any).toString() : '';
+    const url = `${BASE}/relatorios/analytics/top-boxes${q ? `?${q}` : ''}`;
+    return fetchRelatorios<TopBox[]>(url);
+  },
+  async getAnalyticsTopPatios(params?: { limite?: number; inicio?: string; fim?: string; dias?: number }): Promise<TopPatio[]> {
+    const q = params ? new URLSearchParams(params as any).toString() : '';
+    const url = `${BASE}/relatorios/analytics/top-patios${q ? `?${q}` : ''}`;
+    return fetchRelatorios<TopPatio[]>(url);
   }
 };
