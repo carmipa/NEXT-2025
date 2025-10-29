@@ -62,13 +62,17 @@ public class ContatoService {
     @Transactional // Transação de escrita
     @CacheEvict(value = {"contatosList", "contatoPorId"}, allEntries = true) // Invalida caches relevantes
     public Contato criarContato(ContatoRequestDto dto) { // 
-        String email = dto.getEmail(); // 
-        // Verifica se já existe um contato com o mesmo e-mail
-        if (contatoRepository.findByEmail(email).isPresent()) { // 
-            throw new DuplicatedResourceException("Contato", "email", email); // Lança exceção se e-mail duplicado 
+        String rawEmail = dto.getEmail();
+        String email = rawEmail == null ? null : rawEmail.trim().toLowerCase();
+        // Verifica se já existe um contato com o mesmo e-mail (normalizado)
+        if (email != null && contatoRepository.findByEmail(email).isPresent()) {
+            throw new DuplicatedResourceException("Contato", "email", email);
         }
-        Contato contato = contatoMapper.toEntity(dto); // Mapeia DTO para entidade 
-        return contatoRepository.save(contato); // Salva o novo contato 
+        Contato contato = contatoMapper.toEntity(dto);
+        if (email != null) {
+            contato.setEmail(email);
+        }
+        return contatoRepository.save(contato);
     }
 
     // Método para atualizar um contato existente
@@ -81,11 +85,13 @@ public class ContatoService {
                     String novoEmail = dto.getEmail(); // 
                     // Verifica se o novo e-mail (se fornecido e diferente do atual) já existe em outro contato
                     if (novoEmail != null && !novoEmail.isBlank() && !novoEmail.equalsIgnoreCase(existente.getEmail())) {
-                        if (contatoRepository.findByEmail(novoEmail) // 
+                        String norm = novoEmail.trim().toLowerCase();
+                        if (contatoRepository.findByEmail(norm) // 
                                 .filter(c -> !c.getIdContato().equals(id)) // Exclui o próprio contato da checagem
                                 .isPresent()) {
                             throw new DuplicatedResourceException("Contato", "email", novoEmail); // Lança exceção se duplicado 
                         }
+                        existente.setEmail(norm);
                     }
                     contatoMapper.partialUpdate(dto, existente); // Atualiza a entidade com dados do DTO 
                     return contatoRepository.save(existente); // Salva as alterações

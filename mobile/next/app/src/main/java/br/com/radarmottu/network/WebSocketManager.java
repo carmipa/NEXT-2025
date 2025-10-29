@@ -19,7 +19,7 @@ public class WebSocketManager {
 
     private static final String TAG = "WebSocketManager";
     // CORRIGIDO: Apontando para o endpoint WebSocket correto exposto pelo Nginx.
-    private static final String WEBSOCKET_URL = "ws://72.61.219.15/radarmotu-api/ws";
+    private static final String WEBSOCKET_URL_BASE = "ws://72.61.219.15/radarmotu-api/ws";
 
     private OkHttpClient client;
     private WebSocket webSocket;
@@ -39,15 +39,31 @@ public class WebSocketManager {
                 .build();
     }
 
-    public void start() {
-        Request request = new Request.Builder().url(WEBSOCKET_URL).build();
+    public void start(String tagId) {
+        if (tagId == null || tagId.isEmpty()) {
+            Log.e(TAG, "Tag ID é nulo ou vazio. Conexão não iniciada.");
+            if (listener != null) {
+                listener.onError("Tag ID inválida");
+            }
+            return;
+        }
+
+        String url = WEBSOCKET_URL_BASE + "?tagId=" + tagId;
+        Request request = new Request.Builder().url(url).build();
+        
+        // Garante que qualquer conexão antiga seja fechada antes de iniciar uma nova
+        if (webSocket != null) {
+            webSocket.close(1001, "Iniciando nova conexão.");
+        }
+
         webSocket = client.newWebSocket(request, new SocketListener());
-        Log.d(TAG, "Iniciando WebSocket: " + WEBSOCKET_URL);
+        Log.d(TAG, "Iniciando WebSocket para a tag: " + tagId + " em " + url);
     }
 
     public void stop() {
         if (webSocket != null) {
             webSocket.close(1000, "Cliente desconectando.");
+            webSocket = null; // Limpa a referência após fechar
         }
     }
 

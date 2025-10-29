@@ -17,7 +17,7 @@ public class PatioRequestDto implements Serializable {
     @Size(max = 50, message = "O nome do pátio deve ter no máximo 50 caracteres.")
     String nomePatio;
 
-    @Size(max = 100, message = "A observação deve ter no máximo 100 caracteres.")
+    @Size(max = 500, message = "A observação deve ter no máximo 500 caracteres.")
     String observacao;
 
     @NotBlank(message = "O status não pode estar em branco.")

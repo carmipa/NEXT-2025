@@ -446,13 +446,13 @@ export default function NovoPatioWizardPage() {
                     <div className="mt-4 min-h-[48px]">
                         {error && <div className="flex items-center gap-2 text-xs sm:text-sm text-red-700 p-2 sm:p-3 rounded-md neumorphic-container"><i className="ion-ios-close-circle text-lg sm:text-xl"></i> <span>{error}</span></div>}
                         {success && (
-                            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between text-xs sm:text-sm text-green-700 p-2 sm:p-3 rounded-md neumorphic-container gap-2">
-                                <div className="flex items-center gap-2">
-                                    <i className="ion-ios-checkmark-circle text-lg sm:text-xl"></i>
-                                    <span>{success}</span>
+                            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between text-xs sm:text-sm p-2 sm:p-3 rounded-md gap-2 border bg-green-50 border-green-300">
+                                <div className="flex items-center gap-2 text-emerald-700 font-semibold">
+                                    <i className="ion-ios-checkmark-circle text-emerald-600 text-lg sm:text-xl"></i>
+                                    <span className="text-emerald-700">{success}</span>
                                 </div>
                                 {salvamentoConcluido && countdown > 0 && (
-                                    <div className="text-xs text-green-600 font-medium">
+                                    <div className="text-xs text-emerald-600 font-medium">
                                         Redirecionando em {countdown}s...
                                     </div>
                                 )}

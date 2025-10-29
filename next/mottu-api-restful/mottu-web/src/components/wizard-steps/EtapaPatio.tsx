@@ -12,6 +12,7 @@ interface EtapaPatioProps {
 
 const EtapaPatio: React.FC<EtapaPatioProps> = ({ wizardData, setWizardData }) => {
     const [errors, setErrors] = useState<{ [key: string]: string }>({});
+    const MAX_OBS = 500;
 
     const validateNomePatio = (nome: string): string | null => {
         if (!nome.trim()) {
@@ -38,11 +39,14 @@ const EtapaPatio: React.FC<EtapaPatioProps> = ({ wizardData, setWizardData }) =>
             }));
         }
         
+        // Enforce limite de observação também em colagens
+        const nextValue = name === 'observacao' ? value.slice(0, MAX_OBS) : value;
+
         setWizardData(prev => ({
             ...prev,
             patio: {
                 ...prev.patio,
-                [name]: value
+                [name]: nextValue
             }
         }));
     };
@@ -104,13 +108,21 @@ const EtapaPatio: React.FC<EtapaPatioProps> = ({ wizardData, setWizardData }) =>
                         value={wizardData.patio.observacao || ''}
                         onChange={handleChange}
                         rows={4}
-                        maxLength={500}
+                        maxLength={MAX_OBS}
                         placeholder="Alguma observação sobre o pátio, como localização ou características especiais..."
                         className="neumorphic-textarea"
                     />
-                    <p className="mt-1 text-xs text-white opacity-70">
-                        {(wizardData.patio.observacao || '').length}/500 caracteres
-                    </p>
+                    {(() => {
+                        const len = (wizardData.patio.observacao || '').length;
+                        const restante = MAX_OBS - len;
+                        const nearLimit = restante <= 20;
+                        return (
+                            <p className={`mt-1 text-xs ${nearLimit ? 'text-red-300' : 'text-white opacity-70'}`}>
+                                {len}/{MAX_OBS} caracteres {nearLimit && `(restam ${restante})`}
+                                {restante === 0 && ' — você atingiu o limite.'}
+                            </p>
+                        );
+                    })()}
                 </div>
             </div>
         </div>

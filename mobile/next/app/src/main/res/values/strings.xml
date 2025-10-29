@@ -39,5 +39,6 @@
     <string name="sound_on">Som Ligado</string>
     <string name="sound_off">Som Desligado</string>
     <string name="license_plate_hint">Placa do veículo</string>
+    <string name="sound_on_off">Ativar/desativar som</string>
 
 </resources>

@@ -16,6 +16,19 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 
+    <ImageView
+        android:id="@+id/image_view_sound_cartesian"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_margin="16dp"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:contentDescription="@string/sound_on_off"
+        android:padding="8dp"
+        android:src="@drawable/ic_volume_up"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:tint="@color/on_app_bg" />
+
     <LinearLayout
         android:id="@+id/bottom_panel_cartesian"
         android:layout_width="0dp"
@@ -36,12 +49,23 @@
             android:textColor="@color/on_app_bg"
             android:text="Lat: -" />
 
-        <ToggleButton
-            android:id="@+id/toggle_sound_bip_cartesian"
-            android:layout_width="wrap_content"
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/plate_input_layout_cartesian"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+            android:layout_width="180dp"
             android:layout_height="wrap_content"
-            android:textOn="SOM LIGADO"
-            android:textOff="SOM DESLIGADO" />
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp"
+            android:hint="Placa da moto">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/plate_input_edit_text_cartesian"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="textCapCharacters|textNoSuggestions"
+                android:maxLength="7"
+                android:maxLines="1" />
+        </com.google.android.material.textfield.TextInputLayout>
 
         <TextView
             android:id="@+id/text_cartesian_longitude"

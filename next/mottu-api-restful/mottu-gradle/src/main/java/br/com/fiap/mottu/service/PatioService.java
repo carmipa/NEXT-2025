@@ -249,7 +249,10 @@ public class PatioService {
     public Patio criarPatioCompleto(PatioCompletoRequestDto dto) {
         log.info("Iniciando criação de pátio completo via wizard para: {}", dto.patio().nomePatio());
 
-        Contato contato = contatoService.criarContato(dto.contato());
+        // Reutiliza contato existente pelo e-mail (normalizado), evitando erro de duplicidade
+        String emailNorm = dto.contato().getEmail() == null ? null : dto.contato().getEmail().trim().toLowerCase();
+        Contato contato = (emailNorm != null ? contatoRepository.findByEmail(emailNorm) : java.util.Optional.<Contato>empty())
+                .orElseGet(() -> contatoService.criarContato(dto.contato()));
         Endereco endereco = enderecoService.criarEndereco(dto.endereco()).block();
 
         Patio patio = new Patio();

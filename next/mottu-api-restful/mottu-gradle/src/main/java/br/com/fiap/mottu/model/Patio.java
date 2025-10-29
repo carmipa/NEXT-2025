@@ -34,7 +34,7 @@ public class Patio {
     @Column(name = "STATUS", nullable = false, length = 1)
     private String status;
 
-    @Column(name = "OBSERVACAO", length = 100)
+    @Column(name = "OBSERVACAO", length = 500)
     private String observacao;
 
     @CreatedDate

@@ -63,6 +63,13 @@ function CadastrarVeiculoContent() {
                 ...prev,
                 [name]: value.toUpperCase() // Converte para maiúscula automaticamente
             }));
+        } else if (name === 'chassi') {
+            // Permite apenas letras e números e força maiúsculas
+            const sanitized = value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+            setFormData(prev => ({
+                ...prev,
+                chassi: sanitized
+            }));
         } else {
             setFormData(prev => ({
                 ...prev,
@@ -145,7 +152,7 @@ function CadastrarVeiculoContent() {
 
                                 <div className="group">
                                     <label htmlFor="chassi" className="neumorphic-label flex items-center gap-1 text-xs sm:text-sm" style={{fontFamily: 'Montserrat, sans-serif'}}><i className="ion-ios-barcode text-purple-500 text-sm sm:text-base"></i> Chassi <span className="text-red-300">*</span></label>
-                                    <input type="text" id="chassi" name="chassi" value={formData.chassi} onChange={handleChange} required maxLength={17} placeholder="17 caracteres" className="neumorphic-input text-sm sm:text-base" style={{fontFamily: 'Montserrat, sans-serif'}} />
+                                    <input type="text" id="chassi" name="chassi" value={formData.chassi} onChange={handleChange} required maxLength={17} placeholder="17 caracteres" className="neumorphic-input text-sm sm:text-base" style={{fontFamily: 'Montserrat, sans-serif'}} inputMode="text" pattern="[A-Za-z0-9]{1,17}" />
                                 </div>
 
                                 <div className="group">

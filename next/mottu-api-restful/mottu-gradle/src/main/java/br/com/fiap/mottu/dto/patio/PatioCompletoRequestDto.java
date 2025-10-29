@@ -6,8 +6,7 @@ import br.com.fiap.mottu.dto.endereco.EnderecoRequestDto;
 
 // ALTERAÇÃO: imports corrigidos de 'javax' para 'jakarta'
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotEmpty;
-import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.*;
 import java.util.List;
 
 public record PatioCompletoRequestDto(
@@ -20,9 +19,9 @@ public record PatioCompletoRequestDto(
     // DTOs aninhados que representam cada parte do wizard
 
     public record PatioDto(
-            @NotEmpty(message = "O nome do pátio é obrigatório") String nomePatio,
-            String observacao,
-            @NotEmpty(message = "O status do pátio é obrigatório") String status
+            @NotEmpty(message = "O nome do pátio é obrigatório") @Size(max = 50) String nomePatio,
+            @Size(max = 500) String observacao,
+            @NotEmpty(message = "O status do pátio é obrigatório") @Size(max = 1) String status
     ) {}
 
     public record ZonaDto(

@@ -27,6 +27,19 @@
         android:layout_margin="8dp"/>
 
     <ImageView
+        android:id="@+id/image_view_sound"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_margin="16dp"
+        android:padding="8dp"
+        android:src="@drawable/ic_volume_up"
+        app:tint="@color/on_app_bg"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:contentDescription="@string/sound_on_off" />
+
+    <ImageView
         android:id="@+id/image_view_direction_arrow"
         android:layout_width="64dp"
         android:layout_height="64dp"
@@ -56,17 +69,23 @@
             android:textColor="@color/on_app_bg_60"
             android:text="Lat: --" />
 
-        <ToggleButton
-            android:id="@+id/toggle_sound_bip"
-            android:layout_width="140dp"
-            android:layout_height="48dp"
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/plate_input_layout"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+            android:layout_width="180dp"
+            android:layout_height="wrap_content"
             android:layout_marginStart="16dp"
             android:layout_marginEnd="16dp"
-            android:textOn="@string/sound_on"
-            android:textOff="@string/sound_off"
-            android:gravity="center"
-            android:background="@drawable/toggle_sound_background"
-            android:textColor="@color/toggle_sound_text_color" />
+            android:hint="Placa da moto">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/plate_input_edit_text"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="textCapCharacters|textNoSuggestions"
+                android:maxLength="7"
+                android:maxLines="1" />
+        </com.google.android.material.textfield.TextInputLayout>
 
         <TextView
             android:id="@+id/text_phone_longitude"

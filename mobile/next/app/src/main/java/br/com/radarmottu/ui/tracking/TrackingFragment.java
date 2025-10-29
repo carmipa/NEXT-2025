@@ -10,6 +10,8 @@ import android.hardware.SensorManager;
 import android.location.Location;
 import android.os.Bundle;
 import android.os.Looper;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -17,7 +19,6 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
-import android.widget.ToggleButton;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
@@ -32,14 +33,24 @@ import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationResult;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.location.Priority;
+import com.google.android.material.textfield.TextInputEditText;
+import com.google.android.material.textfield.TextInputLayout;
 
+import java.util.List;
 import java.util.Locale;
 
 import br.com.radarmottu.R;
+import br.com.radarmottu.model.Vehicle;
+import br.com.radarmottu.model.VehicleResponse;
 import br.com.radarmottu.model.WebSocketMessage;
+import br.com.radarmottu.network.ApiService;
+import br.com.radarmottu.network.RetrofitClient;
 import br.com.radarmottu.network.WebSocketManager;
 import br.com.radarmottu.ui.common.SonarView;
 import br.com.radarmottu.ui.common.SoundManager;
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
 public class TrackingFragment extends Fragment
         implements WebSocketManager.WebSocketListener, SensorEventListener {
@@ -47,8 +58,10 @@ public class TrackingFragment extends Fragment
     private static final String TAG = "TrackingFragment";
     private SonarView sonarView;
     private TextView textWebsocketStatus, textPhoneLatitude, textPhoneLongitude;
-    private ToggleButton toggleSoundBip;
     private ImageView directionArrow;
+    private ImageView imageViewSound;
+    private TextInputLayout plateInputLayout;
+    private TextInputEditText plateInputEditText;
 
     private SoundManager soundManager;
     private WebSocketManager webSocketManager;
@@ -63,6 +76,9 @@ public class TrackingFragment extends Fragment
     private final float[] orientationAngles = new float[3];
     private float phoneHeadingInDegrees = 0f;
     private float targetAngleInDegrees = 0f;
+
+    private boolean isSoundOn = false;
+    private ApiService apiService;
 
     private final ActivityResultLauncher<String> requestPermissionLauncher =
             registerForActivityResult(new ActivityResultContracts.RequestPermission(), isGranted -> {
@@ -86,18 +102,24 @@ public class TrackingFragment extends Fragment
                               @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
+        // Initialize views
         sonarView = view.findViewById(R.id.sonar_view);
         textWebsocketStatus = view.findViewById(R.id.text_websocket_status);
         textPhoneLatitude = view.findViewById(R.id.text_phone_latitude);
         textPhoneLongitude = view.findViewById(R.id.text_phone_longitude);
-        toggleSoundBip = view.findViewById(R.id.toggle_sound_bip);
         directionArrow = view.findViewById(R.id.image_view_direction_arrow);
+        imageViewSound = view.findViewById(R.id.image_view_sound);
+        plateInputLayout = view.findViewById(R.id.plate_input_layout);
+        plateInputEditText = view.findViewById(R.id.plate_input_edit_text);
 
+        // Initialize managers and clients
         webSocketManager = new WebSocketManager(this);
         soundManager = new SoundManager(requireContext());
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(requireActivity());
         sensorManager = (SensorManager) requireActivity().getSystemService(Context.SENSOR_SERVICE);
+        apiService = RetrofitClient.getApiService();
 
+        // Setup location callback
         locationCallback = new LocationCallback() {
             @Override
             public void onLocationResult(@NonNull LocationResult locationResult) {
@@ -110,21 +132,111 @@ public class TrackingFragment extends Fragment
             }
         };
 
-        toggleSoundBip.setOnCheckedChangeListener((buttonView, isChecked) -> {
-            if (isChecked) {
+        // Sound button listener
+        imageViewSound.setOnClickListener(v -> {
+            isSoundOn = !isSoundOn;
+            if (isSoundOn) {
+                imageViewSound.setImageResource(R.drawable.ic_volume_up);
                 if (lastKnownTagDistance != Float.MAX_VALUE) {
                     soundManager.startBeeping(lastKnownTagDistance);
                 }
             } else {
+                imageViewSound.setImageResource(R.drawable.ic_volume_off);
                 soundManager.stopBeeping();
+            }
+        });
+        // Set initial sound state
+        imageViewSound.setImageResource(R.drawable.ic_volume_off);
+
+
+        // Plate input listener
+        plateInputEditText.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {}
+
+            @Override
+            public void afterTextChanged(Editable s) {
+                String plate = s.toString().toUpperCase(Locale.ROOT);
+                if (plate.length() >= 7) {
+                    searchVehicleByPlate(plate);
+                } else {
+                    plateInputLayout.setError(null);
+                    webSocketManager.stop();
+                    resetTrackingState();
+                }
             }
         });
     }
 
+    private void searchVehicleByPlate(String plate) {
+        Log.d(TAG, "Iniciando busca pela placa: [" + plate + "]");
+        apiService.searchVehicleByPlate(plate).enqueue(new Callback<VehicleResponse>() {
+            @Override
+            public void onResponse(Call<VehicleResponse> call, Response<VehicleResponse> response) {
+                Log.d(TAG, "Resposta da API recebida. Código: " + response.code() + ", Sucesso: " + response.isSuccessful());
+                if (response.isSuccessful() && response.body() != null) {
+                    List<Vehicle> vehicles = response.body().getContent();
+                    Log.d(TAG, "Corpo da resposta: " + response.body().toString());
+                    if (vehicles != null && !vehicles.isEmpty()) {
+                        Vehicle vehicle = vehicles.get(0);
+                        String tagId = vehicle.getTagBleId();
+                        Log.d(TAG, "Veículo encontrado: " + vehicle.getPlaca() + ", Tag ID: " + tagId);
+                        if (tagId != null && !tagId.isEmpty()) {
+                            plateInputLayout.setError(null);
+                            webSocketManager.start(tagId);
+                            Toast.makeText(getContext(), "Rastreando moto com placa: " + plate, Toast.LENGTH_SHORT).show();
+                        } else {
+                            Log.w(TAG, "Tag ID nula ou vazia para a placa: " + plate);
+                            plateInputLayout.setError("Tag não encontrada para esta placa");
+                            webSocketManager.stop();
+                            resetTrackingState();
+                        }
+                    } else {
+                        Log.w(TAG, "Nenhum veículo encontrado para a placa: " + plate);
+                        plateInputLayout.setError("Moto não cadastrada");
+                        webSocketManager.stop();
+                        resetTrackingState();
+                    }
+                } else {
+                    try {
+                        String errorBody = response.errorBody() != null ? response.errorBody().string() : "Corpo de erro vazio";
+                        Log.e(TAG, "Falha na busca. Código: " + response.code() + ", Mensagem: " + response.message() + ", Corpo do erro: " + errorBody);
+                    } catch (Exception e) {
+                        Log.e(TAG, "Erro ao ler corpo de erro da API", e);
+                    }
+                    plateInputLayout.setError("Moto não cadastrada");
+                    webSocketManager.stop();
+                    resetTrackingState();
+                }
+            }
+
+            @Override
+            public void onFailure(Call<VehicleResponse> call, Throwable t) {
+                Log.e(TAG, "Falha na chamada da API para a placa: " + plate, t);
+                plateInputLayout.setError("Erro de rede");
+                webSocketManager.stop();
+                resetTrackingState();
+            }
+        });
+    }
+    
+    private void resetTrackingState() {
+        lastKnownTagDistance = Float.MAX_VALUE;
+        if (sonarView != null) {
+            sonarView.updateTagPosition(0,0);
+        }
+        directionArrow.setRotation(0);
+        directionArrow.setImageResource(0);
+        textWebsocketStatus.setText("Status: --");
+    }
+
+
     @Override
     public void onResume() {
         super.onResume();
-        webSocketManager.start();
         checkAndRequestLocationPermissions();
         if (sonarView != null) sonarView.startAnimation();
 
@@ -198,7 +310,7 @@ public class TrackingFragment extends Fragment
             if (sonarView != null) {
                 sonarView.updateTagPosition(message.getPosX(), message.getPosY());
             }
-            if (toggleSoundBip.isChecked()) {
+            if (isSoundOn) {
                 soundManager.stopBeeping();
                 soundManager.startBeeping(lastKnownTagDistance);
             }
