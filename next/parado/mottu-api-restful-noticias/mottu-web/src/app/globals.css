@@ -1,0 +1,771 @@
+/* src/app/globals.css */
+
+/* Tailwind CSS */
+@import "tailwindcss";
+
+/* Importa fontes e ícones */
+@import url('https://fonts.googleapis.com/css?family=Montserrat:500,700&display=swap');
+@import url('https://unpkg.com/ionicons@4.5.10-0/dist/css/ionicons.min.css');
+
+/* Garantir que os ícones Ionicons sejam renderizados */
+.ion-ios-analytics:before { content: "\f3c0"; font-family: "Ionicons"; }
+.ion-ios-settings:before { content: "\f4a7"; font-family: "Ionicons"; }
+.ion-ios-home:before { content: "\f448"; font-family: "Ionicons"; }
+.ion-ios-add:before { content: "\f2c7"; font-family: "Ionicons"; }
+.ion-ios-list:before { content: "\f4a1"; font-family: "Ionicons"; }
+.ion-ios-search:before { content: "\f4a5"; font-family: "Ionicons"; }
+.ion-ios-map:before { content: "\f4a3"; font-family: "Ionicons"; }
+.ion-ios-grid:before { content: "\f44a"; font-family: "Ionicons"; }
+.ion-ios-calendar:before { content: "\f2d1"; font-family: "Ionicons"; }
+.ion-ios-swap:before { content: "\f4a8"; font-family: "Ionicons"; }
+.ion-ios-people:before { content: "\f4a4"; font-family: "Ionicons"; }
+.ion-ios-flash:before { content: "\f43e"; font-family: "Ionicons"; }
+.ion-ios-notifications:before { content: "\f4a2"; font-family: "Ionicons"; }
+.ion-ios-navigate:before { content: "\f4a0"; font-family: "Ionicons"; }
+.ion-ios-download:before { content: "\f3d4"; font-family: "Ionicons"; }
+.ion-ios-bicycle:before { content: "\f2d0"; font-family: "Ionicons"; }
+.ion-ios-help-circle:before { content: "\f43a"; font-family: "Ionicons"; }
+.ion-ios-compass:before { content: "\f2d3"; font-family: "Ionicons"; }
+.ion-ios-chatbubbles:before { content: "\f2d4"; font-family: "Ionicons"; }
+.ion-ios-code:before { content: "\f2d5"; font-family: "Ionicons"; }
+.ion-ios-mail:before { content: "\f4a6"; font-family: "Ionicons"; }
+.ion-ios-close:before { content: "\f2d7"; font-family: "Ionicons"; }
+.ion-ios-menu:before { content: "\f4a9"; font-family: "Ionicons"; }
+
+/* Fallback para ícones não carregados */
+i[class*="ion-ios-"] {
+    font-family: "Ionicons", "FontAwesome", sans-serif;
+    font-style: normal;
+    font-weight: normal;
+    line-height: 1;
+    display: inline-block;
+    text-decoration: none;
+    text-rendering: auto;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+
+/* Paleta Mottu e tema base */
+:root {
+    /* Gradiente verde principal com clareamento sutil na parte inferior e escurecimento na superior */
+    --color-mottu-gradient: linear-gradient(45deg, #007A1F 0%, #008A25 20%, #009C2C 50%, #00B033 80%, #00C23A 100%);
+    
+    /* Cores base do gradiente */
+    --color-mottu-dark: #007A1F;     /* Cor mais escura do gradiente */
+    --color-mottu-default: #009C2C;  /* Cor central do gradiente */
+    --color-mottu-light: #00C23A;    /* Cor mais clara do gradiente */
+    --color-mottu-text: #FFFFFF;     /* Texto em áreas verdes */
+    --color-mottu-stats-card: var(--color-mottu-default);
+
+    /* Classes de gradiente para aplicação global */
+    --gradient-navbar: var(--color-mottu-gradient);
+    --gradient-header: var(--color-mottu-gradient);
+    --gradient-footer: var(--color-mottu-gradient);
+    --gradient-body: var(--color-mottu-gradient);
+
+    /* Tema base */
+
+    --radius: 0.625rem;
+
+    --background: oklch(1 0 0);
+
+    --foreground: oklch(0.145 0 0);
+
+    --card: oklch(1 0 0);
+
+    --card-foreground: oklch(0.145 0 0);
+
+    --popover: oklch(1 0 0);
+
+    --popover-foreground: oklch(0.145 0 0);
+
+    --primary: oklch(0.205 0 0);
+
+    --primary-foreground: oklch(0.985 0 0);
+
+    --secondary: oklch(0.97 0 0);
+
+    --secondary-foreground: oklch(0.205 0 0);
+
+    --muted: oklch(0.97 0 0);
+
+    --muted-foreground: oklch(0.556 0 0);
+
+    --accent: oklch(0.97 0 0);
+
+    --accent-foreground: oklch(0.205 0 0);
+
+    --destructive: oklch(0.577 0.245 27.325);
+
+    --border: oklch(0.922 0 0);
+
+    --input: oklch(0.922 0 0);
+
+    --ring: oklch(0.708 0 0);
+
+    --chart-1: oklch(0.646 0.222 41.116);
+
+    --chart-2: oklch(0.6 0.118 184.704);
+
+    --chart-3: oklch(0.398 0.07 227.392);
+
+    --chart-4: oklch(0.828 0.189 84.429);
+
+    --chart-5: oklch(0.769 0.188 70.08);
+
+    --sidebar: oklch(0.985 0 0);
+
+    --sidebar-foreground: oklch(0.145 0 0);
+
+    --sidebar-primary: oklch(0.205 0 0);
+
+    --sidebar-primary-foreground: oklch(0.985 0 0);
+
+    --sidebar-accent: oklch(0.97 0 0);
+
+    --sidebar-accent-foreground: oklch(0.205 0 0);
+
+    --sidebar-border: oklch(0.922 0 0);
+
+    --sidebar-ring: oklch(0.708 0 0);
+}
+
+/* Modo escuro (mantém coerência do projeto) */
+
+/* IMPORTANTE: não usar @theme inline aqui para evitar conflitos
+   (removido conforme instruções do arquivo analisado) */
+
+/* Base */
+* { box-sizing: border-box; }
+html, body { 
+    height: 100%; 
+    overflow-x: hidden;
+}
+
+/* Badges tecnológicas no rodapé: mantém proporção e evita warnings de imagem */
+.badge-tech {
+    height: 28px;
+    width: auto;
+    display: inline-block;
+}
+
+/* Fonte Montserrat para títulos */
+.font-montserrat {
+    font-family: 'Montserrat', sans-serif;
+}
+
+/* Utilitárias de consistência */
+.container-page {
+    max-width: 72rem;
+    width: 100%;
+    margin-left: auto;
+    margin-right: auto;
+    padding: 1rem;
+}
+
+@media (min-width: 768px) {
+    .container-page {
+        padding: 1.5rem;
+    }
+}
+
+.card {
+    background-color: var(--color-mottu-dark);
+    color: var(--color-mottu-text);
+    border: 1px solid var(--color-mottu-dark);
+    border-radius: 1rem;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.25);
+}
+
+.card-inner {
+    padding: 1.5rem;
+}
+
+@media (min-width: 768px) {
+    .card-inner {
+        padding: 2rem;
+    }
+}
+
+.btn-primary {
+    background-color: var(--color-mottu-default);
+    color: var(--color-mottu-text);
+    padding-left: 1rem;
+    padding-right: 1rem;
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+    border-radius: 0.375rem;
+    font-weight: 600;
+    transition: all 0.15s ease-in-out;
+}
+.btn-primary:hover { background-color: var(--color-mottu-light); }
+
+.btn-outline {
+    background-color: transparent;
+    color: var(--color-mottu-text);
+    border: 2px solid var(--color-mottu-default);
+    padding-left: 1rem;
+    padding-right: 1rem;
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+    border-radius: 0.375rem;
+    font-weight: 600;
+    transition: all 0.15s ease-in-out;
+}
+.btn-outline:hover {
+    background-color: var(--color-mottu-light);
+    color: #fff;
+}
+
+/* Tabelas */
+.table {
+    width: 100%;
+    font-size: 0.875rem;
+}
+.table thead th {
+    text-align: left;
+    border-bottom: 1px solid #475569;
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+}
+.table tbody td {
+    border-bottom: 1px solid rgba(30, 41, 59, 0.6);
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+}
+
+/* Configurações do Tailwind CSS personalizadas */
+
+.dark {
+    --background: oklch(0.145 0 0);
+    --foreground: oklch(0.985 0 0);
+    --card: oklch(0.205 0 0);
+    --card-foreground: oklch(0.985 0 0);
+    --popover: oklch(0.205 0 0);
+    --popover-foreground: oklch(0.985 0 0);
+    --primary: oklch(0.922 0 0);
+    --primary-foreground: oklch(0.205 0 0);
+    --secondary: oklch(0.269 0 0);
+    --secondary-foreground: oklch(0.985 0 0);
+    --muted: oklch(0.269 0 0);
+    --muted-foreground: oklch(0.708 0 0);
+    --accent: oklch(0.269 0 0);
+    --accent-foreground: oklch(0.985 0 0);
+    --destructive: oklch(0.704 0.191 22.216);
+    --border: oklch(0.922 0 0);
+    --input: oklch(0.922 0 0);
+    --ring: oklch(0.556 0 0);
+    --chart-1: oklch(0.488 0.243 264.376);
+    --chart-2: oklch(0.696 0.17 162.48);
+    --chart-3: oklch(0.769 0.188 70.08);
+    --chart-4: oklch(0.627 0.265 303.9);
+    --chart-5: oklch(0.645 0.246 16.439);
+    --sidebar: oklch(0.205 0 0);
+    --sidebar-foreground: oklch(0.985 0 0);
+    --sidebar-primary: oklch(0.488 0.243 264.376);
+    --sidebar-primary-foreground: oklch(0.985 0 0);
+    --sidebar-accent: oklch(0.269 0 0);
+    --sidebar-accent-foreground: oklch(0.985 0 0);
+    --sidebar-border: rgba(255, 255, 255, 0.1);
+    --sidebar-ring: oklch(0.556 0 0);
+}
+
+@layer base {
+  * {
+    border-color: var(--border);
+  }
+  body {
+    color: var(--foreground);
+  }
+}
+
+.large-header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: #000000;
+    overflow: hidden;
+    background-size: cover;
+    background-position: center center;
+    z-index: -1;
+}
+
+#demo-canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+/* ===========================
+   PCAR CARD - GLOBAL STYLES
+   =========================== */
+
+/* (Opcional) Fonte Bebas Neue: adicione no index.html (public/index.html)
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap" rel="stylesheet">
+*/
+
+:root {
+    --pcar-primary: #443763;
+    --pcar-accent: #ea3900;
+    --pcar-text-weak: #585858;
+    --pcar-card-bg: #ffffff;
+    --pcar-shadow-1: 0 20px 20px rgba(0, 0, 0, 0.2);
+    --pcar-shadow-2: 0 0 50px rgba(0, 0, 0, 0.2);
+}
+
+/* Container de perspectiva */
+.pcar {
+    position: relative;
+    width: 90%;
+    max-width: 600px;
+    margin: 0 auto;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: all 0.75s ease-out;
+    -webkit-perspective: 1000px;
+    perspective: 1000px;
+}
+
+/* Responsividade para mobile */
+@media (max-width: 640px) {
+    .pcar {
+        width: 95%;
+        max-width: 400px;
+    }
+}
+
+/* Card 3D */
+.pcar-card {
+    transition: all 0.75s;
+    max-width: 480px;
+    width: 100%;
+    border-radius: 20px;
+    padding: 1vh 3%;
+    box-shadow: var(--pcar-shadow-1), var(--pcar-shadow-2);
+    position: relative;
+    -webkit-transform-style: preserve-3d;
+    transform-style: preserve-3d;
+    background: black;
+}
+
+/* Responsividade para mobile */
+@media (max-width: 640px) {
+    .pcar-card {
+        max-width: 350px;
+        padding: 0.5vh 2%;
+        border-radius: 15px;
+    }
+}
+
+/* Bloco da imagem + círculo */
+.pcar-bike {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 2vh;
+    -webkit-transform-style: preserve-3d;
+    transform-style: preserve-3d;
+    position: relative;
+}
+
+.pcar-bike img {
+    width: 65%;
+    max-width: 250px;
+    z-index: 2;
+    transition: all 0.75s ease-out;
+    -webkit-user-select: none;
+    user-select: none;
+    pointer-events: none;
+}
+
+/* Responsividade para mobile */
+@media (max-width: 640px) {
+    .pcar-bike img {
+        width: 70%;
+        max-width: 200px;
+    }
+}
+
+.pcar-circle {
+    width: clamp(100px, 10vw, 150px);
+    height: clamp(100px, 10vw, 150px);
+    background: linear-gradient(to right, var(--pcar-primary), var(--pcar-accent));
+    position: absolute;
+    border-radius: 50%;
+    z-index: 1;
+}
+
+/* Texto */
+.pcar-info {
+    text-align: center;
+    -webkit-transform-style: preserve-3d;
+    transform-style: preserve-3d;
+}
+
+.pcar-title {
+    font-family: "Bebas Neue", system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    letter-spacing: 0.05em;
+    color: var(--pcar-primary);
+    font-size: clamp(45px, 8vw, 75px);
+    transition: all 0.75s ease-out;
+    margin-bottom: 5vh;
+    transform-style: preserve-3d;
+}
+
+.pcar-title .pcar-highlight {
+    color: var(--pcar-accent);
+}
+
+.pcar-desc {
+    font-size: clamp(18px, 2vw, 24px);
+    margin-bottom: 7vh;
+    color: var(--pcar-text-weak);
+    font-weight: lighter;
+    transition: all 0.75s ease-out;
+}
+
+/* Botões */
+.pcar-purchase {
+    margin-bottom: 5vh;
+    transition: all 0.75s ease-out;
+    display: flex;
+    justify-content: center;
+    gap: 10%;
+    flex-wrap: wrap;
+}
+
+.pcar-purchase button {
+    font-family: "Bebas Neue", system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    letter-spacing: 0.1em;
+    max-width: 40%;
+    width: 100%;
+    font-size: clamp(18px, 3vw, 25px);
+    padding: 0.8em 3em;
+    background: var(--pcar-primary);
+    border: none;
+    color: white;
+    cursor: pointer;
+    border-radius: 30px;
+    font-weight: bolder;
+}
+
+/* Classes de "salto" 3D */
+.pcar-card.has-transform { transition: all 100ms linear; }
+.pcar-title.has-transform { transform: translateZ(50px) !important; }
+.pcar-bike img.has-transform { transform: translateZ(100px) rotateZ(10deg) !important; }
+.pcar-text.has-transform { transform: translateZ(25px) !important; }
+/* Botões ficam estáveis - sem efeito de salto para evitar mudança de posição */
+.pcar-actions.has-transform { transform: translateZ(0px) !important; }
+
+/* Garantir que os botões não mudem de posição durante hover */
+.pcar-actions {
+    position: relative;
+    z-index: 20;
+    margin-top: 30px;
+    padding: 20px 0;
+    background: rgba(0, 0, 0, 0.1);
+    border-radius: 15px;
+    backdrop-filter: blur(10px);
+}
+
+.pcar-actions button {
+    position: relative;
+    z-index: 21;
+    will-change: transform;
+    backface-visibility: hidden;
+    margin: 5px;
+}
+
+/* Garantir que o texto não sobreponha os botões */
+.pcar-text {
+    position: relative;
+    z-index: 5;
+    margin-bottom: 30px;
+}
+
+.pcar-title {
+    position: relative;
+    z-index: 5;
+    margin-bottom: 20px;
+}
+
+/* Responsividade */
+@media (max-width: 992px) {
+    .pcar { width: 90%; }
+}
+
+@media (max-width: 640px) {
+    .pcar { 
+        width: 95%; 
+        max-width: 400px;
+    }
+    .pcar-card {
+        max-width: 350px;
+        padding: 0.5vh 2%;
+        border-radius: 15px;
+    }
+    .pcar-bike img {
+        width: 70%;
+        max-width: 200px;
+    }
+}
+
+@media (max-width: 600px) {
+    .pcar-purchase { gap: 16px; }
+    .pcar-purchase button {
+        max-width: 100%;
+        width: auto;
+    }
+}
+
+/* Respeitar usuários com redução de movimento */
+@media (prefers-reduced-motion: reduce) {
+    .pcar, .pcar * {
+        transition: none !important;
+        animation: none !important;
+    }
+}
+
+/* ===== WIDGET DE CONTATO E MAPA ===== */
+
+/* LAYOUT LADO A LADO */
+.pcw-row {
+  display: grid;
+  grid-template-columns: 380px 1fr; /* esquerda: form | direita: mapa */
+  gap: 0; /* Remove gap para ficar colado */
+  align-items: stretch; /* Mudado para stretch para ocupar toda altura */
+  min-height: 500px; /* Mudado de height para min-height */
+}
+
+/* COLUNA ESQUERDA — FORM MINIMAL */
+.pcw-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 24px;
+  border-radius: 14px 0 0 14px; /* Só arredondar a esquerda */
+  background: #1f2937;          /* dark minimal */
+  color: #e5e7eb;
+  box-shadow: 0 8px 22px rgba(0,0,0,.25);
+  min-height: 500px; /* Mudado de height: 100% para min-height */
+}
+
+.pcw-heading {
+  font-weight: 700;
+  font-size: 20px;
+  margin-bottom: 4px;
+}
+
+.pcw-label {
+  font-size: 12px;
+  color: #cbd5e1;
+}
+
+.pcw-input,
+.pcw-textarea {
+  width: 100%;
+  border: 1px solid #334155;
+  border-radius: 10px;
+  padding: 10px 12px;
+  background: #0b1220;
+  color: #e5e7eb;
+  outline: none;
+  transition: border-color .2s, box-shadow .2s;
+}
+
+.pcw-input:focus,
+.pcw-textarea:focus {
+  border-color: #38bdf8;
+  box-shadow: 0 0 0 3px rgba(56,189,248,.25);
+}
+
+.pcw-button {
+  margin-top: 4px;
+  border: 0;
+  border-radius: 999px;
+  padding: 12px 18px;
+  font-weight: 600;
+  background: #e2e8f0;
+  color: #111827;
+  cursor: pointer;
+}
+
+.pcw-button:hover { filter: brightness(.98); }
+
+.pcw-feedback {
+  font-size: 12px;
+  color: #10b981;
+}
+
+/* COLUNA DIREITA — MAPA */
+.pcw-map {
+  width: 100%;
+  height: 100%; /* Altura 100% para ocupar toda a altura disponível */
+  border-radius: 0 14px 14px 0; /* Só arredondar a direita */
+  overflow: hidden;
+  background: #ffffff;
+  box-shadow: 0 8px 22px rgba(0,0,0,.15);
+}
+
+.pcw-map-footer {
+  margin-top: 8px;
+  font-size: 12px;
+  color: #334155;
+  position: relative;
+  background: rgba(255, 255, 255, 0.9);
+  padding: 4px 8px;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+/* RESPONSIVIDADE */
+@media (max-width: 768px) {
+  .pcw-row {
+    grid-template-columns: 1fr;
+    height: auto;
+    gap: 16px;
+  }
+  
+  .pcw-form {
+    border-radius: 14px;
+    height: auto;
+  }
+  
+  .pcw-map {
+    height: 300px;
+    border-radius: 14px;
+  }
+  
+  .pcw-map-footer {
+    position: relative;
+    margin-top: 8px;
+    background: transparent;
+    padding: 0;
+  }
+}
+
+/* ===== GRADIENTE VERDE GLOBAL ===== */
+
+/* Aplicar gradiente em elementos específicos apenas quando necessário */
+.navbar-gradient {
+  background: var(--color-mottu-gradient) !important;
+}
+
+.header-gradient {
+  background: var(--color-mottu-gradient) !important;
+}
+
+.footer-gradient {
+  background: var(--color-mottu-gradient) !important;
+}
+
+.bg-mottu-gradient {
+  background: var(--color-mottu-gradient) !important;
+}
+
+.btn-mottu-gradient {
+  background: var(--color-mottu-gradient) !important;
+  border: none !important;
+}
+
+.btn-mottu-gradient:hover {
+  background: linear-gradient(45deg, #008123 0%, #008A26 30%, #008E27 55%, #00992B 85%, #009B2C 100%) !important;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 145, 41, 0.3);
+}
+
+/* ===== NAVBAR CUSTOMIZADO ===== */
+
+/* Navbar principal */
+.navbar-custom {
+  backdrop-filter: blur(10px);
+  background: rgba(0, 122, 31, 0.95);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Dropdown customizado */
+.navbar-dropdown {
+  backdrop-filter: blur(15px);
+  background: rgba(255, 255, 255, 0.98);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+}
+
+/* Menu mobile customizado */
+.navbar-mobile {
+  backdrop-filter: blur(10px);
+  background: rgba(0, 122, 31, 0.98);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Animações suaves para dropdown */
+.navbar-dropdown-item {
+  transition: all 0.15s ease-in-out;
+  position: relative;
+}
+
+.navbar-dropdown-item:hover {
+  background: rgba(0, 156, 44, 0.1);
+  transform: translateX(4px);
+}
+
+.navbar-dropdown-item::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: var(--color-mottu-light);
+  transform: scaleY(0);
+  transition: transform 0.15s ease-in-out;
+}
+
+.navbar-dropdown-item:hover::before {
+  transform: scaleY(1);
+}
+
+/* Botão mobile com animação */
+.navbar-mobile-button {
+  transition: all 0.2s ease-in-out;
+}
+
+.navbar-mobile-button:hover {
+  background: rgba(255, 255, 255, 0.1);
+  transform: scale(1.05);
+}
+
+/* Logo com efeito hover */
+.navbar-logo {
+  transition: all 0.2s ease-in-out;
+}
+
+.navbar-logo:hover {
+  transform: scale(1.05);
+}
+
+/* Responsividade melhorada */
+@media (max-width: 768px) {
+  .navbar-dropdown {
+    width: 100% !important;
+    left: 0 !important;
+    right: 0 !important;
+  }
+}
+
+/* Melhor contraste para acessibilidade */
+@media (prefers-reduced-motion: reduce) {
+  .navbar-dropdown-item,
+  .navbar-mobile-button,
+  .navbar-logo {
+    transition: none !important;
+    transform: none !important;
+  }
+}
+
