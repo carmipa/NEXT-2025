@@ -1,0 +1,1080 @@
+{
+  "info": {
+    "_postman_id": "GENERATED_ID_MOTTU_API",
+    "name": "Mottu API - Challenge FIAP (Corrigida)",
+    "description": "Coleção de testes para a API de Gerenciamento Mottu (Challenge FIAP). Versão corrigida para importação.\n\n**Instruções:**\n1. Configure a variável de ambiente `{{baseUrl}}` (ex: `http://localhost:8080`).\n2. Execute as requisições POST primeiro para criar recursos.\n3. Use os IDs retornados pelas criações para substituir os placeholders (ex: `{{BOX_ID_1}}`) nas requisições GET (por ID), PUT, DELETE e de associação, ou configure-os como variáveis de coleção/ambiente (scripts na aba 'Tests' podem ajudar a automatizar isso).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "BoxController",
+      "description": "Gerenciamento de Boxes",
+      "item": [
+        {
+          "name": "Criar Novo Box",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"nome\":\"Box Delta 004\",\"status\":\"L\",\"dataEntrada\":\"2025-08-01\",\"dataSaida\":\"2025-10-31\",\"observacao\":\"Box para equipamentos\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/boxes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "boxes"
+              ]
+            },
+            "description": "Cria um novo box. Anote o `idBox` retornado para usar em outras requisições. Exemplo: defina a variável de coleção `BOX_ID_1`."
+          },
+          "response": []
+        },
+        {
+          "name": "Listar Todos os Boxes (Paginado)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/boxes?page=0&size=5&sort=nome,asc",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "boxes"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "5"
+                },
+                {
+                  "key": "sort",
+                  "value": "nome,asc"
+                }
+              ]
+            },
+            "description": "Lista boxes com paginação e ordenação."
+          },
+          "response": []
+        },
+        {
+          "name": "Buscar Box por ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/boxes/{{BOX_ID_1}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "boxes",
+                "{{BOX_ID_1}}"
+              ]
+            },
+            "description": "Substitua `{{BOX_ID_1}}` pelo ID de um box existente."
+          },
+          "response": []
+        },
+        {
+          "name": "Atualizar Box Existente",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"nome\":\"Box Delta 004 Atualizado\",\"status\":\"O\",\"observacao\":\"Observação atualizada do box Delta\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/boxes/{{BOX_ID_1}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "boxes",
+                "{{BOX_ID_1}}"
+              ]
+            },
+            "description": "Substitua `{{BOX_ID_1}}` pelo ID de um box existente."
+          },
+          "response": []
+        },
+        {
+          "name": "Buscar Boxes por Filtro (Paginado)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/boxes/search?nome=Delta&status=O&page=0&size=5",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "boxes",
+                "search"
+              ],
+              "query": [
+                {
+                  "key": "nome",
+                  "value": "Delta"
+                },
+                {
+                  "key": "status",
+                  "value": "O"
+                },
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "5"
+                }
+              ]
+            },
+            "description": "Busca boxes filtrando por nome e status."
+          },
+          "response": []
+        },
+        {
+          "name": "Deletar Box",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/boxes/{{BOX_ID_1}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "boxes",
+                "{{BOX_ID_1}}"
+              ]
+            },
+            "description": "Substitua `{{BOX_ID_1}}` pelo ID de um box existente."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "VeiculoController",
+      "description": "Gerenciamento de Veículos",
+      "item": [
+        {
+          "name": "Criar Novo Veículo",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"placa\":\"MNO5F67\",\"renavam\":\"87654321098\",\"chassi\":\"7KLPMNOABCDEF12345\",\"fabricante\":\"Yamaha\",\"modelo\":\"NMAX 160\",\"motor\":\"160cc\",\"ano\":2025,\"combustivel\":\"Gasolina\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/veiculos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "veiculos"
+              ]
+            },
+            "description": "Cria um novo veículo. Anote o `idVeiculo` retornado (ex: `{{VEICULO_ID_1}}`)."
+          },
+          "response": []
+        },
+        {
+          "name": "Listar Todos os Veículos (Paginado)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/veiculos?page=0&size=3&sort=modelo,desc",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "veiculos"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "3"
+                },
+                {
+                  "key": "sort",
+                  "value": "modelo,desc"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Buscar Veículo por ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/veiculos/{{VEICULO_ID_1}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "veiculos",
+                "{{VEICULO_ID_1}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Atualizar Veículo Existente",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"placa\":\"MNO5F68\",\"modelo\":\"NMAX 160 ABS\",\"ano\":2026}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/veiculos/{{VEICULO_ID_1}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "veiculos",
+                "{{VEICULO_ID_1}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Buscar Veículos por Filtro (Paginado)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/veiculos/search?fabricante=Yamaha&combustivel=Gasolina",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "veiculos",
+                "search"
+              ],
+              "query": [
+                {
+                  "key": "fabricante",
+                  "value": "Yamaha"
+                },
+                {
+                  "key": "combustivel",
+                  "value": "Gasolina"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Obter Localização de um Veículo",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/veiculos/{{VEICULO_ID_1}}/localizacao",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "veiculos",
+                "{{VEICULO_ID_1}}",
+                "localizacao"
+              ]
+            },
+            "description": "Depende de Rastreamentos/Patios/Zonas/Boxes associados ao veículo."
+          },
+          "response": []
+        },
+        {
+          "name": "Deletar Veículo",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/veiculos/{{VEICULO_ID_1}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "veiculos",
+                "{{VEICULO_ID_1}}"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "RastreamentoController",
+      "description": "Gerenciamento de Rastreamentos",
+      "item": [
+        {
+          "name": "Criar Novo Rastreamento",
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"ipsX\":10.123,\"ipsY\":20.456,\"ipsZ\":5.789,\"gprsLatitude\":-23.561769,\"gprsLongitude\":-46.656106,\"gprsAltitude\":780.25}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/rastreamentos",
+              "host": [ "{{baseUrl}}" ],
+              "path": [ "api", "rastreamentos" ]
+            },
+            "description": "Cria um novo registro de rastreamento. Anote o `idRastreamento` (ex: `{{RASTREAMENTO_ID_1}}`)."
+          },
+          "response": []
+        },
+        {
+          "name": "Listar Todos os Rastreamentos (Paginado)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/rastreamentos?page=0&size=5&sort=dataHoraRegistro,desc",
+              "host": [ "{{baseUrl}}" ],
+              "path": [ "api", "rastreamentos" ],
+              "query": [
+                { "key": "page", "value": "0" },
+                { "key": "size", "value": "5" },
+                { "key": "sort", "value": "dataHoraRegistro,desc" }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Buscar Rastreamento por ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/rastreamentos/{{RASTREAMENTO_ID_1}}",
+              "host": [ "{{baseUrl}}" ],
+              "path": [ "api", "rastreamentos", "{{RASTREAMENTO_ID_1}}" ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Atualizar Rastreamento Existente",
+          "request": {
+            "method": "PUT",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"ipsX\":11.000,\"ipsY\":21.000,\"ipsZ\":6.000,\"gprsLatitude\":-23.561700,\"gprsLongitude\":-46.656100,\"gprsAltitude\":781.00}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/rastreamentos/{{RASTREAMENTO_ID_1}}",
+              "host": [ "{{baseUrl}}" ],
+              "path": [ "api", "rastreamentos", "{{RASTREAMENTO_ID_1}}" ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Deletar Rastreamento",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/rastreamentos/{{RASTREAMENTO_ID_1}}",
+              "host": [ "{{baseUrl}}" ],
+              "path": [ "api", "rastreamentos", "{{RASTREAMENTO_ID_1}}" ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "EnderecoController",
+      "description": "Gerenciamento de Endereços (com ViaCEP)",
+      "item": [
+        {
+          "name": "Criar Novo Endereço",
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"cep\":\"04538133\",\"numero\":300,\"complemento\":\"Torre Norte, 5 andar\",\"observacao\":\"Escritório principal\"}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/enderecos",
+              "host": [ "{{baseUrl}}" ],
+              "path": [ "api", "enderecos" ]
+            },
+            "description": "Cria um novo endereço, consultando ViaCEP. Anote o `idEndereco` (ex: `{{ENDERECO_ID_1}}`)."
+          },
+          "response": []
+        },
+        {
+          "name": "Listar Todos os Endereços (Paginado)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/enderecos?page=0&size=3&sort=cidade,asc",
+              "host": [ "{{baseUrl}}" ],
+              "path": [ "api", "enderecos" ],
+              "query": [
+                { "key": "page", "value": "0" },
+                { "key": "size", "value": "3" },
+                { "key": "sort", "value": "cidade,asc" }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Buscar Endereço por ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/enderecos/{{ENDERECO_ID_1}}",
+              "host": [ "{{baseUrl}}" ],
+              "path": [ "api", "enderecos", "{{ENDERECO_ID_1}}" ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Atualizar Endereço Existente",
+          "request": {
+            "method": "PUT",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"cep\":\"04538132\",\"numero\":350,\"complemento\":\"Torre Sul, 10 andar\",\"observacao\":\"Novo escritório\"}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/enderecos/{{ENDERECO_ID_1}}",
+              "host": [ "{{baseUrl}}" ],
+              "path": [ "api", "enderecos", "{{ENDERECO_ID_1}}" ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Deletar Endereço",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/enderecos/{{ENDERECO_ID_1}}",
+              "host": [ "{{baseUrl}}" ],
+              "path": [ "api", "enderecos", "{{ENDERECO_ID_1}}" ]
+            },
+            "description": "Cuidado ao deletar se estiver vinculado a um Cliente."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "ContatoController",
+      "description": "Gerenciamento de Contatos",
+      "item": [
+        {
+          "name": "Criar Novo Contato",
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"email\":\"contato.financeiro@example.com\",\"ddd\":11,\"ddi\":55,\"telefone1\":\"55554321\",\"celular\":\"987654321\",\"observacao\":\"Contato financeiro\"}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/contatos",
+              "host": [ "{{baseUrl}}" ],
+              "path": [ "api", "contatos" ]
+            },
+            "description": "Cria um novo contato. Anote o `idContato` (ex: `{{CONTATO_ID_1}}`)."
+          },
+          "response": []
+        },
+        {
+          "name": "Listar Todos os Contatos (Paginado)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/contatos?page=0&size=5&sort=email,asc",
+              "host": [ "{{baseUrl}}" ],
+              "path": [ "api", "contatos" ],
+              "query": [
+                { "key": "page", "value": "0" },
+                { "key": "size", "value": "5" },
+                { "key": "sort", "value": "email,asc" }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Buscar Contato por ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/contatos/{{CONTATO_ID_1}}",
+              "host": [ "{{baseUrl}}" ],
+              "path": [ "api", "contatos", "{{CONTATO_ID_1}}" ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Atualizar Contato Existente",
+          "request": {
+            "method": "PUT",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"email\":\"financeiro.atualizado@example.com\",\"celular\":\"911223344\",\"observacao\":\"Departamento Financeiro\"}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/contatos/{{CONTATO_ID_1}}",
+              "host": [ "{{baseUrl}}" ],
+              "path": [ "api", "contatos", "{{CONTATO_ID_1}}" ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Deletar Contato",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/contatos/{{CONTATO_ID_1}}",
+              "host": [ "{{baseUrl}}" ],
+              "path": [ "api", "contatos", "{{CONTATO_ID_1}}" ]
+            },
+            "description": "Cuidado ao deletar se estiver vinculado a um Cliente."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "ClienteController",
+      "description": "Gerenciamento de Clientes e suas associações",
+      "item": [
+        {
+          "name": "Criar Novo Cliente (com Endereço e Contato aninhados)",
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"sexo\":\"F\",\"nome\":\"Ana Carolina\",\"sobrenome\":\"Lima\",\"dataNascimento\":\"1992-08-10\",\"cpf\":\"77788899900\",\"profissao\":\"Publicitária\",\"estadoCivil\":\"Solteiro\",\"enderecoRequestDto\":{\"cep\":\"01310100\",\"numero\":1500,\"complemento\":\"Andar 3\",\"observacao\":\"Avenida Paulista\"},\"contatoRequestDto\":{\"email\":\"ana.lima@example.com\",\"ddd\":11,\"ddi\":55,\"telefone1\":\"31317777\",\"celular\":\"944443333\",\"observacao\":\"Contato da Ana\"}}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/clientes",
+              "host": [ "{{baseUrl}}" ],
+              "path": [ "api", "clientes" ]
+            },
+            "description": "Cria um novo cliente. Anote `idCliente`, `enderecoResponseDto.idEndereco` (ex: `{{ENDERECO_ID_ANA}}`), e `contatoResponseDto.idContato` (ex: `{{CONTATO_ID_ANA}}`). Salve o `idCliente` como `{{CLIENTE_ID_1}}` (ou outro, ex: `{{CLIENTE_ID_ANA}}`)."
+          },
+          "response": []
+        },
+        {
+          "name": "Listar Todos os Clientes (Paginado)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/clientes?page=0&size=2&sort=cpf,desc",
+              "host": [ "{{baseUrl}}" ],
+              "path": [ "api", "clientes" ],
+              "query": [
+                { "key": "page", "value": "0" },
+                { "key": "size", "value": "2" },
+                { "key": "sort", "value": "cpf,desc" }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Buscar Cliente por ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/clientes/{{CLIENTE_ID_1}}",
+              "host": [ "{{baseUrl}}" ],
+              "path": [ "api", "clientes", "{{CLIENTE_ID_1}}" ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Atualizar Cliente Existente (com Endereco e Contato aninhados por ID)",
+          "request": {
+            "method": "PUT",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"nome\":\"Ana Carolina Silva\",\"profissao\":\"Gerente de Publicidade\",\"enderecoRequestDto\":{\"idEndereco\":\"{{ENDERECO_ID_ANA}}\",\"numero\":1550,\"complemento\":\"Andar 3 - Atualizado\"},\"contatoRequestDto\":{\"idContato\":\"{{CONTATO_ID_ANA}}\",\"celular\":\"944440000\"}}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/clientes/{{CLIENTE_ID_1}}",
+              "host": [ "{{baseUrl}}" ],
+              "path": [ "api", "clientes", "{{CLIENTE_ID_1}}" ]
+            },
+            "description": "Substitua `{{CLIENTE_ID_1}}`, `{{ENDERECO_ID_ANA}}` e `{{CONTATO_ID_ANA}}` pelos IDs corretos obtidos anteriormente. Os IDs aninhados indicam que você quer ATUALIZAR o endereço/contato existente do cliente."
+          },
+          "response": []
+        },
+        {
+          "name": "Associar Veículo a um Cliente",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/clientes/{{CLIENTE_ID_1}}/enderecos/{{ENDERECO_ID_ANA}}/contatos/{{CONTATO_ID_ANA}}/veiculos/{{VEICULO_ID_1}}/associar",
+              "host": [ "{{baseUrl}}" ],
+              "path": [
+                "api", "clientes", "{{CLIENTE_ID_1}}",
+                "enderecos", "{{ENDERECO_ID_ANA}}",
+                "contatos", "{{CONTATO_ID_ANA}}",
+                "veiculos", "{{VEICULO_ID_1}}", "associar"
+              ]
+            },
+            "description": "Substitua os placeholders pelos IDs corretos. `ENDERECO_ID_ANA` e `CONTATO_ID_ANA` devem ser os IDs do endereço e contato *atualmente associados* ao `CLIENTE_ID_1` (ou `CLIENTE_ID_ANA`). `VEICULO_ID_1` é um veículo existente."
+          },
+          "response": []
+        },
+        {
+          "name": "Listar Veículos de um Cliente",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/clientes/{{CLIENTE_ID_1}}/veiculos",
+              "host": [ "{{baseUrl}}" ],
+              "path": [ "api", "clientes", "{{CLIENTE_ID_1}}", "veiculos" ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Desassociar Veículo de um Cliente",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/clientes/{{CLIENTE_ID_1}}/enderecos/{{ENDERECO_ID_ANA}}/contatos/{{CONTATO_ID_ANA}}/veiculos/{{VEICULO_ID_1}}/desassociar",
+              "host": [ "{{baseUrl}}" ],
+              "path": [
+                "api", "clientes", "{{CLIENTE_ID_1}}",
+                "enderecos", "{{ENDERECO_ID_ANA}}",
+                "contatos", "{{CONTATO_ID_ANA}}",
+                "veiculos", "{{VEICULO_ID_1}}", "desassociar"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Deletar Cliente",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/clientes/{{CLIENTE_ID_1}}",
+              "host": [ "{{baseUrl}}" ],
+              "path": [ "api", "clientes", "{{CLIENTE_ID_1}}" ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "PatioController",
+      "description": "Gerenciamento de Pátios e suas associações",
+      "item": [
+        {
+          "name": "Criar Novo Pátio",
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"nomePatio\":\"Pátio Zona Sul\",\"dataEntrada\":\"2025-01-10\",\"dataSaida\":\"2025-12-20\",\"observacao\":\"Pátio de alta capacidade\"}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/patios",
+              "host": [ "{{baseUrl}}" ],
+              "path": [ "api", "patios" ]
+            },
+            "description": "Cria um novo pátio. Anote o `idPatio` (ex: `{{PATIO_ID_1}}`)."
+          },
+          "response": []
+        },
+        {
+          "name": "Listar Todos os Pátios (Paginado)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/patios?page=0&size=3&sort=nomePatio,asc",
+              "host": [ "{{baseUrl}}" ],
+              "path": [ "api", "patios" ],
+              "query": [
+                { "key": "page", "value": "0" },
+                { "key": "size", "value": "3" },
+                { "key": "sort", "value": "nomePatio,asc" }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Buscar Pátio por ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/patios/{{PATIO_ID_1}}",
+              "host": [ "{{baseUrl}}" ],
+              "path": [ "api", "patios", "{{PATIO_ID_1}}" ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Atualizar Pátio Existente",
+          "request": {
+            "method": "PUT",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"nomePatio\":\"Pátio Zona Sul Expansão\",\"observacao\":\"Observação pátio Zona Sul atualizada\"}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/patios/{{PATIO_ID_1}}",
+              "host": [ "{{baseUrl}}" ],
+              "path": [ "api", "patios", "{{PATIO_ID_1}}" ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[ASSOCIAÇÃO] Associar Veículo a Pátio",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/patios/{{PATIO_ID_1}}/veiculos/{{VEICULO_ID_1}}/associar",
+              "host": [ "{{baseUrl}}" ],
+              "path": [ "api", "patios", "{{PATIO_ID_1}}", "veiculos", "{{VEICULO_ID_1}}", "associar"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[ASSOCIAÇÃO] Listar Veículos de Pátio",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/patios/{{PATIO_ID_1}}/veiculos",
+              "host": [ "{{baseUrl}}" ],
+              "path": [ "api", "patios", "{{PATIO_ID_1}}", "veiculos"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[ASSOCIAÇÃO] Associar Box a Pátio",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/patios/{{PATIO_ID_1}}/boxes/{{BOX_ID_1}}/associar",
+              "host": [ "{{baseUrl}}" ],
+              "path": [ "api", "patios", "{{PATIO_ID_1}}", "boxes", "{{BOX_ID_1}}", "associar"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[ASSOCIAÇÃO] Listar Boxes de Pátio",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/patios/{{PATIO_ID_1}}/boxes",
+              "host": [ "{{baseUrl}}" ],
+              "path": [ "api", "patios", "{{PATIO_ID_1}}", "boxes"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Deletar Pátio",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/patios/{{PATIO_ID_1}}",
+              "host": [ "{{baseUrl}}" ],
+              "path": [ "api", "patios", "{{PATIO_ID_1}}" ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "ZonaController",
+      "description": "Gerenciamento de Zonas",
+      "item": [
+        {
+          "name": "Criar Nova Zona",
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"nome\":\"Zona Residencial Central\",\"dataEntrada\":\"2025-03-15\",\"dataSaida\":\"2025-11-15\",\"observacao\":\"Baixo fluxo\"}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/zonas",
+              "host": [ "{{baseUrl}}" ],
+              "path": [ "api", "zonas" ]
+            },
+            "description": "Cria uma nova zona. Anote o `idZona` (ex: `{{ZONA_ID_1}}`)."
+          },
+          "response": []
+        },
+        {
+          "name": "Listar Todas as Zonas (Paginado)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/zonas?page=0&size=3&sort=nome,desc",
+              "host": [ "{{baseUrl}}" ],
+              "path": [ "api", "zonas" ],
+              "query": [
+                { "key": "page", "value": "0" },
+                { "key": "size", "value": "3" },
+                { "key": "sort", "value": "nome,desc" }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Buscar Zona por ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/zonas/{{ZONA_ID_1}}",
+              "host": [ "{{baseUrl}}" ],
+              "path": [ "api", "zonas", "{{ZONA_ID_1}}" ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Atualizar Zona Existente",
+          "request": {
+            "method": "PUT",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"nome\":\"Zona Residencial Central Premium\",\"observacao\":\"Baixo fluxo - VIP\"}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/zonas/{{ZONA_ID_1}}",
+              "host": [ "{{baseUrl}}" ],
+              "path": [ "api", "zonas", "{{ZONA_ID_1}}" ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Deletar Zona",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/zonas/{{ZONA_ID_1}}",
+              "host": [ "{{baseUrl}}" ],
+              "path": [ "api", "zonas", "{{ZONA_ID_1}}" ]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080",
+      "type": "string"
+    },
+    {
+      "key": "BOX_ID_1",
+      "value": "1",
+      "type": "string",
+      "description": "ID de exemplo para Box. Atualize após a criação ou configure via script de teste."
+    },
+    {
+      "key": "VEICULO_ID_1",
+      "value": "1",
+      "type": "string",
+      "description": "ID de exemplo para Veículo. Atualize após a criação."
+    },
+    {
+      "key": "RASTREAMENTO_ID_1",
+      "value": "1",
+      "type": "string",
+      "description": "ID de exemplo para Rastreamento. Atualize após a criação."
+    },
+    {
+      "key": "ENDERECO_ID_1",
+      "value": "1",
+      "type": "string",
+      "description": "ID de exemplo para Endereço criado isoladamente. Atualize após a criação."
+    },
+    {
+      "key": "CONTATO_ID_1",
+      "value": "1",
+      "type": "string",
+      "description": "ID de exemplo para Contato criado isoladamente. Atualize após a criação."
+    },
+    {
+      "key": "CLIENTE_ID_1",
+      "value": "1",
+      "type": "string",
+      "description": "ID de exemplo para Cliente. Atualize após a criação."
+    },
+    {
+      "key": "ENDERECO_ID_ANA",
+      "value": "1",
+      "type": "string",
+      "description": "ID do Endereço da Cliente Ana. Atualize após a criação do cliente."
+    },
+    {
+      "key": "CONTATO_ID_ANA",
+      "value": "1",
+      "type": "string",
+      "description": "ID do Contato da Cliente Ana. Atualize após a criação do cliente."
+    },
+    {
+      "key": "PATIO_ID_1",
+      "value": "1",
+      "type": "string",
+      "description": "ID de exemplo para Pátio. Atualize após a criação."
+    },
+    {
+      "key": "ZONA_ID_1",
+      "value": "1",
+      "type": "string",
+      "description": "ID de exemplo para Zona. Atualize após a criação."
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+# Acesse: https://app.local:3443
+# Dica: adicione no hosts do Windows (como admin):
+#   10.199.82.137  app.local
+# ou o IP atual do seu notebook quando estiver no tethering.
+
+https://app.local:3443 {
+  # Usa a CA interna do Caddy (cert local). Instale a CA no celular se for acessar do telefone.
+  tls internal
+
+  # API → Spring Boot
+  @api path /api/*
+  handle @api {
+    reverse_proxy 127.0.0.1:8080
+  }
+
+  # Todo o resto → Next.js
+  handle {
+    reverse_proxy 127.0.0.1:3000
+  }
+}

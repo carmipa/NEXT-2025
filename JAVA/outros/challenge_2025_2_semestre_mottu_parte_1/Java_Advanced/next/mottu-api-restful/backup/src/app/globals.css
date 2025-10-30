@@ -1,0 +1,400 @@
+/* src/app/globals.css */
+
+/* Importa Tailwind CSS v4 (Next.js integrado) */
+@import "tailwindcss";
+
+
+/* Paleta Mottu e tema base */
+:root {
+    --color-mottu-dark: #0A6E40;     /* Fundo da NavBar */
+    --color-mottu-default: #0C8B4E;  /* Verde principal (botões/realces) */
+    --color-mottu-light: #2cd444;    /* Hover/ativo */
+    --color-mottu-text: #FFFFFF;     /* Texto em áreas verdes */
+    --color-mottu-stats-card: var(--color-mottu-default);
+
+    /* Tema base */
+
+    --radius: 0.625rem;
+
+    --background: oklch(1 0 0);
+
+    --foreground: oklch(0.145 0 0);
+
+    --card: oklch(1 0 0);
+
+    --card-foreground: oklch(0.145 0 0);
+
+    --popover: oklch(1 0 0);
+
+    --popover-foreground: oklch(0.145 0 0);
+
+    --primary: oklch(0.205 0 0);
+
+    --primary-foreground: oklch(0.985 0 0);
+
+    --secondary: oklch(0.97 0 0);
+
+    --secondary-foreground: oklch(0.205 0 0);
+
+    --muted: oklch(0.97 0 0);
+
+    --muted-foreground: oklch(0.556 0 0);
+
+    --accent: oklch(0.97 0 0);
+
+    --accent-foreground: oklch(0.205 0 0);
+
+    --destructive: oklch(0.577 0.245 27.325);
+
+    --border: oklch(0.922 0 0);
+
+    --input: oklch(0.922 0 0);
+
+    --ring: oklch(0.708 0 0);
+
+    --chart-1: oklch(0.646 0.222 41.116);
+
+    --chart-2: oklch(0.6 0.118 184.704);
+
+    --chart-3: oklch(0.398 0.07 227.392);
+
+    --chart-4: oklch(0.828 0.189 84.429);
+
+    --chart-5: oklch(0.769 0.188 70.08);
+
+    --sidebar: oklch(0.985 0 0);
+
+    --sidebar-foreground: oklch(0.145 0 0);
+
+    --sidebar-primary: oklch(0.205 0 0);
+
+    --sidebar-primary-foreground: oklch(0.985 0 0);
+
+    --sidebar-accent: oklch(0.97 0 0);
+
+    --sidebar-accent-foreground: oklch(0.205 0 0);
+
+    --sidebar-border: oklch(0.922 0 0);
+
+    --sidebar-ring: oklch(0.708 0 0);
+}
+
+/* Modo escuro (mantém coerência do projeto) */
+
+/* IMPORTANTE: não usar @theme inline aqui para evitar conflitos
+   (removido conforme instruções do arquivo analisado) */
+
+/* Base */
+* { box-sizing: border-box; }
+html, body { 
+    height: 100%; 
+    overflow-x: hidden;
+}
+
+/* Utilitárias de consistência */
+.container-page {
+    @apply max-w-6xl w-full mx-auto p-4 md:p-6;
+}
+
+.card {
+    background-color: var(--color-mottu-dark);
+    color: var(--color-mottu-text);
+    border: 1px solid var(--color-mottu-dark);
+    border-radius: 1rem;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.25);
+}
+
+.card-inner {
+    @apply p-6 md:p-8;
+}
+
+.btn-primary {
+    background-color: var(--color-mottu-default);
+    color: var(--color-mottu-text);
+    @apply px-4 py-2 rounded-md font-semibold transition;
+}
+.btn-primary:hover { background-color: var(--color-mottu-light); }
+
+.btn-outline {
+    background-color: transparent;
+    color: var(--color-mottu-text);
+    border: 2px solid var(--color-mottu-default);
+    @apply px-4 py-2 rounded-md font-semibold transition;
+}
+.btn-outline:hover {
+    background-color: var(--color-mottu-light);
+    color: #fff;
+}
+
+/* Tabelas */
+.table {
+    @apply w-full text-sm;
+}
+.table thead th {
+    @apply text-left border-b border-slate-600 py-2;
+}
+.table tbody td {
+    @apply border-b border-slate-800/60 py-2;
+}
+
+@theme {
+    --radius-sm: calc(var(--radius) - 4px);
+    --radius-md: calc(var(--radius) - 2px);
+    --radius-lg: var(--radius);
+    --radius-xl: calc(var(--radius) + 4px);
+    
+    --color-background: var(--background);
+    --color-foreground: var(--foreground);
+    --color-card: var(--card);
+    --color-card-foreground: var(--card-foreground);
+    --color-popover: var(--popover);
+    --color-popover-foreground: var(--popover-foreground);
+    --color-primary: var(--primary);
+    --color-primary-foreground: var(--primary-foreground);
+    --color-secondary: var(--secondary);
+    --color-secondary-foreground: var(--secondary-foreground);
+    --color-muted: var(--muted);
+    --color-muted-foreground: var(--muted-foreground);
+    --color-accent: var(--accent);
+    --color-accent-foreground: var(--accent-foreground);
+    --color-destructive: var(--destructive);
+    --color-border: var(--border);
+    --color-input: var(--input);
+    --color-ring: var(--ring);
+    --color-chart-1: var(--chart-1);
+    --color-chart-2: var(--chart-2);
+    --color-chart-3: var(--chart-3);
+    --color-chart-4: var(--chart-4);
+    --color-chart-5: var(--chart-5);
+    --color-sidebar: var(--sidebar);
+    --color-sidebar-foreground: var(--sidebar-foreground);
+    --color-sidebar-primary: var(--sidebar-primary);
+    --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+    --color-sidebar-accent: var(--sidebar-accent);
+    --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+    --color-sidebar-border: var(--sidebar-border);
+    --color-sidebar-ring: var(--sidebar-ring);
+    
+    /* Cores customizadas MOTTU */
+    --color-mottu-dark: var(--color-mottu-dark);
+    --color-mottu-default: var(--color-mottu-default);
+    --color-mottu-light: var(--color-mottu-light);
+    --color-mottu-text: var(--color-mottu-text);
+}
+
+.dark {
+    --background: oklch(0.145 0 0);
+    --foreground: oklch(0.985 0 0);
+    --card: oklch(0.205 0 0);
+    --card-foreground: oklch(0.985 0 0);
+    --popover: oklch(0.205 0 0);
+    --popover-foreground: oklch(0.985 0 0);
+    --primary: oklch(0.922 0 0);
+    --primary-foreground: oklch(0.205 0 0);
+    --secondary: oklch(0.269 0 0);
+    --secondary-foreground: oklch(0.985 0 0);
+    --muted: oklch(0.269 0 0);
+    --muted-foreground: oklch(0.708 0 0);
+    --accent: oklch(0.269 0 0);
+    --accent-foreground: oklch(0.985 0 0);
+    --destructive: oklch(0.704 0.191 22.216);
+    --border: oklch(1 0 0 / 10%);
+    --input: oklch(1 0 0 / 15%);
+    --ring: oklch(0.556 0 0);
+    --chart-1: oklch(0.488 0.243 264.376);
+    --chart-2: oklch(0.696 0.17 162.48);
+    --chart-3: oklch(0.769 0.188 70.08);
+    --chart-4: oklch(0.627 0.265 303.9);
+    --chart-5: oklch(0.645 0.246 16.439);
+    --sidebar: oklch(0.205 0 0);
+    --sidebar-foreground: oklch(0.985 0 0);
+    --sidebar-primary: oklch(0.488 0.243 264.376);
+    --sidebar-primary-foreground: oklch(0.985 0 0);
+    --sidebar-accent: oklch(0.269 0 0);
+    --sidebar-accent-foreground: oklch(0.985 0 0);
+    --sidebar-border: oklch(1 0 0 / 10%);
+    --sidebar-ring: oklch(0.556 0 0);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+    }
+  body {
+    @apply text-foreground;
+    }
+}
+
+.large-header {
+    position: relative;
+    width: 100%;
+    background: #333;
+    overflow: hidden;
+    background-size: cover;
+    background-position: center center;
+    z-index: 1;
+}
+
+#demo-canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+/* ===========================
+   PCAR CARD - GLOBAL STYLES
+   =========================== */
+
+/* (Opcional) Fonte Bebas Neue: adicione no index.html (public/index.html)
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap" rel="stylesheet">
+*/
+
+:root {
+    --pcar-primary: #443763;
+    --pcar-accent: #ea3900;
+    --pcar-text-weak: #585858;
+    --pcar-card-bg: #ffffff;
+    --pcar-shadow-1: 0 20px 20px rgba(0, 0, 0, 0.2);
+    --pcar-shadow-2: 0 0 50px rgba(0, 0, 0, 0.2);
+}
+
+/* Container de perspectiva */
+.pcar {
+    position: relative;
+    width: 85%;
+    max-width: 600px;
+    margin: 0 auto;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: all 0.75s ease-out;
+    -webkit-perspective: 1000px;
+    perspective: 1000px;
+}
+
+/* Card 3D */
+.pcar-card {
+    transition: all 0.75s;
+    max-width: 480px;
+    width: 100%;
+    border-radius: 20px;
+    padding: 1vh 3%;
+    box-shadow: var(--pcar-shadow-1), var(--pcar-shadow-2);
+    position: relative;
+    -webkit-transform-style: preserve-3d;
+    transform-style: preserve-3d;
+    background: black;
+}
+
+/* Bloco da imagem + círculo */
+.pcar-bike {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 2vh;
+    -webkit-transform-style: preserve-3d;
+    transform-style: preserve-3d;
+    position: relative;
+}
+
+.pcar-bike img {
+    width: 65%;
+    max-width: 250px;
+    z-index: 2;
+    transition: all 0.75s ease-out;
+    user-select: none;
+    pointer-events: none;
+}
+
+.pcar-circle {
+    width: clamp(100px, 10vw, 150px);
+    height: clamp(100px, 10vw, 150px);
+    background: linear-gradient(to right, var(--pcar-primary), var(--pcar-accent));
+    position: absolute;
+    border-radius: 50%;
+    z-index: 1;
+}
+
+/* Texto */
+.pcar-info {
+    text-align: center;
+    -webkit-transform-style: preserve-3d;
+    transform-style: preserve-3d;
+}
+
+.pcar-title {
+    font-family: "Bebas Neue", system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    letter-spacing: 0.05em;
+    color: var(--pcar-primary);
+    font-size: clamp(45px, 8vw, 75px);
+    transition: all 0.75s ease-out;
+    margin-bottom: 5vh;
+    transform-style: preserve-3d;
+}
+
+.pcar-title .pcar-highlight {
+    color: var(--pcar-accent);
+}
+
+.pcar-desc {
+    font-size: clamp(18px, 2vw, 24px);
+    margin-bottom: 7vh;
+    color: var(--pcar-text-weak);
+    font-weight: lighter;
+    transition: all 0.75s ease-out;
+}
+
+/* Botões */
+.pcar-purchase {
+    margin-bottom: 5vh;
+    transition: all 0.75s ease-out;
+    display: flex;
+    justify-content: center;
+    gap: 10%;
+    flex-wrap: wrap;
+}
+
+.pcar-purchase button {
+    font-family: "Bebas Neue", system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    letter-spacing: 0.1em;
+    max-width: 40%;
+    width: 400%;
+    font-size: clamp(18px, 3vw, 25px);
+    padding: 0.8em 3em;
+    background: var(--pcar-primary);
+    border: none;
+    color: white;
+    cursor: pointer;
+    border-radius: 30px;
+    font-weight: bolder;
+}
+
+/* Classes de "salto" 3D */
+.pcar-card.has-transform { transition: all 100ms linear; }
+.pcar-title.has-transform { transform: translateZ(150px) !important; }
+.pcar-bike img.has-transform { transform: translateZ(200px) rotateZ(10deg) !important; }
+.pcar-text.has-transform { transform: translateZ(125px) !important; }
+.pcar-actions.has-transform { transform: translateZ(150px) rotateX(20deg) !important; }
+
+/* Responsividade */
+@media (max-width: 992px) {
+    .pcar { width: 90%; }
+}
+@media (max-width: 600px) {
+    .pcar-purchase { gap: 16px; }
+    .pcar-purchase button {
+        max-width: 100%;
+        width: auto;
+    }
+}
+
+/* Respeitar usuários com redução de movimento */
+@media (prefers-reduced-motion: reduce) {
+    .pcar, .pcar * {
+        transition: none !important;
+        animation: none !important;
+    }
+}
+

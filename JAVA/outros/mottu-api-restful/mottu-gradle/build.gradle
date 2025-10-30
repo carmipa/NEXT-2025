@@ -1,0 +1,107 @@
+plugins {
+    id 'java'
+    id 'org.springframework.boot' version '3.5.4'
+    id 'io.spring.dependency-management' version '1.1.7'
+}
+
+group = 'br.com.fiap.mottu'
+version = '0.0.1-SNAPSHOT'
+description = 'mottu-gradle'
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
+configurations {
+    compileOnly {
+        extendsFrom annotationProcessor
+    }
+    developmentOnly
+    runtimeClasspath {
+        extendsFrom developmentOnly
+    }
+    // remove conflitos com spring-jcl
+    all {
+        exclude group: 'commons-logging', module: 'commons-logging'
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+ext {
+    mapstructVersion = '1.5.5.Final'
+    lombokVersion    = '1.18.38'
+    springdocVersion = '2.8.8'
+}
+
+dependencies {
+    // === SPRING CORE ===
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-webflux'
+
+    // === DEV TOOLS ===
+    developmentOnly 'org.springframework.boot:spring-boot-devtools'
+
+    // === LOMBOK ===
+    compileOnly "org.projectlombok:lombok:${lombokVersion}"
+    annotationProcessor "org.projectlombok:lombok:${lombokVersion}"
+
+    // === MAPSTRUCT ===
+    implementation "org.mapstruct:mapstruct:${mapstructVersion}"
+    annotationProcessor "org.mapstruct:mapstruct-processor:${mapstructVersion}"
+    annotationProcessor "org.projectlombok:lombok-mapstruct-binding:0.2.0"
+
+    // === DATABASE ===
+    runtimeOnly 'com.oracle.database.jdbc:ojdbc11'
+
+    // === OPENAPI / SWAGGER ===
+    implementation "org.springdoc:springdoc-openapi-starter-webmvc-ui:${springdocVersion}"
+
+    // === CACHE ===
+    implementation 'org.springframework.boot:spring-boot-starter-cache'
+    implementation 'com.github.ben-manes.caffeine:caffeine'
+
+    // === OCR e Visão Computacional ===
+    // OpenALPR como principal (via linha de comando)
+    // OpenCV como suporte para pré-processamento
+    implementation 'org.openpnp:opencv:4.9.0-0'
+    // Tesseract como fallback secundário
+    implementation 'net.sourceforge.tess4j:tess4j:5.11.0'
+
+    // === TESTES ===
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'io.projectreactor:reactor-test'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    
+    // H2 para testes de desenvolvimento
+    runtimeOnly 'com.h2database:h2'
+
+    // Plugins ImageIO para formatos não suportados nativamente
+    implementation 'com.twelvemonkeys.imageio:imageio-jpeg:3.12.0'
+    implementation 'com.twelvemonkeys.imageio:imageio-tiff:3.12.0'
+    implementation 'com.twelvemonkeys.imageio:imageio-webp:3.12.0'
+    implementation 'com.twelvemonkeys.imageio:imageio-bmp:3.12.0'
+    implementation 'com.twelvemonkeys.imageio:imageio-pnm:3.12.0'
+
+    // (Opcional) JAI ImageIO Core — melhora suporte a alguns TIFF/JP2K
+    implementation 'com.github.jai-imageio:jai-imageio-core:1.4.0'
+}
+
+
+tasks.named('test') {
+
+    useJUnitPlatform()
+}
+
+// No seu arquivo build.gradle
+
+bootJar {
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}

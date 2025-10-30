@@ -1,0 +1,170 @@
+{
+  "contato_geral": {
+    "email_principal": "contato@mottu.com.br",
+    "email_motoristas": "ajuda@mottu.com.br",
+    "telefone_central": null,
+    "observacao": "A Mottu prioriza o contato via aplicativo e e-mail. O e-mail 'ajuda@mottu.com.br' é o canal de suporte direto para os entregadores parceiros."
+  },
+  "patios_mottu": [
+    {
+      "estado": "São Paulo",
+      "cidade": "São Paulo",
+      "bairro": "Butantã",
+      "logradouro": "Rua Agostinho Cantu, 207/209",
+      "cep": "05501-010",
+      "telefone": null,
+      "email": "contato@mottu.com.br",
+      "observacao": "Apontado como um dos endereços principais em São Paulo. O e-mail é um contato geral."
+    },
+    {
+      "estado": "São Paulo",
+      "cidade": "São Paulo",
+      "bairro": "Vila Independência",
+      "logradouro": "Av. Presidente Wilson, 5897",
+      "cep": null,
+      "telefone": null,
+      "email": "contato@mottu.com.br",
+      "observacao": "Ponto de Troca de Bateria. O e-mail é um contato geral."
+    },
+    {
+      "estado": "São Paulo",
+      "cidade": "Taboão da Serra",
+      "bairro": "Jardim Monte Alegre",
+      "logradouro": "R. Roberta Simões Souza, 1440",
+      "cep": null,
+      "telefone": null,
+      "email": "contato@mottu.com.br",
+      "observacao": "Ponto de Troca de Bateria. O e-mail é um contato geral."
+    },
+    {
+      "estado": "São Paulo",
+      "cidade": "São Paulo",
+      "bairro": "Vila Madalena",
+      "logradouro": "R. Arapiraca, 39",
+      "cep": null,
+      "telefone": null,
+      "email": "contato@mottu.com.br",
+      "observacao": "Ponto de Troca de Bateria. O e-mail é um contato geral."
+    },
+    {
+      "estado": "São Paulo",
+      "cidade": "São Paulo",
+      "bairro": "Jardim Ipanema",
+      "logradouro": "R. Antônio Mariano, 351",
+      "cep": null,
+      "telefone": null,
+      "email": "contato@mottu.com.br",
+      "observacao": "Ponto de Troca de Bateria. O e-mail é um contato geral."
+    },
+    {
+      "estado": "São Paulo",
+      "cidade": "São Bernardo do Campo",
+      "bairro": "Independência",
+      "logradouro": "Av. Moinho Fabrini, 128",
+      "cep": null,
+      "telefone": null,
+      "email": "contato@mottu.com.br",
+      "observacao": "Ponto de Troca de Bateria. O e-mail é um contato geral."
+    },
+    {
+      "estado": "São Paulo",
+      "cidade": "Guarulhos",
+      "bairro": "Jardim dos Afonsos",
+      "logradouro": "Rua Antônio Pegoraro, 110",
+      "cep": "07131-403",
+      "telefone": null,
+      "email": "contato@mottu.com.br",
+      "observacao": "O e-mail é um contato geral."
+    },
+    {
+      "estado": "São Paulo",
+      "cidade": "São Paulo",
+      "bairro": "Limão",
+      "logradouro": "Av. Professor Celestino Bourroul, 363",
+      "cep": null,
+      "telefone": null,
+      "email": "contato@mottu.com.br",
+      "observacao": "Ponto de Troca de Bateria. O e-mail é um contato geral."
+    },
+    {
+      "estado": "Rio de Janeiro",
+      "cidade": "Niterói",
+      "bairro": "Fonseca",
+      "logradouro": "Alameda São Boaventura, 460, Loja 102",
+      "cep": "24120-191",
+      "telefone": null,
+      "email": "contato@mottu.com.br",
+      "observacao": "O e-mail é um contato geral."
+    },
+    {
+      "estado": "Minas Gerais",
+      "cidade": "Contagem",
+      "bairro": null,
+      "logradouro": "Endereço próximo ao Carrefour na Rodovia Fernão Dias (BR-381)",
+      "cep": null,
+      "telefone": null,
+      "email": "contato@mottu.com.br",
+      "observacao": "A informação do endereço exato é imprecisa. O e-mail é um contato geral."
+    },
+    {
+      "estado": "Goiás",
+      "cidade": "Goiânia",
+      "bairro": "Residencial das Acácias",
+      "logradouro": "Rua FL 42, 132, Quadra 04",
+      "cep": "74595-286",
+      "telefone": null,
+      "email": "contato@mottu.com.br",
+      "observacao": "O e-mail é um contato geral."
+    },
+    {
+      "estado": "Paraná",
+      "cidade": "Curitiba",
+      "bairro": "Hauer",
+      "logradouro": "Rua São Bento, 1069, Sala 01",
+      "cep": "81630-230",
+      "telefone": null,
+      "email": "contato@mottu.com.br",
+      "observacao": "O e-mail é um contato geral."
+    },
+    {
+      "estado": "Pernambuco",
+      "cidade": "Caruaru",
+      "bairro": "Caiuca",
+      "logradouro": "Rua Frei Ricardo do Pilar, 312",
+      "cep": "55034-400",
+      "telefone": null,
+      "email": "contato@mottu.com.br",
+      "observacao": "O e-mail é um contato geral."
+    },
+    {
+      "estado": "Pernambuco",
+      "cidade": "Jaboatão dos Guararapes",
+      "bairro": "Muribeca",
+      "logradouro": "Rua República Eslovaca, 443, Galpão 00 A, Sala 01",
+      "cep": "54350-195",
+      "telefone": null,
+      "email": "contato@mottu.com.br",
+      "observacao": "O e-mail é um contato geral."
+    },
+    {
+      "estado": "Ceará",
+      "cidade": "Fortaleza",
+      "bairro": "Fátima",
+      "logradouro": "Rua Doutor Ratisbona, 738",
+      "cep": "60411-220",
+      "telefone": null,
+      "email": "contato@mottu.com.br",
+      "observacao": "O e-mail é um contato geral."
+    },
+    {
+      "estado": "Distrito Federal",
+      "cidade": "Brasília",
+      "bairro": "Setor Habitacional Vicente Pires",
+      "logradouro": "Rua 3, Chácara 86, Lote 3",
+      "cep": "72005-780",
+      "telefone": null,
+      "email": "contato@mottu.com.br",
+      "observacao": "O e-mail é um contato geral."
+    }
+  ]
+}
