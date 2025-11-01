@@ -136,7 +136,7 @@ const navItems: Array<{
         basePath: "/ajuda", label: "Ajuda", icon: "ion-ios-help-circle",
         subItems: [
             { href: "/mapa-do-site", label: "Mapa do Site", icon: "ion-ios-compass" },
-            { href: "http://localhost:8080/swagger-ui/index.html", label: "Swagger (API)", icon: "ion-ios-code" },
+            { href: "http://72.61.219.15:8080/swagger-ui/index.html", label: "Swagger (API)", icon: "ion-ios-code" },
         ]
     },
     { href: "/ajuda/feedback", label: "Feedback", icon: "ion-ios-chatbubbles", basePath: "/ajuda/feedback" },
