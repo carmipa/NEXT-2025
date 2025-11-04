@@ -15,22 +15,54 @@ export default function BuscarMotoPage() {
     const handlePlateScan = async (placa: string) => {
         if (!placa) {
             setError("Nenhuma placa foi reconhecida.");
+            setIsLoading(false);
             return;
         }
+
+        // Limpar e normalizar a placa (remover espaços, caracteres especiais, converter para maiúsculas)
+        const placaLimpa = placa.trim().toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 7);
+        
+        // Validar formato básico (deve ter 7 caracteres)
+        if (placaLimpa.length < 7) {
+            setError("A placa deve ter 7 caracteres no formato Mercosul (ABC1D23).");
+            setIsLoading(false);
+            return;
+        }
+
         setIsLoading(true);
         setError(null);
-        router.push(`/radar/localizar/${placa}`);
+        
+        // Redirecionar para página de localização (o backend normalizará a placa)
+        router.push(`/radar/localizar/${placaLimpa}`);
     };
 
     const handleManualSearch = (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
-        const plateToSearch = manualPlate.trim().toUpperCase();
+        const plateToSearch = manualPlate.trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
 
         if (!plateToSearch) {
             setError("Por favor, digite uma placa para buscar.");
+            setIsLoading(false);
             return;
         }
+
+        // Validar tamanho mínimo
+        if (plateToSearch.length < 7) {
+            setError("A placa deve ter 7 caracteres no formato Mercosul (ABC1D23).");
+            setIsLoading(false);
+            return;
+        }
+
         handlePlateScan(plateToSearch);
+    };
+
+    const handlePlateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const value = e.target.value.trim().toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 7);
+        setManualPlate(value);
+        // Limpar erro quando usuário começar a digitar
+        if (error) {
+            setError(null);
+        }
     };
 
     return (
@@ -54,7 +86,7 @@ export default function BuscarMotoPage() {
                         <label htmlFor="manualPlate" className="flex items-center justify-center gap-2 sm:gap-3 text-lg sm:text-xl font-semibold text-white mb-4 sm:mb-5">
                             <i className="ion-ios-keypad text-2xl sm:text-3xl"></i> <span style={{fontFamily: 'Montserrat, sans-serif'}}>Digite a Placa para Buscar</span>
                         </label>
-                        <input id="manualPlate" type="text" value={manualPlate} onChange={(e) => setManualPlate(e.target.value.trim().toUpperCase())}
+                        <input id="manualPlate" type="text" value={manualPlate} onChange={handlePlateChange}
                                placeholder="EX: ABC1D23" maxLength={7}
                                className="w-full p-3 sm:p-4 h-12 sm:h-14 rounded bg-slate-800 border border-slate-600 text-white text-lg sm:text-xl font-mono tracking-widest text-center focus:outline-none focus:ring-2 focus:ring-green-500 mb-4 sm:mb-5"
                         />

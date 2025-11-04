@@ -5,7 +5,7 @@ import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { ClienteService } from '@/utils/api';
 import { ClienteResponseDto } from '@/types/cliente';
-import { Loader2, AlertCircle, Printer } from 'lucide-react';
+import { Loader2, AlertCircle } from 'lucide-react';
 // Ícones substituídos por Ionicons coloridos
 import '@/types/styles/neumorphic.css';
 
@@ -56,11 +56,6 @@ export default function DetalhesClientePage() {
     );
 
     if (!cliente) return null;
-
-
-    const handlePrint = () => {
-        window.print();
-    };
 
     return (
         <>
@@ -223,16 +218,6 @@ export default function DetalhesClientePage() {
                                     <span className="text-sm lg:text-base font-black">EDITAR</span>
                                 </div>
                             </Link>
-                            <button 
-                                onClick={handlePrint}
-                                className="group relative bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white font-bold py-3 lg:py-4 px-6 lg:px-8 rounded-xl shadow-xl transform hover:scale-105 transition-all duration-300 border-2 border-purple-400 hover:border-purple-300 flex items-center justify-center gap-2"
-                            >
-                                <div className="absolute inset-0 bg-gradient-to-r from-purple-400 to-purple-500 rounded-xl opacity-0 group-hover:opacity-30 transition-opacity duration-300"></div>
-                                <div className="relative flex items-center gap-2">
-                                    <Printer className="w-4 h-4" />
-                                    <span className="text-sm lg:text-base font-black">IMPRIMIR</span>
-                                </div>
-                            </button>
                         </div>
                     </div>
 
@@ -286,7 +271,7 @@ export default function DetalhesClientePage() {
                                 </div>
                                 <div className="flex items-center gap-1 sm:gap-2">
                                     <i className="ion-ios-phone text-green-500 text-sm sm:text-base"></i>
-                                    <span className="text-gray-800 font-montserrat"><strong>Telefone:</strong> ({cliente.contatoResponseDto.ddd}) {cliente.contatoResponseDto.telefone1}</span>
+                                    <span className="text-gray-800 font-montserrat"><strong>Telefone:</strong> {cliente.contatoResponseDto.telefone1}</span>
                                 </div>
                                 <div className="flex items-center gap-1 sm:gap-2">
                                     <i className="ion-ios-globe text-green-500 text-sm sm:text-base"></i>

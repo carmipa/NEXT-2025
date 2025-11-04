@@ -24,6 +24,7 @@ public class NotificacaoService {
     private final BoxRepository boxRepository;
     private final LogMovimentacaoRepository logRepository;
     private final ZonaRepository zonaRepository;
+    private final EstacionamentoRepository estacionamentoRepository; // Adicionado para usar TB_ESTACIONAMENTO
     
     /**
      * Lista notificações com filtros
@@ -105,21 +106,29 @@ public class NotificacaoService {
     
     private void verificarOcupacaoAlta() {
         try {
-            List<Object[]> ocupacaoPatios = patioRepository.findOcupacaoAtual();
+            log.info("Verificando ocupação alta usando TB_ESTACIONAMENTO - DADOS REAIS");
             
-            for (Object[] patio : ocupacaoPatios) {
-                String nomePatio = (String) patio[0];
-                Long totalBoxes = ((Number) patio[1]).longValue();
-                Long boxesOcupados = ((Number) patio[2]).longValue();
+            // Buscar todos os pátios
+            List<br.com.fiap.mottu.model.Patio> patios = patioRepository.findAll();
+            
+            for (br.com.fiap.mottu.model.Patio patio : patios) {
+                // Total de boxes do pátio
+                long totalBoxes = boxRepository.countByPatio(patio);
+                
+                // Boxes realmente ocupados através de TB_ESTACIONAMENTO
+                long boxesOcupados = estacionamentoRepository.countByPatioIdPatioAndEstaEstacionadoTrue(patio.getIdPatio());
                 
                 if (totalBoxes > 0) {
                     double taxaOcupacao = (double) boxesOcupados / totalBoxes;
                     
+                    log.debug("Pátio {}: {} boxes ocupados de {} total (taxa: {:.2f}%)", 
+                            patio.getNomePatio(), boxesOcupados, totalBoxes, taxaOcupacao * 100);
+                    
                     if (taxaOcupacao >= 0.9) {
                         criarNotificacao(
                             "Ocupação Crítica",
-                            String.format("Pátio %s com ocupação de %.1f%% - Próximo da capacidade máxima!", 
-                                nomePatio, taxaOcupacao * 100),
+                            String.format("Pátio %s com ocupação de %.1f%% - Próximo da capacidade máxima! (%d/%d boxes ocupados)", 
+                                patio.getNomePatio(), taxaOcupacao * 100, boxesOcupados, totalBoxes),
                             Notificacao.TipoNotificacao.ERROR,
                             Notificacao.PrioridadeNotificacao.CRITICA,
                             Notificacao.CategoriaNotificacao.OCUPACAO
@@ -127,8 +136,8 @@ public class NotificacaoService {
                     } else if (taxaOcupacao >= 0.8) {
                         criarNotificacao(
                             "Ocupação Alta",
-                            String.format("Pátio %s com ocupação de %.1f%% - Monitorar situação", 
-                                nomePatio, taxaOcupacao * 100),
+                            String.format("Pátio %s com ocupação de %.1f%% - Monitorar situação (%d/%d boxes ocupados)", 
+                                patio.getNomePatio(), taxaOcupacao * 100, boxesOcupados, totalBoxes),
                             Notificacao.TipoNotificacao.WARNING,
                             Notificacao.PrioridadeNotificacao.ALTA,
                             Notificacao.CategoriaNotificacao.OCUPACAO
@@ -218,9 +227,13 @@ public class NotificacaoService {
     
     private void verificarNecessidadesManutencao() {
         try {
-            // Verificar se há muitos boxes ocupados por muito tempo
-            Long boxesOcupados = boxRepository.countByStatus("O");
-            Long totalBoxes = boxRepository.count();
+            log.info("Verificando necessidades de manutenção usando TB_ESTACIONAMENTO - DADOS REAIS");
+            
+            // Contar boxes realmente ocupados através de TB_ESTACIONAMENTO (todos os pátios)
+            long boxesOcupados = estacionamentoRepository.countByEstaEstacionadoTrue();
+            long totalBoxes = boxRepository.count();
+            
+            log.debug("Total de boxes ocupados (TB_ESTACIONAMENTO): {} de {}", boxesOcupados, totalBoxes);
             
             if (totalBoxes > 0) {
                 double taxaOcupacao = (double) boxesOcupados / totalBoxes;
@@ -228,7 +241,8 @@ public class NotificacaoService {
                 if (taxaOcupacao > 0.95) {
                     criarNotificacao(
                         "Manutenção Preventiva Necessária",
-                        "Sistema próximo da capacidade máxima - Agendar manutenção preventiva",
+                        String.format("Sistema próximo da capacidade máxima - %.1f%% de ocupação (%d/%d boxes ocupados). Agendar manutenção preventiva.", 
+                            taxaOcupacao * 100, boxesOcupados, totalBoxes),
                         Notificacao.TipoNotificacao.WARNING,
                         Notificacao.PrioridadeNotificacao.ALTA,
                         Notificacao.CategoriaNotificacao.MANUTENCAO

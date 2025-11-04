@@ -129,6 +129,7 @@ const navItems: Array<{
             { href: "/veiculo/listar", label: "Listar", icon: "ion-ios-list" },
             { href: "/veiculo/cadastrar", label: "Cadastrar", icon: "ion-ios-add" },
             { href: "/veiculo/buscar", label: "Buscar", icon: "ion-ios-search" },
+            { href: "/veiculo/status", label: "Status", icon: "ion-ios-pulse" },
         ]
     },
         

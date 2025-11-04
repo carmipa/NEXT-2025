@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { buildApiUrl } from '@/config/api';
 import ParticleBackground from '@/components/particula/ParticleBackground';
-import { XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell, ScatterChart, Scatter } from 'recharts';
+import { XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell, ScatterChart, Scatter } from 'recharts';
 
 interface Cliente {
     id: string;
@@ -405,32 +405,85 @@ export default function ComportamentalPage() {
                             <table className="min-w-full divide-y divide-gray-200">
                                 <thead className="bg-gray-50">
                                     <tr>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cliente</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rating</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Visitas</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tempo Médio</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pátio Preferido</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Última Visita</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            <div className="flex items-center gap-2">
+                                                <i className="ion-ios-person text-gray-600 text-base"></i>
+                                                Cliente
+                                            </div>
+                                        </th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            <div className="flex items-center gap-2">
+                                                <i className="ion-ios-star text-yellow-500 text-base"></i>
+                                                Rating
+                                            </div>
+                                        </th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            <div className="flex items-center gap-2">
+                                                <i className="ion-ios-analytics text-blue-500 text-base"></i>
+                                                Visitas
+                                            </div>
+                                        </th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            <div className="flex items-center gap-2">
+                                                <i className="ion-ios-time text-green-500 text-base"></i>
+                                                Tempo Médio
+                                            </div>
+                                        </th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            <div className="flex items-center gap-2">
+                                                <i className="ion-ios-home text-purple-500 text-base"></i>
+                                                Pátio Preferido
+                                            </div>
+                                        </th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            <div className="flex items-center gap-2">
+                                                <i className="ion-ios-calendar text-indigo-500 text-base"></i>
+                                                Última Visita
+                                            </div>
+                                        </th>
                                     </tr>
                                 </thead>
                                 <tbody className="bg-white divide-y divide-gray-200">
                                     {clientesFiltrados.map((cliente) => (
-                                        <tr key={cliente.id}>
+                                        <tr key={cliente.id} className="hover:bg-gray-50">
                                             <td className="px-6 py-4 whitespace-nowrap">
-                                                <div>
-                                                    <div className="text-sm font-medium text-gray-900">{cliente.id}</div>
-                                                    <div className="text-sm text-gray-500">{cliente.nome}</div>
+                                                <div className="flex items-center gap-2">
+                                                    <i className="ion-ios-person text-gray-500 text-lg"></i>
+                                                    <div>
+                                                        <div className="text-sm font-medium text-gray-900">{cliente.id}</div>
+                                                        <div className="text-sm text-gray-500">{cliente.nome}</div>
+                                                    </div>
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap">
-                                                <div className="flex">
+                                                <div className="flex items-center gap-1">
                                                     {renderStars(cliente.rating)}
                                                 </div>
                                             </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{cliente.visitas}</td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{cliente.tempoMedio}</td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{cliente.patioPreferido}</td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{cliente.ultimaVisita}</td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                                <div className="flex items-center gap-2">
+                                                    <i className="ion-ios-analytics text-blue-500 text-lg"></i>
+                                                    <span className="font-medium">{cliente.visitas}</span>
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                                <div className="flex items-center gap-2">
+                                                    <i className="ion-ios-time text-green-500 text-lg"></i>
+                                                    <span className="font-medium">{cliente.tempoMedio}</span>
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                                <div className="flex items-center gap-2">
+                                                    <i className="ion-ios-home text-purple-500 text-lg"></i>
+                                                    <span className="font-medium">{cliente.patioPreferido}</span>
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                                <div className="flex items-center gap-2">
+                                                    <i className="ion-ios-calendar text-indigo-500 text-lg"></i>
+                                                    <span>{cliente.ultimaVisita}</span>
+                                                </div>
+                                            </td>
                                         </tr>
                                     ))}
                                 </tbody>
@@ -447,11 +500,32 @@ export default function ComportamentalPage() {
                             <div className="h-64">
                                 <ResponsiveContainer width="100%" height="100%">
                                     <BarChart data={clientesFiltrados}>
-                                        <CartesianGrid strokeDasharray="3 3" />
-                                        <XAxis dataKey="id" />
-                                        <YAxis />
-                                        <Tooltip />
-                                        <Bar dataKey="visitas" fill="#3b82f6" name="Visitas" />
+                                        <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                                        <XAxis 
+                                            dataKey="id" 
+                                            stroke="#6b7280"
+                                            style={{ fontSize: '12px' }}
+                                            angle={-30}
+                                            textAnchor="end"
+                                            height={60}
+                                        />
+                                        <YAxis 
+                                            stroke="#6b7280"
+                                            style={{ fontSize: '12px' }}
+                                        />
+                                        <Tooltip 
+                                            contentStyle={{ 
+                                                backgroundColor: '#ffffff', 
+                                                border: '1px solid #e5e7eb', 
+                                                borderRadius: '8px',
+                                                padding: '10px'
+                                            }}
+                                            labelStyle={{ color: '#111827', fontWeight: 'bold' }}
+                                        />
+                                        <Legend 
+                                            wrapperStyle={{ fontSize: '12px' }}
+                                        />
+                                        <Bar dataKey="visitas" fill="#3b82f6" name="Visitas" radius={[4, 4, 0, 0]} />
                                     </BarChart>
                                 </ResponsiveContainer>
                             </div>
@@ -474,7 +548,7 @@ export default function ComportamentalPage() {
                                             cx="50%"
                                             cy="50%"
                                             labelLine={false}
-                                            label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                                            label={({ name, percent }) => percent > 0.05 ? `${name}: ${(percent * 100).toFixed(0)}%` : ''}
                                             outerRadius={80}
                                             fill="#8884d8"
                                             dataKey="value"
@@ -487,7 +561,20 @@ export default function ComportamentalPage() {
                                                 <Cell key={`cell-${index}`} fill={entry.color} />
                                             ))}
                                         </Pie>
-                                        <Tooltip />
+                                        <Tooltip 
+                                            formatter={(value: unknown) => [`${value} clientes`, 'Quantidade']}
+                                            contentStyle={{ 
+                                                backgroundColor: '#ffffff', 
+                                                border: '1px solid #e5e7eb', 
+                                                borderRadius: '8px',
+                                                padding: '10px'
+                                            }}
+                                        />
+                                        <Legend 
+                                            verticalAlign="bottom" 
+                                            height={36}
+                                            wrapperStyle={{ fontSize: '12px' }}
+                                        />
                                     </PieChart>
                                 </ResponsiveContainer>
                             </div>
@@ -505,10 +592,29 @@ export default function ComportamentalPage() {
                                         y: parseInt(cliente.tempoMedio.replace(/[^\d]/g, '')) || 0,
                                         name: cliente.nome
                                     }))}>
-                                        <CartesianGrid strokeDasharray="3 3" />
-                                        <XAxis dataKey="x" name="Visitas" />
-                                        <YAxis dataKey="y" name="Tempo (min)" />
-                                        <Tooltip cursor={{ strokeDasharray: '3 3' }} />
+                                        <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                                        <XAxis 
+                                            dataKey="x" 
+                                            name="Visitas" 
+                                            stroke="#6b7280"
+                                            style={{ fontSize: '12px' }}
+                                        />
+                                        <YAxis 
+                                            dataKey="y" 
+                                            name="Tempo (min)" 
+                                            stroke="#6b7280"
+                                            style={{ fontSize: '12px' }}
+                                        />
+                                        <Tooltip 
+                                            cursor={{ strokeDasharray: '3 3' }}
+                                            contentStyle={{ 
+                                                backgroundColor: '#ffffff', 
+                                                border: '1px solid #e5e7eb', 
+                                                borderRadius: '8px',
+                                                padding: '10px'
+                                            }}
+                                            labelStyle={{ color: '#111827', fontWeight: 'bold' }}
+                                        />
                                         <Scatter dataKey="y" fill="#ef4444" />
                                     </ScatterChart>
                                 </ResponsiveContainer>

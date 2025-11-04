@@ -114,7 +114,16 @@ export default function AnalyticsRelatorioPage() {
         <div className="max-w-7xl mx-auto space-y-6">
           <div className="bg-white/10 backdrop-blur-lg rounded-2xl shadow-2xl p-6 border border-white/20">
             <div className="flex items-center justify-between">
-              <h1 className="text-2xl md:text-3xl font-bold text-white"><i className="ion-ios-analytics mr-2 text-sky-400"></i>Relatórios • Analytics</h1>
+              <div className="flex items-center gap-3">
+                <a 
+                  href="/relatorios" 
+                  className="p-2 text-gray-300 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+                  title="Voltar para Relatórios"
+                >
+                  <i className="ion-ios-arrow-back text-lg lg:text-xl"></i>
+                </a>
+                <h1 className="text-2xl md:text-3xl font-bold text-white"><i className="ion-ios-analytics mr-2 text-sky-400"></i>Relatórios • Analytics</h1>
+              </div>
               <div className="flex items-center gap-3">
                 <div className={`hidden sm:flex items-center gap-2 px-2 py-1 rounded-full border text-xs ${sseActive ? 'bg-green-50 border-green-200 text-green-700' : 'bg-gray-50 border-gray-200 text-gray-600'}`}>
                   <span className={`w-2 h-2 rounded-full ${sseActive ? 'bg-green-500' : 'bg-gray-400'}`}></span>
@@ -246,11 +255,28 @@ export default function AnalyticsRelatorioPage() {
                 ) : (
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={topVeiculos}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="placa" />
-                      <YAxis />
-                      <Tooltip />
-                      <Bar dataKey="eventos" name="Eventos" barSize={18}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                      <XAxis 
+                        dataKey="placa" 
+                        stroke="#9ca3af"
+                        style={{ fontSize: '12px' }}
+                      />
+                      <YAxis 
+                        stroke="#9ca3af"
+                        style={{ fontSize: '12px' }}
+                      />
+                      <Tooltip 
+                        contentStyle={{ 
+                          backgroundColor: '#1f2937', 
+                          border: '1px solid #374151', 
+                          borderRadius: '8px',
+                          color: '#ffffff'
+                        }}
+                      />
+                      <Legend 
+                        wrapperStyle={{ fontSize: '12px', color: '#ffffff' }}
+                      />
+                      <Bar dataKey="eventos" name="Eventos" barSize={18} radius={[4, 4, 0, 0]}>
                         {topVeiculos.map((_, i) => (
                           <Cell key={i} fill={COLORS[i % COLORS.length]} />
                         ))}
@@ -270,11 +296,24 @@ export default function AnalyticsRelatorioPage() {
                 ) : (
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
-                      <Pie data={pieData} dataKey="value" nameKey="name" outerRadius={100} label>
+                      <Pie 
+                        data={pieData} 
+                        dataKey="value" 
+                        nameKey="name" 
+                        outerRadius={100} 
+                        label={({ name, percent }) => percent > 0.05 ? `${name}: ${(percent * 100).toFixed(1)}%` : ''}
+                        labelLine={false}
+                      >
                         {pieData.map((_, i) => (
                           <Cell key={i} fill={COLORS[i % COLORS.length]} />
                         ))}
                       </Pie>
+                      <Tooltip formatter={(value: unknown) => [`${value} eventos`, 'Eventos']} />
+                      <Legend 
+                        verticalAlign="bottom" 
+                        height={36}
+                        wrapperStyle={{ fontSize: '12px', color: '#ffffff' }}
+                      />
                     </PieChart>
                   </ResponsiveContainer>
                 )}
@@ -295,11 +334,31 @@ export default function AnalyticsRelatorioPage() {
                 ) : (
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={topPatios}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="patioNome" />
-                      <YAxis />
-                      <Tooltip />
-                      <Bar dataKey="eventos" name="Eventos" barSize={18}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                      <XAxis 
+                        dataKey="patioNome" 
+                        stroke="#9ca3af"
+                        style={{ fontSize: '12px' }}
+                        angle={-30}
+                        textAnchor="end"
+                        height={80}
+                      />
+                      <YAxis 
+                        stroke="#9ca3af"
+                        style={{ fontSize: '12px' }}
+                      />
+                      <Tooltip 
+                        contentStyle={{ 
+                          backgroundColor: '#1f2937', 
+                          border: '1px solid #374151', 
+                          borderRadius: '8px',
+                          color: '#ffffff'
+                        }}
+                      />
+                      <Legend 
+                        wrapperStyle={{ fontSize: '12px', color: '#ffffff' }}
+                      />
+                      <Bar dataKey="eventos" name="Eventos" barSize={18} radius={[4, 4, 0, 0]}>
                         {topPatios.map((_, i) => (
                           <Cell key={i} fill={COLORS[(i+4) % COLORS.length]} />
                         ))}
@@ -322,11 +381,30 @@ export default function AnalyticsRelatorioPage() {
                 ) : (
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={topBoxes}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="boxId" />
-                      <YAxis />
-                      <Tooltip />
-                      <Bar dataKey="eventos" name="Eventos" barSize={18}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                      <XAxis 
+                        dataKey="boxId" 
+                        stroke="#9ca3af"
+                        style={{ fontSize: '12px' }}
+                        tickFormatter={(value) => `Box ${value}`}
+                      />
+                      <YAxis 
+                        stroke="#9ca3af"
+                        style={{ fontSize: '12px' }}
+                      />
+                      <Tooltip 
+                        contentStyle={{ 
+                          backgroundColor: '#1f2937', 
+                          border: '1px solid #374151', 
+                          borderRadius: '8px',
+                          color: '#ffffff'
+                        }}
+                        formatter={(value: unknown) => [`${value} eventos`, 'Eventos']}
+                      />
+                      <Legend 
+                        wrapperStyle={{ fontSize: '12px', color: '#ffffff' }}
+                      />
+                      <Bar dataKey="eventos" name="Eventos" barSize={18} radius={[4, 4, 0, 0]}>
                         {topBoxes.map((_, i) => (
                           <Cell key={i} fill={COLORS[(i+2) % COLORS.length]} />
                         ))}

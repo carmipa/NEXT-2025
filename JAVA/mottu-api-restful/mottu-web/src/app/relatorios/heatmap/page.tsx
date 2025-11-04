@@ -101,36 +101,87 @@ export default function HeatmapPage() {
         }
         
         try {
-            console.log(`Buscando boxes para pátio ID: ${patioId}`);
-            // Buscar boxes reais do banco de dados
-            const response = await fetchWithCache<any>(`/api/patios/${patioId}/boxes`, 'mapas');
-            if (response) {
-                const boxesData = response;
-                console.log(`Boxes do pátio ${patioId}:`, boxesData);
+            console.log(`🔍 Buscando boxes para pátio ID: ${patioId} usando nova API de estacionamentos`);
+            
+            const backendOrigin = process.env.NEXT_PUBLIC_BACKEND_ORIGIN || 'http://localhost:8080';
+            
+            // Buscar boxes e estacionamentos ativos em paralelo usando a nova API
+            const [boxesResponse, estacionamentosResponse] = await Promise.all([
+                fetch(`${backendOrigin}/api/patios/${patioId}/status/A/boxes?page=0&size=1000&sort=nome,asc`, {
+                    cache: 'no-store'
+                }),
+                fetch(`${backendOrigin}/api/estacionamentos/patio/${patioId}/ativos`, {
+                    cache: 'no-store'
+                })
+            ]);
+            
+            if (!boxesResponse.ok) {
+                const errorText = await boxesResponse.text();
+                console.error(`❌ Erro ao buscar boxes do pátio ${patioId}:`, boxesResponse.status, errorText);
+                return gerarBoxesMock(patioId);
+            }
+            
+            const boxesPage = await boxesResponse.json();
+            const boxes = boxesPage.content || boxesPage || [];
+            
+            const estacionamentosAtivos = estacionamentosResponse.ok 
+                ? await estacionamentosResponse.json() 
+                : [];
+            
+            console.log(`📊 Boxes encontrados: ${boxes.length}, Estacionamentos ativos: ${estacionamentosAtivos.length}`);
+            
+            // Criar mapa de estacionamentos por boxId
+            const estacionamentosPorBoxId = new Map(
+                estacionamentosAtivos.map((e: any) => {
+                    const boxId = e.box?.idBox || e.boxId;
+                    return boxId ? [boxId, e] : null;
+                }).filter((item): item is [number, any] => item !== null)
+            );
+            
+            // Processar boxes reais combinando com estacionamentos
+            if (Array.isArray(boxes) && boxes.length > 0) {
+                const boxesProcessados = boxes.map((box: any, index: number) => {
+                    const boxId = box.idBox || box.id;
+                    const estacionamento = estacionamentosPorBoxId.get(boxId);
+                    
+                    // Determinar status baseado em estacionamento ativo
+                    let statusNorm: 'ocupado' | 'livre' | 'manutencao';
+                    if (estacionamento) {
+                        // Verificar se o veículo está em manutenção
+                        const statusVeiculo = estacionamento.veiculo?.status;
+                        if (statusVeiculo === 'EM_MANUTENCAO') {
+                            statusNorm = 'manutencao';
+                        } else {
+                            statusNorm = 'ocupado';
+                        }
+                    } else {
+                        // Se não há estacionamento ativo, verificar status do box
+                        const statusBox = box.status || box.situacao || box.estado;
+                        statusNorm = normalizarStatus(statusBox, null);
+                    }
+                    
+                    const veiculoInfo = estacionamento?.veiculo;
+                    const placa = veiculoInfo?.placa || undefined;
+                    
+                    return {
+                        id: String(boxId || `box-${patioId}-${index + 1}`),
+                        numero: box.nome || box.numeroBox || box.numero || index + 1,
+                        status: statusNorm,
+                        veiculo: placa,
+                        placa: placa
+                    };
+                });
                 
-                // Processar boxes reais
-                if (Array.isArray(boxesData) && boxesData.length > 0) {
-                    return boxesData.map((box: any, index: number) => {
-                        const veic = box.veiculo || box.veiculoId || box.vehicle;
-                        const statusNorm = normalizarStatus(box.status ?? box.situacao ?? box.estado, veic);
-                        return {
-                            id: box.id || `box-${patioId}-${index + 1}`,
-                            numero: box.numeroBox || box.numero || index + 1,
-                            status: statusNorm,
-                            veiculo: veic ? (veic.placa || veic.licensePlate || String(veic)) : undefined,
-                            placa: veic ? (veic.placa || veic.licensePlate || String(veic)) : undefined
-                        };
-                    });
-                }
+                console.log(`✅ Boxes processados para pátio ${patioId}:`, boxesProcessados.length);
+                return boxesProcessados;
             } else {
-                console.error(`Erro na resposta da API para pátio ${patioId}:`, response.status, response.statusText);
+                console.warn(`⚠️ Nenhum box encontrado para pátio ${patioId}`);
+                return gerarBoxesMock(patioId);
             }
         } catch (error) {
-            console.error(`Erro ao carregar boxes do pátio ${patioId}:`, error);
+            console.error(`❌ Erro ao carregar boxes do pátio ${patioId}:`, error);
+            return gerarBoxesMock(patioId);
         }
-        
-        // Retornar dados mock se não conseguir carregar dados reais
-        return gerarBoxesMock(patioId);
     };
 
     const gerarBoxesMock = (patioId: number) => {
@@ -233,7 +284,7 @@ export default function HeatmapPage() {
                     setPatios([]);
                 }
             } else {
-                console.error('Erro ao buscar pátios:', patiosResponse.status);
+                console.error('Erro ao buscar pátios: dados não disponíveis');
                 setPatios([]);
             }
         } catch (error) {
@@ -585,13 +636,48 @@ export default function HeatmapPage() {
                                     <table className="w-full">
                                         <thead className="bg-gray-50">
                                             <tr>
-                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pátio</th>
-                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ocupação Atual</th>
-                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Média</th>
-                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Máxima</th>
-                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tendência</th>
-                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Boxes Ocupados</th>
-                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Boxes Livres</th>
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                    <div className="flex items-center gap-2">
+                                                        <i className="ion-ios-home text-gray-600"></i>
+                                                        Pátio
+                                                    </div>
+                                                </th>
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                    <div className="flex items-center gap-2">
+                                                        <i className="ion-ios-pulse text-blue-500"></i>
+                                                        Ocupação Atual
+                                                    </div>
+                                                </th>
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                    <div className="flex items-center gap-2">
+                                                        <i className="ion-ios-analytics text-indigo-500"></i>
+                                                        Média
+                                                    </div>
+                                                </th>
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                    <div className="flex items-center gap-2">
+                                                        <i className="ion-ios-trending-up text-orange-500"></i>
+                                                        Máxima
+                                                    </div>
+                                                </th>
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                    <div className="flex items-center gap-2">
+                                                        <i className="ion-ios-arrow-round-forward text-purple-500"></i>
+                                                        Tendência
+                                                    </div>
+                                                </th>
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                    <div className="flex items-center gap-2">
+                                                        <i className="ion-ios-close-circle text-red-500"></i>
+                                                        Boxes Ocupados
+                                                    </div>
+                                                </th>
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                    <div className="flex items-center gap-2">
+                                                        <i className="ion-ios-checkmark-circle text-green-500"></i>
+                                                        Boxes Livres
+                                                    </div>
+                                                </th>
                                             </tr>
                                         </thead>
                                         <tbody className="bg-white divide-y divide-gray-200">
@@ -602,10 +688,14 @@ export default function HeatmapPage() {
                                                 return (
                                                     <tr key={`patio-row-${patio.id}-${index}`} className="hover:bg-gray-50">
                                                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                                            {patio.nome}
+                                                            <div className="flex items-center gap-2">
+                                                                <i className="ion-ios-home text-gray-500"></i>
+                                                                <span>{patio.nome}</span>
+                                                            </div>
                                                         </td>
                                                         <td className="px-6 py-4 whitespace-nowrap">
-                                                            <div className="flex items-center">
+                                                            <div className="flex items-center gap-2">
+                                                                <i className="ion-ios-pulse text-blue-500"></i>
                                                                 <div className="w-16 bg-gray-200 rounded-full h-2 mr-2">
                                                                     <div 
                                                                         className="h-2 rounded-full"
@@ -619,10 +709,16 @@ export default function HeatmapPage() {
                                                             </div>
                                                         </td>
                                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                            {patio.media}%
+                                                            <div className="flex items-center gap-2">
+                                                                <i className="ion-ios-analytics text-indigo-500"></i>
+                                                                <span>{patio.media}%</span>
+                                                            </div>
                                                         </td>
                                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                            {patio.maxima}%
+                                                            <div className="flex items-center gap-2">
+                                                                <i className="ion-ios-trending-up text-orange-500"></i>
+                                                                <span>{patio.maxima}%</span>
+                                                            </div>
                                                         </td>
                                                         <td className="px-6 py-4 whitespace-nowrap">
                                                             <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
@@ -631,14 +727,20 @@ export default function HeatmapPage() {
                                                                 'bg-blue-100 text-blue-800'
                                                             }`}>
                                                                 <i className={`${getTrendIcon(patio.trend)} mr-1`}></i>
-                                                                {patio.trend}
+                                                                <span className="capitalize">{patio.trend}</span>
                                                             </span>
                                                         </td>
                                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-red-600 font-medium">
-                                                            {boxesOcupados}
+                                                            <div className="flex items-center gap-2">
+                                                                <i className="ion-ios-close-circle text-red-500"></i>
+                                                                <span>{boxesOcupados}</span>
+                                                            </div>
                                                         </td>
                                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-green-600 font-medium">
-                                                            {boxesLivres}
+                                                            <div className="flex items-center gap-2">
+                                                                <i className="ion-ios-checkmark-circle text-green-500"></i>
+                                                                <span>{boxesLivres}</span>
+                                                            </div>
                                                         </td>
                                                     </tr>
                                                 );

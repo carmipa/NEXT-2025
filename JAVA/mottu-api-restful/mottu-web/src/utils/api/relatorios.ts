@@ -9,10 +9,11 @@ const BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "/api";
 
 // Tipos para relatórios
 export interface OcupacaoDiariaData {
-  data: string;
+  dia?: string; // Campo retornado pelo backend (LocalDate serializado)
+  data?: string; // Campo processado no frontend
   ocupados: number;
   livres: number;
-  percentual: number;
+  percentual?: number; // Calculado no frontend
 }
 
 export interface MovimentacaoData {
@@ -66,6 +67,7 @@ export interface AvancadosData {
     leituraDisco: number;
     escritaDisco: number;
     usoDisco: number;
+    larguraBandaMbps?: number;
   };
 }
 
@@ -81,6 +83,11 @@ export interface SystemPerformance {
   nonHeapUsedBytes: number;
   threadCount: number;
   daemonThreadCount: number;
+  processorCacheSizeBytes?: number | null;
+  networkBandwidthMbps?: number | null;
+  totalRamBytes?: number | null;
+  ramSpeedMhz?: number | null;
+  processorSpeedMhz?: number | null;
 }
 
 export interface ThreadInfo {

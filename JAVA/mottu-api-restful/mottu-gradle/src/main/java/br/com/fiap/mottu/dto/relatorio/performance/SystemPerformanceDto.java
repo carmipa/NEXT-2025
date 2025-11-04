@@ -37,6 +37,21 @@ public class SystemPerformanceDto implements Serializable {
     @Schema(description = "Quantidade de threads do tipo daemon", example = "78")
     private int daemonThreadCount;
 
+    @Schema(description = "Tamanho total do cache L3 do processador em bytes (estimado)", example = "8388608")
+    private Long processorCacheSizeBytes;
+
+    @Schema(description = "Velocidade/largura de banda da rede em MB/s", example = "100.0")
+    private Double networkBandwidthMbps;
+
+    @Schema(description = "Quantidade total de RAM do sistema em bytes", example = "17179869184")
+    private Long totalRamBytes;
+
+    @Schema(description = "Velocidade da RAM em MHz (estimado)", example = "3200")
+    private Integer ramSpeedMhz;
+
+    @Schema(description = "Velocidade do processador em MHz (estimado)", example = "2400")
+    private Integer processorSpeedMhz;
+
     public long getPid() {
         return pid;
     }
@@ -115,6 +130,46 @@ public class SystemPerformanceDto implements Serializable {
 
     public void setDaemonThreadCount(int daemonThreadCount) {
         this.daemonThreadCount = daemonThreadCount;
+    }
+
+    public Long getProcessorCacheSizeBytes() {
+        return processorCacheSizeBytes;
+    }
+
+    public void setProcessorCacheSizeBytes(Long processorCacheSizeBytes) {
+        this.processorCacheSizeBytes = processorCacheSizeBytes;
+    }
+
+    public Double getNetworkBandwidthMbps() {
+        return networkBandwidthMbps;
+    }
+
+    public void setNetworkBandwidthMbps(Double networkBandwidthMbps) {
+        this.networkBandwidthMbps = networkBandwidthMbps;
+    }
+
+    public Long getTotalRamBytes() {
+        return totalRamBytes;
+    }
+
+    public void setTotalRamBytes(Long totalRamBytes) {
+        this.totalRamBytes = totalRamBytes;
+    }
+
+    public Integer getRamSpeedMhz() {
+        return ramSpeedMhz;
+    }
+
+    public void setRamSpeedMhz(Integer ramSpeedMhz) {
+        this.ramSpeedMhz = ramSpeedMhz;
+    }
+
+    public Integer getProcessorSpeedMhz() {
+        return processorSpeedMhz;
+    }
+
+    public void setProcessorSpeedMhz(Integer processorSpeedMhz) {
+        this.processorSpeedMhz = processorSpeedMhz;
     }
 }
 

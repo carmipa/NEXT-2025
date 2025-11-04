@@ -4,6 +4,11 @@ export interface EnderecoRequestDto {
     idEndereco?: number;
     cep: string;
     numero: number;
+    logradouro?: string;
+    bairro?: string;
+    cidade?: string;
+    estado?: string;
+    pais?: string;
     complemento?: string;
     observacao?: string;
 }

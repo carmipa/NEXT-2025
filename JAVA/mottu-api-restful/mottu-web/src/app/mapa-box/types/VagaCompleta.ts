@@ -31,9 +31,9 @@ export const STATUS_COLORS = {
         text: 'text-red-800'
     },
     'M': {
-        bg: 'bg-orange-500',
-        border: 'border-orange-600',
-        text: 'text-orange-800'
+        bg: 'bg-yellow-500',
+        border: 'border-yellow-600',
+        text: 'text-yellow-800'
     }
 };
 

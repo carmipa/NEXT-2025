@@ -93,9 +93,55 @@ public class VagaOracleService {
 
     @Transactional
     public void liberarBox(Long boxId) {
-        jdbc.update("DELETE FROM TB_VEICULOBOX WHERE TB_BOX_ID_BOX = ?", boxId);
-        // CORREÇÃO: No modelo atual, STATUS='L' significa livre
-        jdbc.update("UPDATE TB_BOX SET STATUS = 'L' WHERE ID_BOX = ?", boxId);
+        log.info("🔓 VagaOracleService: Liberando box ID: {}", boxId);
+        
+        // CRÍTICO: Primeiro atualizar TB_ESTACIONAMENTO para manter consistência
+        // Buscar todos os estacionamentos ativos deste box
+        String sqlBuscarEstacionamentos = """
+            SELECT ID_ESTACIONAMENTO, TB_VEICULO_ID_VEICULO 
+            FROM TB_ESTACIONAMENTO 
+            WHERE TB_BOX_ID_BOX = ? AND ESTA_ESTACIONADO = 1
+            """;
+        
+        List<Map<String, Object>> estacionamentosAtivos = jdbc.query(sqlBuscarEstacionamentos, 
+            ps -> ps.setLong(1, boxId),
+            (rs, rowNum) -> {
+                Map<String, Object> est = new java.util.HashMap<>();
+                est.put("idEstacionamento", rs.getLong("ID_ESTACIONAMENTO"));
+                est.put("veiculoId", rs.getLong("TB_VEICULO_ID_VEICULO"));
+                return est;
+            });
+        
+        if (!estacionamentosAtivos.isEmpty()) {
+            log.info("📝 VagaOracleService: Encontrados {} estacionamento(s) ativo(s) no box {}", 
+                    estacionamentosAtivos.size(), boxId);
+            
+            // Atualizar TB_ESTACIONAMENTO: marcar como liberado
+            String sqlAtualizarEstacionamento = """
+                UPDATE TB_ESTACIONAMENTO 
+                SET ESTA_ESTACIONADO = 0, 
+                    DATA_SAIDA = CURRENT_TIMESTAMP, 
+                    DATA_ULTIMA_ATUALIZACAO = CURRENT_TIMESTAMP 
+                WHERE TB_BOX_ID_BOX = ? AND ESTA_ESTACIONADO = 1
+                """;
+            
+            int rowsEstacionamento = jdbc.update(sqlAtualizarEstacionamento, boxId);
+            log.info("✅ VagaOracleService: {} estacionamento(s) atualizado(s) em TB_ESTACIONAMENTO", rowsEstacionamento);
+        } else {
+            log.warn("⚠️ VagaOracleService: Nenhum estacionamento ativo encontrado no box {} (pode estar usando sistema antigo)", boxId);
+        }
+        
+        // Atualizar TB_BOX: marcar como livre
+        int rowsBox = jdbc.update("UPDATE TB_BOX SET STATUS = 'L', DATA_SAIDA = CURRENT_TIMESTAMP WHERE ID_BOX = ?", boxId);
+        log.info("✅ VagaOracleService: {} box(es) atualizado(s) em TB_BOX", rowsBox);
+        
+        // Remover vínculo antigo TB_VEICULOBOX (sistema legado)
+        int rowsVeiculoBox = jdbc.update("DELETE FROM TB_VEICULOBOX WHERE TB_BOX_ID_BOX = ?", boxId);
+        if (rowsVeiculoBox > 0) {
+            log.info("✅ VagaOracleService: {} vínculo(s) removido(s) de TB_VEICULOBOX", rowsVeiculoBox);
+        }
+        
+        log.info("✅ VagaOracleService: Box {} liberado com sucesso", boxId);
     }
 
     @Transactional

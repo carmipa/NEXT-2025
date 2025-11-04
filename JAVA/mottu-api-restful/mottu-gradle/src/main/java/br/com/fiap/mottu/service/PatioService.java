@@ -9,6 +9,7 @@ import br.com.fiap.mottu.dto.zona.ZonaRequestDto;
 import br.com.fiap.mottu.dto.zona.ZonaResponseDto;
 import br.com.fiap.mottu.exception.DuplicatedResourceException;
 import br.com.fiap.mottu.exception.ResourceNotFoundException;
+import br.com.fiap.mottu.exception.ResourceInUseException;
 import br.com.fiap.mottu.filter.PatioFilter;
 import br.com.fiap.mottu.mapper.PatioMapper;
 import br.com.fiap.mottu.model.*;
@@ -18,6 +19,7 @@ import br.com.fiap.mottu.repository.*;
 import br.com.fiap.mottu.repository.relacionamento.VeiculoPatioRepository;
 import br.com.fiap.mottu.specification.PatioSpecification;
 import br.com.fiap.mottu.config.LoggingConfig; // Configuração de logging estruturado
+import br.com.fiap.mottu.service.MapGlobalService; // Para invalidar cache do mapa global
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.CachePut;
@@ -53,13 +55,17 @@ public class PatioService {
     private final VeiculoPatioRepository veiculoPatioRepository;
     private final ContatoService contatoService;
     private final EnderecoService enderecoService;
+    private final EstacionamentoRepository estacionamentoRepository;
+    private final MapGlobalService mapGlobalService;
 
     public PatioService(PatioRepository patioRepository, PatioMapper patioMapper,
                         VeiculoRepository veiculoRepository, ZonaRepository zonaRepository,
                         ContatoRepository contatoRepository, EnderecoRepository enderecoRepository,
                         VeiculoPatioRepository veiculoPatioRepository,
                         BoxRepository boxRepository,
-                        ContatoService contatoService, EnderecoService enderecoService) {
+                        ContatoService contatoService, EnderecoService enderecoService,
+                        EstacionamentoRepository estacionamentoRepository,
+                        MapGlobalService mapGlobalService) {
         this.patioRepository = patioRepository;
         this.patioMapper = patioMapper;
         this.veiculoRepository = veiculoRepository;
@@ -70,6 +76,8 @@ public class PatioService {
         this.veiculoPatioRepository = veiculoPatioRepository;
         this.contatoService = contatoService;
         this.enderecoService = enderecoService;
+        this.estacionamentoRepository = estacionamentoRepository;
+        this.mapGlobalService = mapGlobalService;
     }
 
     // LISTAR E BUSCAR
@@ -142,7 +150,13 @@ public class PatioService {
             patio.setEndereco(enderecoService.criarEndereco(dto.getEndereco()).block());
         }
 
-        return patioRepository.save(patio);
+        Patio patioCriado = patioRepository.save(patio);
+        
+        // Invalidar cache do mapa global quando um novo pátio é criado
+        mapGlobalService.invalidarCache();
+        log.info("🗑️ Cache do mapa global invalidado após criação do pátio {}", patioCriado.getIdPatio());
+        
+        return patioCriado;
     }
 
     @Transactional
@@ -172,16 +186,67 @@ public class PatioService {
             patioExistente.setEndereco(enderecoService.criarEndereco(dto.getEndereco()).block());
         }
 
-        return patioRepository.save(patioExistente);
+        Patio patioAtualizado = patioRepository.save(patioExistente);
+        
+        // Invalidar cache do mapa global quando um pátio é atualizado
+        mapGlobalService.invalidarCache();
+        log.info("🗑️ Cache do mapa global invalidado após atualização do pátio {}", patioAtualizado.getIdPatio());
+        
+        return patioAtualizado;
     }
 
     @Transactional
     @CacheEvict(value = {"patioPorId", "patiosList", "veiculosDoPatio", "zonasDoPatio", "contatosDoPatio", "enderecosDoPatio", "boxesDoPatio"}, allEntries = true)
     public void deletarPatio(Long id) {
-        if (!patioRepository.existsById(id)) {
-            throw new ResourceNotFoundException("Pátio", id);
+        Patio patio = buscarPatioPorId(id);
+        
+        // Validar se há estacionamentos ativos no pátio
+        long estacionamentosAtivos = estacionamentoRepository.countByPatioIdPatioAndEstaEstacionadoTrue(id);
+        if (estacionamentosAtivos > 0) {
+            throw new ResourceInUseException(
+                "Pátio", 
+                "estacionamento(s) ativo(s)", 
+                estacionamentosAtivos
+            );
         }
+        
+        // Validar se há veículos associados ao pátio
+        long veiculosAssociados = veiculoPatioRepository.countByPatioIdPatio(id);
+        if (veiculosAssociados > 0) {
+            throw new ResourceInUseException(
+                "Pátio",
+                "veículo(s)",
+                veiculosAssociados
+            );
+        }
+        
+        // Validar se há boxes no pátio
+        long totalBoxes = boxRepository.countByPatioIdPatio(id);
+        if (totalBoxes > 0) {
+            throw new ResourceInUseException(
+                "Pátio",
+                "box(es)",
+                totalBoxes
+            );
+        }
+        
+        // Validar se há zonas no pátio
+        long totalZonas = zonaRepository.countByPatioIdPatio(id);
+        if (totalZonas > 0) {
+            throw new ResourceInUseException(
+                "Pátio",
+                "zona(s)",
+                totalZonas
+            );
+        }
+        
+        log.info("Deletando pátio ID: {} - Nome: {}", id, patio.getNomePatio());
         patioRepository.deleteById(id);
+        log.info("Pátio ID {} deletado com sucesso.", id);
+        
+        // Invalidar cache do mapa global quando um pátio é deletado
+        mapGlobalService.invalidarCache();
+        log.info("🗑️ Cache do mapa global invalidado após exclusão do pátio {}", id);
     }
 
     // --- MÉTODOS DE ASSOCIAÇÃO (Veículo) ---
@@ -291,6 +356,11 @@ public class PatioService {
         }
 
         log.info("Criação completa do pátio {} finalizada com sucesso.", patioSalvo.getNomePatio());
+        
+        // Invalidar cache do mapa global quando um novo pátio completo é criado
+        mapGlobalService.invalidarCache();
+        log.info("🗑️ Cache do mapa global invalidado após criação completa do pátio {}", patioSalvo.getIdPatio());
+        
         return patioSalvo;
     }
 

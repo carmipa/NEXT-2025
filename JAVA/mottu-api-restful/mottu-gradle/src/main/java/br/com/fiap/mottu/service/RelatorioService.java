@@ -832,6 +832,10 @@ public class RelatorioService {
             metricas.put("usoDisco", Math.round(usoDisco * 100) / 100.0);
             metricas.put("usoBD", Math.round(usoBD * 100) / 100.0);
             metricas.put("usoRede", Math.round(usoRede * 100) / 100.0);
+            // Largura de banda da rede em Mbps (pode ser usado o throughput atual ou estimativa)
+            // Mínimo 1 Gbps (1000 Mbps) para servidores, convertendo MB/s para Mbps quando necessário
+            double larguraBandaMbps = Math.max(1000.0, throughputRede * 8.0); // Convertendo MB/s para Mbps, mínimo 1 Gbps (estimativa)
+            metricas.put("larguraBandaMbps", Math.round(larguraBandaMbps * 100) / 100.0);
             metricas.put("topBoxesUtilizados", topBoxes);
             metricas.put("topVeiculosFrequentes", topVeiculos);
             

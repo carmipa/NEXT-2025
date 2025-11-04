@@ -128,22 +128,48 @@ export default function PatioMottuGuarulhos({ highlightBoxId }: { highlightBoxId
 
                 console.log('📊 Dados do mapa recebidos:', {
                     totalBoxes: mapaData.boxes?.length,
-                    boxesOcupados: mapaData.boxes?.filter(b => b.status === 'O').length,
-                    boxesLivres: mapaData.boxes?.filter(b => b.status === 'L').length
+                    boxesOcupados: mapaData.boxes?.filter((b: any) => b.status === 'O').length,
+                    boxesLivres: mapaData.boxes?.filter((b: any) => b.status === 'L').length,
+                    primeiraBox: mapaData.boxes?.[0]
                 });
 
-                const mappedBoxes: MappedBox[] = mapaData.boxes.map(apiBox => {
+                if (!mapaData.boxes || mapaData.boxes.length === 0) {
+                    console.warn('⚠️ Nenhum box encontrado no mapa!');
+                    setBoxes([]);
+                    return;
+                }
+
+                const mappedBoxes: MappedBox[] = mapaData.boxes.map((apiBox: any) => {
                     const position = getBoxPositionFromName(apiBox.nome);
+                    
+                    // Determinar status: 'L' = Livre, 'O' = Ocupado, outros = Indefinido
+                    let status: 'Livre' | 'Ocupado' | 'Indefinido' | 'Armazenamento' = 'Indefinido';
+                    if (apiBox.status === 'L') {
+                        status = 'Livre';
+                    } else if (apiBox.status === 'O') {
+                        status = 'Ocupado';
+                    }
                     
                     return {
                         layoutId: `box-${apiBox.idBox}`, 
                         dbId: apiBox.idBox,
-                        nome: apiBox.nome, // Incluir nome do box
-                        x: position.x, y: position.y, w: 3, h: 4,
-                        status: apiBox.status === 'L' ? 'Livre' : 'Ocupado',
-                        veiculo: apiBox.veiculo
+                        nome: apiBox.nome,
+                        x: position.x, 
+                        y: position.y, 
+                        w: 3, 
+                        h: 4,
+                        status: status,
+                        veiculo: apiBox.veiculo || null
                     };
                 });
+                
+                console.log('✅ Boxes mapeados:', {
+                    total: mappedBoxes.length,
+                    livres: mappedBoxes.filter(b => b.status === 'Livre').length,
+                    ocupados: mappedBoxes.filter(b => b.status === 'Ocupado').length,
+                    primeiroBox: mappedBoxes[0]
+                });
+                
                 setBoxes(mappedBoxes);
             } catch (err: any) {
                 console.error("Falha ao buscar dados do mapa:", err);
@@ -235,8 +261,43 @@ export default function PatioMottuGuarulhos({ highlightBoxId }: { highlightBoxId
                         const isHighlighted = highlightBoxId && b.dbId?.toString() === highlightBoxId;
                         return (
                             <g key={b.layoutId}>
-                                <rect x={b.x} y={b.y} width={b.w} height={b.h} fill={getBoxFillColor(b.status)} stroke={isHighlighted ? '#f59e0b' : getBoxStrokeColor(b.status)} strokeWidth={isHighlighted ? 0.8 / k : 0.2 / k} onMouseEnter={(e) => handleMouseEnterBox(e, b)} onMouseLeave={handleMouseLeaveBox}/>
-                                {b.status === 'Ocupado' && viewOptions.showMotos && ( <use href="#helmet-icon" x={b.x + b.w * 0.1} y={b.y + b.h * 0.1} width={b.w * 0.8} height={b.h * 0.8} fill="white" style={{pointerEvents: 'none'}} /> )}
+                                <rect 
+                                    x={b.x} 
+                                    y={b.y} 
+                                    width={b.w} 
+                                    height={b.h} 
+                                    fill={getBoxFillColor(b.status)} 
+                                    stroke={isHighlighted ? '#f59e0b' : getBoxStrokeColor(b.status)} 
+                                    strokeWidth={isHighlighted ? 0.8 / k : 0.2 / k} 
+                                    onMouseEnter={(e) => handleMouseEnterBox(e, b)} 
+                                    onMouseLeave={handleMouseLeaveBox}
+                                    style={{ cursor: 'pointer' }}
+                                />
+                                {/* Label do box com nome/número */}
+                                <text 
+                                    x={b.x + b.w / 2} 
+                                    y={b.y + b.h / 2} 
+                                    fontSize={Math.max(0.8, 1.5 / k)} 
+                                    textAnchor="middle" 
+                                    dominantBaseline="middle"
+                                    fill={b.status === 'Ocupado' ? '#ffffff' : '#1f2937'}
+                                    fontWeight="bold"
+                                    style={{ pointerEvents: 'none', userSelect: 'none' }}
+                                >
+                                    {b.nome || b.dbId}
+                                </text>
+                                {/* Ícone de moto para boxes ocupados */}
+                                {b.status === 'Ocupado' && viewOptions.showMotos && (
+                                    <use 
+                                        href="#helmet-icon" 
+                                        x={b.x + b.w * 0.15} 
+                                        y={b.y + b.h * 0.15} 
+                                        width={b.w * 0.7} 
+                                        height={b.h * 0.7} 
+                                        fill="rgba(255, 255, 255, 0.8)" 
+                                        style={{pointerEvents: 'none'}} 
+                                    />
+                                )}
                             </g>
                         );
                     })}

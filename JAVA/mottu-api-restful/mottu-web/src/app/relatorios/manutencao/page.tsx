@@ -17,22 +17,39 @@ export default function ManutencaoRelatorioPage() {
   const carregar = async () => {
     setLoading(true);
     try {
+      console.log('🔄 Carregando dados REAIS de manutenção...');
       const res = await RelatoriosApi.getManutencaoResumoPorPatio();
+      console.log('✅ Dados recebidos do backend:', res);
+      
+      if (!res || !Array.isArray(res)) {
+        console.warn('⚠️ Dados inválidos recebidos:', res);
+        setDados([]);
+        return;
+      }
+      
       setDados(res);
 
+      // Calcular totais para série temporal (usar valores reais, não 0.1)
       const totalLivres = res.reduce((a, p) => a + (p.boxesLivres || 0), 0);
       const totalOcupados = res.reduce((a, p) => a + (p.boxesOcupados || 0), 0);
       const totalManut = res.reduce((a, p) => a + (p.boxesManutencao || 0), 0);
+      
       const ponto: SerieManutencao = {
         t: new Date().toLocaleTimeString('pt-BR', { hour12: false, hour: '2-digit', minute: '2-digit' }),
-        livres: totalLivres || 0.1,
-        ocupados: totalOcupados || 0.1,
-        manutencao: totalManut || 0.1,
+        livres: totalLivres,
+        ocupados: totalOcupados,
+        manutencao: totalManut,
       };
+      
+      console.log('📈 Ponto da série:', ponto);
+      
       setSeries(prev => {
         const next = [...prev, ponto];
         return next.length > 20 ? next.slice(next.length - 20) : next;
       });
+    } catch (error) {
+      console.error('❌ Erro ao carregar dados de manutenção:', error);
+      setDados([]);
     } finally {
       setLoading(false);
     }
@@ -54,9 +71,9 @@ export default function ManutencaoRelatorioPage() {
             const totalManut = payload.porPatio.reduce((a: number, p: unknown) => a + Number((p as any).boxesManutencao || 0), 0);
             const ponto: SerieManutencao = {
               t: new Date().toLocaleTimeString('pt-BR', { hour12: false, hour: '2-digit', minute: '2-digit' }),
-              livres: totalLivres || 0.1,
-              ocupados: totalOcupados || 0.1,
-              manutencao: totalManut || 0.1,
+              livres: totalLivres,
+              ocupados: totalOcupados,
+              manutencao: totalManut,
             };
             setSeries(prev => {
               const next = [...prev, ponto];
@@ -71,13 +88,48 @@ export default function ManutencaoRelatorioPage() {
   }, []);
 
   const kpis = useMemo(() => {
-    const totalVeiculos = dados.reduce((a, p) => a + (p.veiculosOperacionais + p.veiculosEmManutencao + p.veiculosInativos), 0);
-    const operacionais = dados.reduce((a, p) => a + p.veiculosOperacionais, 0);
-    const emManutencao = dados.reduce((a, p) => a + p.veiculosEmManutencao, 0);
-    const inativos = dados.reduce((a, p) => a + p.veiculosInativos, 0);
-    const livres = dados.reduce((a, p) => a + p.boxesLivres, 0);
-    const ocupados = dados.reduce((a, p) => a + p.boxesOcupados, 0);
-    const manutencao = dados.reduce((a, p) => a + p.boxesManutencao, 0);
+    // DADOS REAIS do backend - não usar valores mockados
+    if (!dados || dados.length === 0) {
+      return { 
+        totalVeiculos: 0, 
+        operacionais: 0, 
+        emManutencao: 0, 
+        inativos: 0, 
+        livres: 0, 
+        ocupados: 0, 
+        manutencao: 0 
+      };
+    }
+    
+    // Agregar dados reais por pátio
+    // IMPORTANTE: Os veículos são apenas os ESTACIONADOS em cada pátio (não todos do sistema)
+    const operacionais = dados.reduce((a, p) => a + (p.veiculosOperacionais || 0), 0);
+    const emManutencao = dados.reduce((a, p) => a + (p.veiculosEmManutencao || 0), 0);
+    const inativos = dados.reduce((a, p) => a + (p.veiculosInativos || 0), 0);
+    const totalVeiculos = operacionais + emManutencao + inativos; // Total de veículos estacionados
+    
+    // Boxes (todos os pátios)
+    const livres = dados.reduce((a, p) => a + (p.boxesLivres || 0), 0);
+    const ocupados = dados.reduce((a, p) => a + (p.boxesOcupados || 0), 0);
+    const manutencao = dados.reduce((a, p) => a + (p.boxesManutencao || 0), 0);
+    
+    console.log('📊 KPIs de Manutenção (DADOS REAIS - Veículos Estacionados):', {
+      totalVeiculos: totalVeiculos, // Total de veículos ESTACIONADOS (não todos do sistema)
+      operacionais,
+      emManutencao,
+      inativos,
+      livres,
+      ocupados,
+      manutencao,
+      totalPatios: dados.length,
+      detalhesPorPatio: dados.map(p => ({
+        patio: p.patioNome,
+        veiculos: (p.veiculosOperacionais || 0) + (p.veiculosEmManutencao || 0) + (p.veiculosInativos || 0),
+        boxesLivres: p.boxesLivres,
+        boxesOcupados: p.boxesOcupados
+      }))
+    });
+    
     return { totalVeiculos, operacionais, emManutencao, inativos, livres, ocupados, manutencao };
   }, [dados]);
 
@@ -187,24 +239,33 @@ export default function ManutencaoRelatorioPage() {
             </div>
           </div>
 
-          {/* Gráfico temporal com escala log para evolução de boxes*/}
+          {/* Gráfico temporal com evolução de boxes - DADOS REAIS */}
           <div className="neumorphic-container">
             <div className="flex items-center justify-between mb-3">
-              <h2 className="text-white text-xl"><i className="ion-ios-analytics text-emerald-400 mr-2"></i>Evolução de Boxes</h2>
+              <h2 className="text-white text-xl"><i className="ion-ios-analytics text-emerald-400 mr-2"></i>Evolução de Boxes (Tempo Real)</h2>
             </div>
             <div className="h-64">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={series}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="t" />
-                  <YAxis scale="log" domain={[0.1, 'auto']} />
-                  <Tooltip />
-                  <Legend />
-                  <Bar dataKey="livres" name="Livres" fill="#34d399" barSize={14} />
-                  <Bar dataKey="ocupados" name="Ocupados" fill="#fbbf24" barSize={14} />
-                  <Bar dataKey="manutencao" name="Manutenção" fill="#fb7185" barSize={14} />
-                </BarChart>
-              </ResponsiveContainer>
+              {series.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={series}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="t" />
+                    <YAxis domain={[0, 'auto']} />
+                    <Tooltip />
+                    <Legend />
+                    <Bar dataKey="livres" name="Livres" fill="#34d399" barSize={14} />
+                    <Bar dataKey="ocupados" name="Ocupados" fill="#fbbf24" barSize={14} />
+                    <Bar dataKey="manutencao" name="Manutenção" fill="#fb7185" barSize={14} />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-full flex items-center justify-center text-gray-400">
+                  <div className="text-center">
+                    <i className="ion-ios-analytics text-4xl mb-2"></i>
+                    <p>Aguardando dados...</p>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 

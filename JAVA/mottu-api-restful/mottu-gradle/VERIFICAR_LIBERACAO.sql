@@ -1,0 +1,86 @@
+-- Script para verificar se a liberação atualizou corretamente TB_ESTACIONAMENTO
+-- Execute este script após tentar liberar uma vaga
+
+-- 1. Verificar estacionamentos ativos para as placas conhecidas (EGX1D92 e EGC4F67)
+SELECT 
+    e.ID_ESTACIONAMENTO,
+    v.PLACA,
+    e.TB_BOX_ID_BOX,
+    b.NOME as BOX_NOME,
+    b.STATUS as BOX_STATUS,
+    e.ESTA_ESTACIONADO,
+    e.DATA_ENTRADA,
+    e.DATA_SAIDA,
+    e.DATA_ULTIMA_ATUALIZACAO
+FROM TB_ESTACIONAMENTO e
+JOIN TB_VEICULO v ON e.TB_VEICULO_ID_VEICULO = v.ID_VEICULO
+JOIN TB_BOX b ON e.TB_BOX_ID_BOX = b.ID_BOX
+WHERE v.PLACA IN ('EGX1D92', 'EGC4F67')
+ORDER BY e.DATA_ULTIMA_ATUALIZACAO DESC;
+
+-- 2. Verificar especificamente os boxes guarulhos001 e guarulhos002
+SELECT 
+    b.ID_BOX,
+    b.NOME,
+    b.STATUS as BOX_STATUS,
+    e.ID_ESTACIONAMENTO,
+    e.ESTA_ESTACIONADO,
+    e.DATA_SAIDA,
+    v.PLACA
+FROM TB_BOX b
+LEFT JOIN TB_ESTACIONAMENTO e ON b.ID_BOX = e.TB_BOX_ID_BOX AND e.ESTA_ESTACIONADO = 1
+LEFT JOIN TB_VEICULO v ON e.TB_VEICULO_ID_VEICULO = v.ID_VEICULO
+WHERE b.NOME IN ('guarulhos001', 'guarulhos002')
+ORDER BY b.ID_BOX;
+
+-- 3. Verificar inconsistências: boxes com STATUS='L' mas com estacionamento ativo
+SELECT 
+    b.ID_BOX,
+    b.NOME,
+    b.STATUS as BOX_STATUS,
+    e.ID_ESTACIONAMENTO,
+    e.ESTA_ESTACIONADO,
+    v.PLACA
+FROM TB_BOX b
+INNER JOIN TB_ESTACIONAMENTO e ON b.ID_BOX = e.TB_BOX_ID_BOX AND e.ESTA_ESTACIONADO = 1
+LEFT JOIN TB_VEICULO v ON e.TB_VEICULO_ID_VEICULO = v.ID_VEICULO
+WHERE b.STATUS = 'L'
+ORDER BY b.ID_BOX;
+
+-- 4. Verificar um box específico após liberação (substitua 1173 ou 1174 pelo ID do box liberado)
+-- Exemplo para guarulhos001 (ID 1173)
+SELECT 
+    e.ID_ESTACIONAMENTO,
+    e.ESTA_ESTACIONADO,
+    e.DATA_SAIDA,
+    e.DATA_ULTIMA_ATUALIZACAO,
+    b.ID_BOX,
+    b.NOME,
+    b.STATUS as BOX_STATUS
+FROM TB_ESTACIONAMENTO e
+JOIN TB_BOX b ON e.TB_BOX_ID_BOX = b.ID_BOX
+WHERE b.ID_BOX = 1173
+ORDER BY e.DATA_ULTIMA_ATUALIZACAO DESC;
+
+-- Exemplo para guarulhos002 (ID 1174)
+SELECT 
+    e.ID_ESTACIONAMENTO,
+    e.ESTA_ESTACIONADO,
+    e.DATA_SAIDA,
+    e.DATA_ULTIMA_ATUALIZACAO,
+    b.ID_BOX,
+    b.NOME,
+    b.STATUS as BOX_STATUS
+FROM TB_ESTACIONAMENTO e
+JOIN TB_BOX b ON e.TB_BOX_ID_BOX = b.ID_BOX
+WHERE b.ID_BOX = 1174
+ORDER BY e.DATA_ULTIMA_ATUALIZACAO DESC;
+
+-- 5. Contar quantos estacionamentos ainda estão ativos
+SELECT 
+    COUNT(*) as TOTAL_ESTACIONAMENTOS_ATIVOS
+FROM TB_ESTACIONAMENTO
+WHERE ESTA_ESTACIONADO = 1;
+
+
+

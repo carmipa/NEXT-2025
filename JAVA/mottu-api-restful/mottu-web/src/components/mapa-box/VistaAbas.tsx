@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useMemo } from 'react';
-import { Bike, MapPin, Users, Clock, BarChart3, ChevronLeft, ChevronRight, PieChart, TrendingUp } from 'lucide-react';
+import { useState, useMemo, useEffect } from 'react';
+import { Bike, MapPin, Users, Clock, BarChart3, PieChart, TrendingUp } from 'lucide-react';
 import { VagaCompleta, STATUS_COLORS, STATUS_LABELS } from '../../app/mapa-box/types/VagaCompleta';
+import { ResponsiveContainer, LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip, Legend } from 'recharts';
 
 interface VistaAbasProps {
     vagas: VagaCompleta[];
@@ -10,115 +11,64 @@ interface VistaAbasProps {
     onVagaSelect: (vaga: VagaCompleta) => void;
 }
 
-type TipoVisualizacao = 'cards' | 'tabela' | 'grafico';
 type TipoGrafico = 'pizza' | 'linha';
 
 export default function VistaAbas({ vagas, vagaSelecionada, onVagaSelect }: VistaAbasProps) {
-    const [tipoVisualizacao, setTipoVisualizacao] = useState<TipoVisualizacao>('grafico');
     const [tipoGrafico, setTipoGrafico] = useState<TipoGrafico>('pizza');
-    const [patioAtual, setPatioAtual] = useState<number>(0);
 
-    // Debug: Log para verificar se o componente está sendo renderizado
-    console.log('VistaAbas renderizada:', { vagas: vagas.length, tipoVisualizacao, patioAtual });
-
-    // Agrupar vagas por pátio
-    const vagasPorPatio = useMemo(() => {
-        const agrupadas = vagas.reduce((acc, vaga) => {
-            const patioId = vaga.patio.idPatio;
-            if (!acc[patioId]) {
-                acc[patioId] = {
-                    patio: vaga.patio,
-                    vagas: []
-                };
-            }
-            acc[patioId].vagas.push(vaga);
-            return acc;
-        }, {} as Record<number, { patio: VagaCompleta['patio']; vagas: VagaCompleta[] }>);
-
-        return Object.values(agrupadas);
-    }, [vagas]);
-
-    // Pátio atual
-    const patioSelecionado = vagasPorPatio[patioAtual];
-    const totalPatios = vagasPorPatio.length;
-
-    // Navegação entre pátios
-    const handlePatioAnterior = () => {
-        setPatioAtual(prev => prev > 0 ? prev - 1 : totalPatios - 1);
-    };
-
-    const handlePatioProximo = () => {
-        setPatioAtual(prev => prev < totalPatios - 1 ? prev + 1 : 0);
-    };
-
-    // Estatísticas do pátio atual
-    const estatisticasPatio = useMemo(() => {
-        if (!patioSelecionado) return { total: 0, livres: 0, ocupados: 0, manutencao: 0 };
-        
-        const vagas = patioSelecionado.vagas;
-        return {
-            total: vagas.length,
-            livres: vagas.filter(v => v.status === 'L').length,
-            ocupados: vagas.filter(v => v.status === 'O').length,
-            manutencao: vagas.filter(v => v.status === 'M').length
-        };
-    }, [patioSelecionado]);
-
-    if (!patioSelecionado) {
+    // Verificar se há vagas
+    if (!vagas || vagas.length === 0) {
         return (
             <div className="neumorphic-container">
                 <div className="text-center p-8">
                     <Bike size={48} className="mx-auto text-gray-400 mb-4" />
-                    <h3 className="text-lg font-medium text-gray-600 mb-2">Nenhum pátio encontrado</h3>
+                    <h3 className="text-lg font-medium text-gray-600 mb-2">Nenhuma vaga encontrada</h3>
                     <p className="text-gray-500 text-sm">
-                        Não há vagas disponíveis para exibir.
+                        Não há vagas disponíveis para exibir gráficos.
                     </p>
                 </div>
             </div>
         );
     }
 
+    // Pegar informações do pátio das vagas (assumindo que todas as vagas são do mesmo pátio)
+    const patioInfo = vagas[0]?.patio;
+
+    // Estatísticas do pátio atual (das vagas recebidas)
+    const estatisticasPatio = useMemo(() => {
+        return {
+            total: vagas.length,
+            livres: vagas.filter(v => v.status === 'L').length,
+            ocupados: vagas.filter(v => v.status === 'O').length,
+            manutencao: vagas.filter(v => v.status === 'M').length
+        };
+    }, [vagas]);
+
     return (
         <div className="space-y-6">
-            {/* Header com navegação de pátios */}
-            <div className="neumorphic-container">
-                <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-4">
+            {/* Header com informações do pátio */}
+            {patioInfo && (
+                <div className="neumorphic-container">
+                    <div className="flex items-center gap-4 mb-4">
                         <MapPin size={24} className="text-blue-500" />
                         <div>
                             <h3 className="text-xl font-semibold" style={{fontFamily: 'Montserrat, sans-serif'}}>
-                                {patioSelecionado.patio.nomePatio}
+                                {patioInfo.nomePatio}
                             </h3>
-                            {patioSelecionado.patio.endereco && (
+                            {patioInfo.endereco && (
                                 <p className="text-sm text-gray-600">
-                                    {patioSelecionado.patio.endereco.cidade}, {patioSelecionado.patio.endereco.estado}
+                                    {typeof patioInfo.endereco === 'string'
+                                        ? patioInfo.endereco
+                                        : `${patioInfo.endereco.cidade || ''}, ${patioInfo.endereco.estado || ''}`}
                                 </p>
                             )}
                         </div>
                     </div>
-                    
-                    <div className="flex items-center gap-2">
-                        <button
-                            onClick={handlePatioAnterior}
-                            className="neumorphic-button p-2"
-                            disabled={totalPatios <= 1}
-                        >
-                            <ChevronLeft size={16} />
-                        </button>
-                        <span className="text-sm text-gray-600 px-3">
-                            {patioAtual + 1} de {totalPatios}
-                        </span>
-                        <button
-                            onClick={handlePatioProximo}
-                            className="neumorphic-button p-2"
-                            disabled={totalPatios <= 1}
-                        >
-                            <ChevronRight size={16} />
-                        </button>
-                    </div>
                 </div>
+            )}
 
-                {/* Estatísticas do pátio */}
+            {/* Estatísticas do pátio */}
+            <div className="neumorphic-container">
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                     <div className="neumorphic-container hover:scale-105 transition-all duration-300">
                         <div className="flex items-center gap-2 mb-2">
@@ -151,22 +101,13 @@ export default function VistaAbas({ vagas, vagaSelecionada, onVagaSelect }: Vist
                 </div>
             </div>
 
-            {/* Abas de visualização */}
+            {/* Abas de visualização - Apenas Gráficos */}
             <div className="neumorphic-container">
-                {/* Título da seção de gráficos */}
-                <div className="flex items-center gap-3 mb-6">
-                    <BarChart3 size={24} className="text-blue-500" />
-                    <div>
-                        <h4 className="text-lg font-semibold">Análise Gráfica</h4>
-                        <p className="text-sm text-gray-600">Visualização em gráficos das estatísticas do pátio</p>
-                    </div>
-                </div>
-
                 {/* Controles de tipo de gráfico */}
                 <div className="flex items-center justify-between mb-6">
                     <div>
                         <h4 className="text-lg font-semibold">Análise Gráfica</h4>
-                        <p className="text-sm text-gray-600">Escolha o tipo de visualização</p>
+                        <p className="text-sm text-gray-600">Escolha o tipo de gráfico</p>
                     </div>
                     
                     <div className="flex gap-2">
@@ -195,14 +136,13 @@ export default function VistaAbas({ vagas, vagaSelecionada, onVagaSelect }: Vist
                     </div>
                 </div>
 
-                {/* Gráficos */}
-                <div>
-                    <GraficoOcupacao
-                        estatisticas={estatisticasPatio}
-                        vagas={patioSelecionado.vagas}
-                        tipoGrafico={tipoGrafico}
-                    />
-                </div>
+                {/* Gráficos - Atualiza automaticamente quando as vagas mudam */}
+                <GraficoOcupacao
+                    key={`grafico-${patioInfo?.idPatio || 'default'}-${vagas.length}`}
+                    estatisticas={estatisticasPatio}
+                    vagas={vagas}
+                    tipoGrafico={tipoGrafico}
+                />
             </div>
         </div>
     );
@@ -239,7 +179,7 @@ function TabelaVagas({
                         
                         return (
                             <tr 
-                                key={vaga.idBox || `vaga-${index}`}
+                                key={vaga.idBox || `vaga-${vaga.nomeBox || vaga.nome}`}
                                 className={`border-b border-gray-100 hover:bg-gray-50 transition-colors ${
                                     isSelecionada ? 'bg-blue-50' : ''
                                 }`}
@@ -247,7 +187,7 @@ function TabelaVagas({
                                 <td className="py-3 px-4">
                                     <div className="flex items-center gap-2">
                                         <div className={`w-3 h-3 rounded-full ${statusColors.bg}`}></div>
-                                        <span className="font-medium">{vaga.nome}</span>
+                                        <span className="font-medium">{vaga.nomeBox || vaga.nome || `Box ${vaga.idBox}`}</span>
                                     </div>
                                 </td>
                                 <td className="py-3 px-4">
@@ -259,7 +199,7 @@ function TabelaVagas({
                                     {vaga.veiculo ? (
                                         <div>
                                             <div className="font-medium">{vaga.veiculo.placa}</div>
-                                            <div className="text-sm text-gray-500">{vaga.veiculo.modelo}</div>
+                                            <div className="text-sm text-gray-500">{vaga.veiculo.modelo || vaga.veiculo.fabricante || '-'}</div>
                                         </div>
                                     ) : (
                                         <span className="text-gray-400">-</span>
@@ -312,148 +252,147 @@ function GraficoOcupacao({
     const porcentagemOcupados = estatisticas.total > 0 ? (estatisticas.ocupados / estatisticas.total) * 100 : 0;
     const porcentagemManutencao = estatisticas.total > 0 ? (estatisticas.manutencao / estatisticas.total) * 100 : 0;
 
-    // Gerar dados simulados para o gráfico de linha (ocupação ao longo do tempo)
+    // Gerar dados temporais baseados nas vagas reais do pátio atual
+    // ATENÇÃO: Atualiza quando vagas ou estatisticas mudam (mudança de pátio)
     const dadosTemporais = useMemo(() => {
-        const horas = [];
+        // Usar dados atuais do pátio como referência
         const agora = new Date();
+        const horas: Array<{hora: string; livres: number; ocupados: number; manutencao: number}> = [];
         
+        // Calcular estatísticas reais das vagas do pátio atual
+        const vagasLivres = estatisticas.livres;
+        const vagasOcupadas = estatisticas.ocupados;
+        const vagasManutencao = estatisticas.manutencao;
+        
+        // Gerar pontos para as últimas 24 horas usando dados reais do pátio atual
+        // (sem histórico temporal completo, mas usando dados reais atuais)
         for (let i = 23; i >= 0; i--) {
             const hora = new Date(agora.getTime() - (i * 60 * 60 * 1000));
             const horaFormatada = hora.getHours().toString().padStart(2, '0') + ':00';
             
-            // Simular variação de ocupação ao longo do dia
-            const baseOcupacao = 0.3 + (Math.sin((hora.getHours() - 6) * Math.PI / 12) * 0.4);
-            const ocupados = Math.round(estatisticas.total * baseOcupacao);
-            const livres = estatisticas.total - ocupados - estatisticas.manutencao;
-            
+            // Usar dados reais atuais do pátio (sem simulação)
             horas.push({
                 hora: horaFormatada,
-                livres: Math.max(0, livres),
-                ocupados: Math.max(0, ocupados),
-                manutencao: estatisticas.manutencao
+                livres: vagasLivres,
+                ocupados: vagasOcupadas,
+                manutencao: vagasManutencao
             });
         }
         
         return horas;
-    }, [estatisticas]);
+    }, [estatisticas]); // Depende apenas de estatisticas, que já muda quando o pátio muda
 
     if (tipoGrafico === 'linha') {
         return (
             <div className="space-y-6">
                 {/* Gráfico de Linha - Ocupação no Tempo */}
                 <div className="neumorphic-container">
-                    <h4 className="text-lg font-semibold mb-4">Ocupação ao Longo do Tempo (Últimas 24h)</h4>
+                    <div className="flex items-center justify-between mb-4">
+                        <h4 className="text-lg font-semibold">Ocupação ao Longo do Tempo</h4>
+                        <span className="text-xs text-amber-600 bg-amber-50 px-2 py-1 rounded">
+                            ⚠️ Dados de demonstração
+                        </span>
+                    </div>
                     <div className="bg-white rounded-lg p-6">
                         <div className="h-80 w-full">
-                            <svg viewBox="0 0 800 300" className="w-full h-full">
-                                {/* Eixos */}
-                                <line x1="50" y1="250" x2="750" y2="250" stroke="#e5e7eb" strokeWidth="2"/>
-                                <line x1="50" y1="50" x2="50" y2="250" stroke="#e5e7eb" strokeWidth="2"/>
-                                
-                                {/* Grid horizontal */}
-                                {[0, 25, 50, 75, 100].map((percent, i) => (
-                                    <g key={i}>
-                                        <line 
-                                            x1="50" 
-                                            y1={250 - (percent * 2)} 
-                                            x2="750" 
-                                            y2={250 - (percent * 2)} 
-                                            stroke="#f3f4f6" 
-                                            strokeWidth="1"
+                            <ResponsiveContainer width="100%" height="100%">
+                                <LineChart data={dadosTemporais} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
+                                    <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
+                                    <XAxis 
+                                        dataKey="hora" 
+                                        stroke="#6b7280"
+                                        style={{ fontSize: '12px' }}
+                                        interval="preserveStartEnd"
+                                    />
+                                    <YAxis 
+                                        stroke="#6b7280"
+                                        domain={[0, estatisticas.total || 1]}
+                                        style={{ fontSize: '12px' }}
+                                    />
+                                    <Tooltip 
+                                        contentStyle={{ 
+                                            backgroundColor: '#ffffff', 
+                                            border: '1px solid #e5e7eb', 
+                                            borderRadius: '8px',
+                                            padding: '10px'
+                                        }}
+                                        labelStyle={{ color: '#111827', fontWeight: 'bold' }}
+                                    />
+                                    <Legend 
+                                        wrapperStyle={{ paddingTop: '20px' }}
+                                        iconType="line"
+                                    />
+                                    <Line 
+                                        type="monotone" 
+                                        dataKey="livres" 
+                                        name="Vagas Livres" 
+                                        stroke="#10b981" 
+                                        strokeWidth={3}
+                                        dot={{ r: 4, fill: '#10b981' }}
+                                        activeDot={{ r: 6 }}
+                                    />
+                                    <Line 
+                                        type="monotone" 
+                                        dataKey="ocupados" 
+                                        name="Vagas Ocupadas" 
+                                        stroke="#ef4444" 
+                                        strokeWidth={3}
+                                        dot={{ r: 4, fill: '#ef4444' }}
+                                        activeDot={{ r: 6 }}
+                                    />
+                                    {estatisticas.manutencao > 0 && (
+                                        <Line 
+                                            type="monotone" 
+                                            dataKey="manutencao" 
+                                            name="Manutenção" 
+                                            stroke="#f59e0b" 
+                                            strokeWidth={3}
+                                            dot={{ r: 4, fill: '#f59e0b' }}
+                                            activeDot={{ r: 6 }}
                                         />
-                                        <text x="40" y={255 - (percent * 2)} textAnchor="end" className="text-xs fill-gray-500">
-                                            {percent}%
-                                        </text>
-                                    </g>
-                                ))}
-                                
-                                {/* Linha de vagas livres */}
-                                <polyline
-                                    points={dadosTemporais.map((dado, i) => {
-                                        const x = 50 + (i * 700 / 23);
-                                        const y = 250 - (dado.livres / estatisticas.total * 200);
-                                        return `${x},${y}`;
-                                    }).join(' ')}
-                                    fill="none"
-                                    stroke="#10b981"
-                                    strokeWidth="3"
-                                />
-                                
-                                {/* Linha de vagas ocupadas */}
-                                <polyline
-                                    points={dadosTemporais.map((dado, i) => {
-                                        const x = 50 + (i * 700 / 23);
-                                        const y = 250 - (dado.ocupados / estatisticas.total * 200);
-                                        return `${x},${y}`;
-                                    }).join(' ')}
-                                    fill="none"
-                                    stroke="#ef4444"
-                                    strokeWidth="3"
-                                />
-                                
-                                {/* Pontos de dados */}
-                                {dadosTemporais.map((dado, i) => {
-                                    const x = 50 + (i * 700 / 23);
-                                    const yLivres = 250 - (dado.livres / estatisticas.total * 200);
-                                    const yOcupados = 250 - (dado.ocupados / estatisticas.total * 200);
-                                    
-                                    return (
-                                        <g key={i}>
-                                            <circle cx={x} cy={yLivres} r="4" fill="#10b981"/>
-                                            <circle cx={x} cy={yOcupados} r="4" fill="#ef4444"/>
-                                        </g>
-                                    );
-                                })}
-                                
-                                {/* Labels do eixo X */}
-                                {dadosTemporais.filter((_, i) => i % 4 === 0).map((dado, i) => {
-                                    const x = 50 + (i * 4 * 700 / 23);
-                                    return (
-                                        <text key={i} x={x} y="270" textAnchor="middle" className="text-xs fill-gray-500">
-                                            {dado.hora}
-                                        </text>
-                                    );
-                                })}
-                            </svg>
+                                    )}
+                                </LineChart>
+                            </ResponsiveContainer>
                         </div>
-                        
-                        {/* Legenda */}
-                        <div className="flex justify-center mt-4 space-x-6">
-                            <div className="flex items-center gap-2">
-                                <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                                <span className="text-sm text-gray-600">Vagas Livres</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-                                <span className="text-sm text-gray-600">Vagas Ocupadas</span>
-                            </div>
+                        <div className="mt-4 pt-4 border-t border-gray-200">
+                            <p className="text-xs text-gray-500 text-center">
+                                <strong>Nota:</strong> Este gráfico mostra dados atuais como referência. Para visualizar histórico completo de ocupação, 
+                                é necessário implementar um endpoint de histórico temporal no backend ou usar dados de log de movimentações.
+                            </p>
                         </div>
                     </div>
                 </div>
 
-                {/* Resumo Estatístico Temporal */}
+                {/* Resumo Estatístico Temporal - Dados Reais */}
                 <div className="neumorphic-container">
-                    <h4 className="text-lg font-semibold mb-4">Análise Temporal</h4>
+                    <h4 className="text-lg font-semibold mb-4">Análise Temporal (Dados Atuais)</h4>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div className="text-center">
                             <div className="text-2xl font-bold text-green-500">
-                                {Math.round(dadosTemporais.reduce((acc, d) => acc + d.livres, 0) / dadosTemporais.length)}
+                                {estatisticas.livres}
                             </div>
-                            <div className="text-sm text-gray-600">Média de Vagas Livres</div>
+                            <div className="text-sm text-gray-600">Vagas Livres (Atual)</div>
                         </div>
                         <div className="text-center">
                             <div className="text-2xl font-bold text-red-500">
-                                {Math.round(dadosTemporais.reduce((acc, d) => acc + d.ocupados, 0) / dadosTemporais.length)}
+                                {estatisticas.ocupados}
                             </div>
-                            <div className="text-sm text-gray-600">Média de Vagas Ocupadas</div>
+                            <div className="text-sm text-gray-600">Vagas Ocupadas (Atual)</div>
                         </div>
                         <div className="text-center">
                             <div className="text-2xl font-bold text-blue-500">
-                                {Math.round((dadosTemporais.reduce((acc, d) => acc + d.ocupados, 0) / dadosTemporais.length) / estatisticas.total * 100)}%
+                                {estatisticas.total > 0 ? Math.round((estatisticas.ocupados / estatisticas.total) * 100) : 0}%
                             </div>
-                            <div className="text-sm text-gray-600">Taxa Média de Ocupação</div>
+                            <div className="text-sm text-gray-600">Taxa de Ocupação (Atual)</div>
                         </div>
                     </div>
+                    {dadosTemporais.length > 0 && (
+                        <div className="mt-4 pt-4 border-t border-gray-200">
+                            <p className="text-xs text-gray-500 text-center">
+                                * Gráfico mostra dados simulados para demonstração. Para dados históricos reais, consulte o histórico de estacionamentos.
+                            </p>
+                        </div>
+                    )}
                 </div>
             </div>
         );
@@ -613,3 +552,68 @@ function GraficoOcupacao({
         </div>
     );
 }
+
+// Componente de Cards
+function CardsVagas({ 
+    vagas, 
+    vagaSelecionada, 
+    onVagaSelect 
+}: { 
+    vagas: VagaCompleta[]; 
+    vagaSelecionada: VagaCompleta | null; 
+    onVagaSelect: (vaga: VagaCompleta) => void; 
+}) {
+    return (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {vagas.map((vaga) => {
+                const isSelecionada = vagaSelecionada?.idBox === vaga.idBox;
+                const statusColors = STATUS_COLORS[vaga.status];
+                
+                return (
+                    <button
+                        key={vaga.idBox || `vaga-${vaga.nomeBox || vaga.nome}`}
+                        onClick={() => onVagaSelect(vaga)}
+                        className={`neumorphic-container hover:scale-105 transition-all duration-300 p-4 text-left ${
+                            isSelecionada ? 'ring-2 ring-blue-500' : ''
+                        }`}
+                    >
+                        <div className="flex items-center justify-between mb-3">
+                            <div className="flex items-center gap-2">
+                                <div className={`w-4 h-4 rounded-full ${statusColors.bg}`}></div>
+                                <span className="font-semibold text-gray-800">
+                                    {vaga.nomeBox || vaga.nome || `Box ${vaga.idBox}`}
+                                </span>
+                            </div>
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusColors.bg} ${statusColors.text}`}>
+                                {STATUS_LABELS[vaga.status]}
+                            </span>
+                        </div>
+                        
+                        {vaga.veiculo && (
+                            <div className="space-y-1 text-sm">
+                                <div className="text-gray-700">
+                                    <span className="font-medium">Placa:</span> {vaga.veiculo.placa}
+                                </div>
+                                <div className="text-gray-600">
+                                    <span className="font-medium">Modelo:</span> {vaga.veiculo.modelo || '-'}
+                                </div>
+                                {vaga.veiculo.fabricante && (
+                                    <div className="text-gray-600">
+                                        <span className="font-medium">Fabricante:</span> {vaga.veiculo.fabricante}
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                        
+                        {!vaga.veiculo && (
+                            <div className="text-sm text-gray-500 italic">
+                                Vaga livre
+                            </div>
+                        )}
+                    </button>
+                );
+            })}
+        </div>
+    );
+}
+

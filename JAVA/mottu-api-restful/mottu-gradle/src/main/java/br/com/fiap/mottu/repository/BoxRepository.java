@@ -36,6 +36,12 @@ public interface BoxRepository extends JpaRepository<Box, Long>, JpaSpecificatio
     
     List<Box> findByStatus(String status);
     
+    /**
+     * Busca boxes por pátio e status
+     */
+    @Query("SELECT b FROM Box b WHERE b.patio.idPatio = :patioId AND b.status = :status")
+    List<Box> findByPatioIdPatioAndStatus(@Param("patioId") Long patioId, @Param("status") String status);
+    
     @Query("SELECT b FROM Box b WHERE b.patio.idPatio = :patioId AND b.nome = :nome")
     Optional<Box> findByPatioIdAndNome(@Param("patioId") Long patioId, @Param("nome") String nome);
     

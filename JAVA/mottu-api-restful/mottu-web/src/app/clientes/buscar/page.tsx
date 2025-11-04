@@ -276,28 +276,32 @@ export default function BuscarClientesPage() {
                         {clientes.map((cliente) => (
                           <div key={cliente.idCliente} className="neumorphic-card-gradient p-5 flex flex-col justify-between transition-all duration-300 hover:shadow-2xl hover:scale-105 transform hover:-translate-y-2 cursor-pointer">
                             <div>
-                              <div className="flex items-center mb-3">
-                                <span className="text-xs font-semibold bg-[var(--neumorphic-bg)] text-[var(--color-mottu-dark)] px-2 py-0.5 rounded-full mr-2">
-                                  ID: {cliente.idCliente}
-                                </span>
-                                <h2 className="text-xl font-bold text-[var(--color-mottu-dark)] truncate font-montserrat">
-                                  {cliente.nome} {cliente.sobrenome}
-                                </h2>
+                              <div className="flex items-center justify-between mb-3 sm:mb-4">
+                                <div className="flex items-center gap-1 sm:gap-2">
+                                  <span className="text-xs font-semibold bg-[var(--neumorphic-bg)] text-[var(--color-mottu-dark)] px-2 sm:px-3 py-1 rounded-full shadow-inner" style={{fontFamily: 'Montserrat, sans-serif'}}>ID: {cliente.idCliente}</span>
+                                  <h2 className="text-lg sm:text-xl font-bold text-[var(--color-mottu-dark)] truncate flex items-center gap-1 sm:gap-2" title={`${cliente.nome} ${cliente.sobrenome}`} style={{fontFamily: 'Montserrat, sans-serif'}}>
+                                    <i className="ion-ios-person text-blue-500 text-base sm:text-lg"></i>
+                                    {cliente.nome} {cliente.sobrenome}
+                                  </h2>
+                                </div>
                               </div>
                               
-                              <div className="text-sm text-slate-600 mt-2 space-y-1">
-                                <p className="flex items-center">
-                                  <span className="font-semibold text-[var(--color-mottu-dark)] w-10 sm:w-12" style={{fontFamily: 'Montserrat, sans-serif'}}>CPF:</span> 
+                              <div className="space-y-2 sm:space-y-3 text-xs sm:text-sm mb-3 sm:mb-4">
+                                <div className="flex items-center">
+                                  <i className="ion-ios-card text-green-500 text-sm sm:text-base mr-1 sm:mr-2"></i>
+                                  <span className="font-semibold text-[var(--color-mottu-dark)] w-16 sm:w-20" style={{fontFamily: 'Montserrat, sans-serif'}}>CPF:</span> 
                                   <span className="text-slate-600 ml-1 sm:ml-2 text-xs sm:text-sm" style={{fontFamily: 'Montserrat, sans-serif'}}>{cliente.cpf}</span>
-                                </p>
-                                <p className="flex items-center">
-                                  <span className="font-semibold text-[var(--color-mottu-dark)] w-10 sm:w-12" style={{fontFamily: 'Montserrat, sans-serif'}}>Email:</span> 
+                                </div>
+                                <div className="flex items-center">
+                                  <i className="ion-ios-mail text-cyan-500 text-sm sm:text-base mr-1 sm:mr-2"></i>
+                                  <span className="font-semibold text-[var(--color-mottu-dark)] w-16 sm:w-20" style={{fontFamily: 'Montserrat, sans-serif'}}>Email:</span> 
                                   <span className="text-slate-600 truncate ml-1 sm:ml-2 text-xs sm:text-sm" style={{fontFamily: 'Montserrat, sans-serif'}}>{cliente.contatoResponseDto?.email || 'N/A'}</span>
-                                </p>
-                                <p className="flex items-center">
-                                  <span className="font-semibold text-[var(--color-mottu-dark)] w-10 sm:w-12" style={{fontFamily: 'Montserrat, sans-serif'}}>Cidade:</span> 
+                                </div>
+                                <div className="flex items-center">
+                                  <i className="ion-ios-location text-purple-500 text-sm sm:text-base mr-1 sm:mr-2"></i>
+                                  <span className="font-semibold text-[var(--color-mottu-dark)] w-16 sm:w-20" style={{fontFamily: 'Montserrat, sans-serif'}}>Cidade:</span> 
                                   <span className="text-slate-600 ml-1 sm:ml-2 text-xs sm:text-sm" style={{fontFamily: 'Montserrat, sans-serif'}}>{cliente.enderecoResponseDto?.cidade || 'N/A'}</span>
-                                </p>
+                                </div>
                               </div>
                             </div>
                             
@@ -333,20 +337,72 @@ export default function BuscarClientesPage() {
                           <table className="w-full">
                             <thead className="bg-slate-50">
                               <tr>
-                                <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider font-montserrat">Nome</th>
-                                <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider font-montserrat">CPF</th>
-                                <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider font-montserrat">Email</th>
-                                <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider font-montserrat">Cidade</th>
-                                <th className="px-4 py-3 text-center text-xs font-medium text-slate-500 uppercase tracking-wider font-montserrat">Ações</th>
+                                <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider font-montserrat">
+                                  <div className="flex items-center gap-1">
+                                    <i className="ion-ios-information-circle text-purple-500 text-xs sm:text-sm"></i>
+                                    <span>ID</span>
+                                  </div>
+                                </th>
+                                <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider font-montserrat">
+                                  <div className="flex items-center gap-1">
+                                    <i className="ion-ios-person text-blue-500 text-xs sm:text-sm"></i>
+                                    <span>Nome</span>
+                                  </div>
+                                </th>
+                                <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider font-montserrat">
+                                  <div className="flex items-center gap-1">
+                                    <i className="ion-ios-card text-green-500 text-xs sm:text-sm"></i>
+                                    <span>CPF</span>
+                                  </div>
+                                </th>
+                                <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider font-montserrat">
+                                  <div className="flex items-center gap-1">
+                                    <i className="ion-ios-mail text-cyan-500 text-xs sm:text-sm"></i>
+                                    <span>Email</span>
+                                  </div>
+                                </th>
+                                <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider font-montserrat">
+                                  <div className="flex items-center gap-1">
+                                    <i className="ion-ios-location text-purple-500 text-xs sm:text-sm"></i>
+                                    <span>Cidade</span>
+                                  </div>
+                                </th>
+                                <th className="px-4 py-3 text-center text-xs font-medium text-slate-500 uppercase tracking-wider font-montserrat">
+                                  <div className="flex items-center justify-center gap-1">
+                                    <i className="ion-ios-settings text-gray-500 text-xs sm:text-sm"></i>
+                                    <span>Ações</span>
+                                  </div>
+                                </th>
                                                     </tr>
                                                 </thead>
                             <tbody className="bg-white divide-y divide-slate-200">
                                                     {clientes.map((cliente) => (
                                 <tr key={cliente.idCliente} className="hover:bg-slate-50 transition-all duration-300 hover:shadow-lg">
-                                  <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-slate-900 font-montserrat">{cliente.nome} {cliente.sobrenome}</td>
-                                  <td className="px-4 py-4 whitespace-nowrap text-sm text-slate-600 font-montserrat">{cliente.cpf}</td>
-                                  <td className="px-4 py-4 whitespace-nowrap text-sm text-slate-600 font-montserrat">{cliente.contatoResponseDto?.email || '-'}</td>
-                                  <td className="px-4 py-4 whitespace-nowrap text-sm text-slate-600 font-montserrat">{cliente.enderecoResponseDto?.cidade || '-'}</td>
+                                  <td className="px-4 py-4 whitespace-nowrap text-xs sm:text-sm text-slate-600" style={{fontFamily: 'Montserrat, sans-serif'}}>{cliente.idCliente}</td>
+                                  <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-slate-900 font-montserrat">
+                                    <div className="flex items-center gap-1">
+                                      <i className="ion-ios-person text-blue-500 text-xs"></i>
+                                      <span>{cliente.nome} {cliente.sobrenome}</span>
+                                    </div>
+                                  </td>
+                                  <td className="px-4 py-4 whitespace-nowrap text-sm text-slate-600 font-montserrat">
+                                    <div className="flex items-center gap-1">
+                                      <i className="ion-ios-card text-green-500 text-xs"></i>
+                                      <span>{cliente.cpf}</span>
+                                    </div>
+                                  </td>
+                                  <td className="px-4 py-4 whitespace-nowrap text-sm text-slate-600 font-montserrat">
+                                    <div className="flex items-center gap-1">
+                                      <i className="ion-ios-mail text-cyan-500 text-xs"></i>
+                                      <span className="truncate">{cliente.contatoResponseDto?.email || '-'}</span>
+                                    </div>
+                                  </td>
+                                  <td className="px-4 py-4 whitespace-nowrap text-sm text-slate-600 font-montserrat">
+                                    <div className="flex items-center gap-1">
+                                      <i className="ion-ios-location text-purple-500 text-xs"></i>
+                                      <span>{cliente.enderecoResponseDto?.cidade || '-'}</span>
+                                    </div>
+                                  </td>
                                   <td className="px-4 py-4 whitespace-nowrap text-center text-sm font-medium">
                                     <div className="flex justify-center items-center gap-2">
                                       <Link 

@@ -208,7 +208,7 @@ export default function ParticleBackground() {
       const y = e.clientY;
       targetRef.current.x = x;
       targetRef.current.y = y;
-      console.log(`🖱️ Mouse move: ${x}, ${y}`);
+      // Log removido para reduzir poluição no console
     };
 
     const onScroll = () => {

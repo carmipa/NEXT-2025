@@ -5,6 +5,7 @@ import br.com.fiap.mottu.filter.relatorios.OcupacaoFilter;
 import br.com.fiap.mottu.model.Box;
 import br.com.fiap.mottu.model.Patio;
 import br.com.fiap.mottu.repository.BoxRepository;
+import br.com.fiap.mottu.repository.EstacionamentoRepository;
 import br.com.fiap.mottu.repository.PatioRepository;
 import br.com.fiap.mottu.specification.relatorios.OcupacaoSpecification;
 import org.slf4j.Logger;
@@ -23,10 +24,12 @@ public class OcupacaoService {
     private static final Logger log = LoggerFactory.getLogger(OcupacaoService.class);
     private final PatioRepository patioRepository;
     private final BoxRepository boxRepository;
+    private final EstacionamentoRepository estacionamentoRepository;
 
-    public OcupacaoService(PatioRepository patioRepository, BoxRepository boxRepository) {
+    public OcupacaoService(PatioRepository patioRepository, BoxRepository boxRepository, EstacionamentoRepository estacionamentoRepository) {
         this.patioRepository = patioRepository;
         this.boxRepository = boxRepository;
+        this.estacionamentoRepository = estacionamentoRepository;
     }
 
     /**
@@ -102,16 +105,22 @@ public class OcupacaoService {
 
     /**
      * Calcula a ocupação de um pátio específico
+     * Usa TB_ESTACIONAMENTO para determinar quais boxes estão realmente ocupados
      */
     private OcupacaoAtualDto calcularOcupacaoPatio(Patio patio) {
         List<Box> boxes = boxRepository.findByPatio(patio);
         
         int totalBoxes = boxes.size();
-        int boxesOcupados = (int) boxes.stream()
-                .filter(Box::isOcupado)
-                .count();
+        
+        // Buscar boxes realmente ocupados através de TB_ESTACIONAMENTO para este pátio
+        // Usa countByPatioIdPatioAndEstaEstacionadoTrue para contar diretamente
+        long boxesOcupadosCount = estacionamentoRepository.countByPatioIdPatioAndEstaEstacionadoTrue(patio.getIdPatio());
+        int boxesOcupados = (int) boxesOcupadosCount;
         
         double taxaOcupacao = totalBoxes > 0 ? (double) boxesOcupados / totalBoxes * 100 : 0.0;
+        
+        log.debug("Pátio {}: {} boxes ocupados de {} total (taxa: {:.2f}%)", 
+                patio.getNomePatio(), boxesOcupados, totalBoxes, taxaOcupacao);
         
         return OcupacaoAtualDto.builder()
                 .patioId(patio.getIdPatio())

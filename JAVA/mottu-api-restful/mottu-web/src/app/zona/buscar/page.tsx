@@ -3,7 +3,8 @@
 import { useState, FormEvent, ChangeEvent } from 'react';
 import Link from 'next/link';
 import { MdVisibility } from 'react-icons/md';
-import { MapPin as ZonaIcon } from 'lucide-react';
+import { MapPin as ZonaIcon, Building } from 'lucide-react';
+import { LayoutGrid, Table } from 'lucide-react';
 import { ZonaResponseDto, ZonaFilter } from '@/types/zona';
 import { SpringPage } from '@/types/common';
 import { ZonaService } from '@/utils/api';
@@ -28,6 +29,7 @@ export default function BuscarZonasPage() {
     const [filter, setFilter] = useState<ZonaFilter>(initialFilterState);
     const [quickField, setQuickField] = useState<'nome'|'observacao'|'patioNome'>('nome');
     const [quickQuery, setQuickQuery] = useState('');
+    const [viewType, setViewType] = useState<'cards' | 'table'>('cards');
 
     const ITEMS_PER_PAGE = 9;
     const SORT_ORDER = 'idZona,asc';
@@ -215,53 +217,186 @@ export default function BuscarZonasPage() {
                     </div>
                 )}
 
+                {/* Toggle de Visualização */}
+                {!isLoading && zonas.length > 0 && (
+                    <div className="flex justify-center mb-6">
+                        <div className="flex bg-zinc-800 rounded-lg p-1">
+                            <button
+                                onClick={() => setViewType('cards')}
+                                className={`flex items-center gap-2 px-4 py-2 rounded-md transition-colors ${
+                                    viewType === 'cards' 
+                                        ? 'bg-emerald-600 text-white' 
+                                        : 'text-zinc-400 hover:text-white'
+                                }`}
+                            >
+                                <LayoutGrid size={16} />
+                                Cards
+                            </button>
+                            <button
+                                onClick={() => setViewType('table')}
+                                className={`flex items-center gap-2 px-4 py-2 rounded-md transition-colors ${
+                                    viewType === 'table' 
+                                        ? 'bg-emerald-600 text-white' 
+                                        : 'text-zinc-400 hover:text-white'
+                                }`}
+                            >
+                                <Table size={16} />
+                                Tabela
+                            </button>
+                        </div>
+                    </div>
+                )}
+
                 {/* Results */}
                 {!isLoading && zonas.length > 0 && (
                     <>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6 mb-6 lg:mb-8">
-                            {zonas.map((zona) => (
-                                <div key={zona.idZona} className="neumorphic-card-gradient p-4 lg:p-5 flex flex-col justify-between transition-all duration-300 hover:shadow-2xl hover:scale-105 transform hover:-translate-y-2">
-                                    <div>
-                                        <div className="flex items-center mb-3">
-                                            <span className="text-xs font-semibold bg-slate-200 text-slate-700 px-2 py-0.5 rounded-full mr-2">
-                                                ID: {zona.idZona}
-                                            </span>
-                                            <h2 className="text-base lg:text-xl font-bold text-[var(--color-mottu-dark)] truncate">
-                                                {zona.nome}
-                                            </h2>
+                        {viewType === 'cards' ? (
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-8 mb-8 lg:mb-12">
+                                {zonas.map((zona) => (
+                                    <div key={zona.idZona} className="neumorphic-card-gradient p-4 lg:p-5 flex flex-col justify-between transition-all duration-300 hover:shadow-2xl hover:scale-105 transform hover:-translate-y-2 cursor-pointer">
+                                        <div>
+                                            <div className="flex items-center justify-between mb-3 sm:mb-4">
+                                                <div className="flex items-center gap-1 sm:gap-2">
+                                                    <span className="text-xs font-semibold bg-[var(--neumorphic-bg)] text-[var(--color-mottu-dark)] px-2 sm:px-3 py-1 rounded-full shadow-inner" style={{fontFamily: 'Montserrat, sans-serif'}}>ID: {zona.idZona}</span>
+                                                    <h2 className="text-lg sm:text-xl font-bold text-[var(--color-mottu-dark)] truncate flex items-center gap-1 sm:gap-2" title={zona.nome} style={{fontFamily: 'Montserrat, sans-serif'}}>
+                                                        <i className="ion-ios-map text-purple-500 text-base sm:text-lg"></i>
+                                                        {zona.nome}
+                                                    </h2>
+                                                </div>
+                                            </div>
+                                            
+                                            <div className="space-y-2 sm:space-y-3 text-xs sm:text-sm mb-3 sm:mb-4">
+                                                
+                                                <div className="flex items-center">
+                                                    <i className={`ion-ios-checkmark-circle text-sm sm:text-base mr-1 sm:mr-2 ${zona.status === 'A' ? 'text-green-500' : 'text-red-500'}`}></i>
+                                                    <span className="font-semibold text-[var(--color-mottu-dark)] w-16 sm:w-20" style={{fontFamily: 'Montserrat, sans-serif'}}>Status:</span>
+                                                    <span className={`font-semibold ml-1 sm:ml-2 ${zona.status === 'A' ? 'text-green-600' : 'text-red-600'}`} style={{fontFamily: 'Montserrat, sans-serif'}}>
+                                                        {zona.status === 'A' ? 'Ativa' : 'Inativa'}
+                                                    </span>
+                                                </div>
+                                                
+                                                {zona.patio?.nomePatio && (
+                                                    <div className="flex items-center">
+                                                        <i className="ion-ios-home text-blue-500 text-sm sm:text-base mr-1 sm:mr-2"></i>
+                                                        <span className="font-semibold text-[var(--color-mottu-dark)] w-16 sm:w-20" style={{fontFamily: 'Montserrat, sans-serif'}}>Pátio:</span>
+                                                        <span className="text-slate-600 truncate ml-1 sm:ml-2" style={{fontFamily: 'Montserrat, sans-serif'}}>{zona.patio.nomePatio}</span>
+                                                    </div>
+                                                )}
+                                                
+                                                {zona.observacao && (
+                                                    <div className="flex items-center">
+                                                        <i className="ion-ios-document text-orange-500 text-sm sm:text-base mr-1 sm:mr-2"></i>
+                                                        <span className="font-semibold text-[var(--color-mottu-dark)] w-16 sm:w-20" style={{fontFamily: 'Montserrat, sans-serif'}}>Obs:</span>
+                                                        <span className="text-slate-500 truncate ml-1 sm:ml-2 text-xs sm:text-sm line-clamp-2" style={{fontFamily: 'Montserrat, sans-serif'}}>{zona.observacao}</span>
+                                                    </div>
+                                                )}
+                                            </div>
                                         </div>
                                         
-                                        <p className="text-xs lg:text-sm text-slate-600 mb-2">
-                                            Status: <span className={`font-semibold ${zona.status === 'A' ? 'text-green-600' : 'text-red-600'}`}>
-                                                {zona.status === 'A' ? 'Ativa' : 'Inativa'}
-                                            </span>
-                                        </p>
-                                        
-                                        {zona.patio?.nomePatio && (
-                                            <p className="text-xs lg:text-sm text-slate-500 mb-2">
-                                                Pátio: {zona.patio.nomePatio}
-                                            </p>
-                                        )}
-                                        
-                                        {zona.observacao && (
-                                            <p className="text-xs lg:text-sm text-slate-500 mb-3 line-clamp-2">
-                                                {zona.observacao}
-                                            </p>
-                                        )}
+                                        <div className="flex justify-end items-center gap-2 border-t border-slate-200 pt-3 mt-4">
+                                            <Link 
+                                                href={`/zona/detalhes/${zona.idZona}`}
+                                                className="p-1.5 lg:p-2 rounded-full text-blue-600 hover:bg-blue-100" 
+                                                title="Ver Detalhes"
+                                            >
+                                                <MdVisibility size={18} className="lg:w-6 lg:h-6"/>
+                                            </Link>
+                                        </div>
                                     </div>
-                                    
-                                    <div className="flex justify-end items-center gap-2 border-t border-slate-200 pt-3 mt-4">
-                                        <Link 
-                                            href={`/zona/detalhes/${zona.idZona}`}
-                                            className="p-1.5 lg:p-2 rounded-full text-blue-600 hover:bg-blue-100" 
-                                            title="Ver Detalhes"
-                                        >
-                                            <MdVisibility size={18} className="lg:w-6 lg:h-6"/>
-                                        </Link>
-                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="neumorphic-container overflow-hidden mb-8">
+                                <div className="overflow-x-auto">
+                                    <table className="w-full min-w-[600px]">
+                                        <thead className="bg-slate-50">
+                                            <tr>
+                                                <th className="px-3 lg:px-4 py-2 lg:py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider" style={{fontFamily: 'Montserrat, sans-serif'}}>
+                                                    <div className="flex items-center gap-1">
+                                                        <i className="ion-ios-information-circle text-purple-500 text-xs sm:text-sm"></i>
+                                                        <span>ID</span>
+                                                    </div>
+                                                </th>
+                                                <th className="px-3 lg:px-4 py-2 lg:py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider" style={{fontFamily: 'Montserrat, sans-serif'}}>
+                                                    <div className="flex items-center gap-1">
+                                                        <i className="ion-ios-map text-purple-500 text-xs sm:text-sm"></i>
+                                                        <span>Zona</span>
+                                                    </div>
+                                                </th>
+                                                <th className="px-3 lg:px-4 py-2 lg:py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider" style={{fontFamily: 'Montserrat, sans-serif'}}>
+                                                    <div className="flex items-center gap-1">
+                                                        <i className="ion-ios-checkmark-circle text-emerald-500 text-xs sm:text-sm"></i>
+                                                        <span>Status</span>
+                                                    </div>
+                                                </th>
+                                                <th className="px-3 lg:px-4 py-2 lg:py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider" style={{fontFamily: 'Montserrat, sans-serif'}}>
+                                                    <div className="flex items-center gap-1">
+                                                        <i className="ion-ios-home text-blue-500 text-xs sm:text-sm"></i>
+                                                        <span>Pátio</span>
+                                                    </div>
+                                                </th>
+                                                <th className="px-3 lg:px-4 py-2 lg:py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider hidden lg:table-cell" style={{fontFamily: 'Montserrat, sans-serif'}}>
+                                                    <div className="flex items-center gap-1">
+                                                        <i className="ion-ios-document text-orange-500 text-xs sm:text-sm"></i>
+                                                        <span>Observação</span>
+                                                    </div>
+                                                </th>
+                                                <th className="px-3 lg:px-4 py-2 lg:py-3 text-center text-xs font-medium text-slate-500 uppercase tracking-wider" style={{fontFamily: 'Montserrat, sans-serif'}}>
+                                                    <div className="flex items-center justify-center gap-1">
+                                                        <i className="ion-ios-settings text-gray-500 text-xs sm:text-sm"></i>
+                                                        <span>Ações</span>
+                                                    </div>
+                                                </th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="bg-white divide-y divide-slate-200">
+                                            {zonas.map((zona) => (
+                                                <tr key={zona.idZona} className="hover:bg-slate-50">
+                                                    <td className="px-3 lg:px-4 py-3 lg:py-4 whitespace-nowrap text-xs lg:text-sm text-slate-600" style={{fontFamily: 'Montserrat, sans-serif'}}>{zona.idZona}</td>
+                                                    <td className="px-3 lg:px-4 py-3 lg:py-4 whitespace-nowrap text-xs lg:text-sm font-medium text-slate-900" style={{fontFamily: 'Montserrat, sans-serif'}}>
+                                                        <div className="flex items-center gap-1">
+                                                            <i className="ion-ios-map text-purple-500 text-xs"></i>
+                                                            <span>{zona.nome}</span>
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-3 lg:px-4 py-3 lg:py-4 whitespace-nowrap text-xs lg:text-sm text-slate-900">
+                                                        <div className="flex items-center gap-1">
+                                                            <i className={`ion-ios-checkmark-circle text-xs ${zona.status === 'A' ? 'text-green-500' : 'text-red-500'}`}></i>
+                                                            <span className={`font-semibold ${zona.status === 'A' ? 'text-green-600' : 'text-red-600'}`} style={{fontFamily: 'Montserrat, sans-serif'}}>
+                                                                {zona.status === 'A' ? 'Ativa' : 'Inativa'}
+                                                            </span>
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-3 lg:px-4 py-3 lg:py-4 whitespace-nowrap text-xs lg:text-sm text-slate-900" style={{fontFamily: 'Montserrat, sans-serif'}}>
+                                                        <div className="flex items-center gap-1">
+                                                            <i className="ion-ios-home text-blue-500 text-xs"></i>
+                                                            <span>{zona.patio?.nomePatio || '-'}</span>
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-3 lg:px-4 py-3 lg:py-4 text-xs lg:text-sm text-slate-900 max-w-xs truncate hidden lg:table-cell" style={{fontFamily: 'Montserrat, sans-serif'}}>
+                                                        <div className="flex items-center gap-1">
+                                                            <i className="ion-ios-document text-orange-500 text-xs"></i>
+                                                            <span className="truncate">{zona.observacao || '-'}</span>
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-3 lg:px-4 py-3 lg:py-4 whitespace-nowrap text-center text-xs lg:text-sm font-medium">
+                                                        <div className="flex justify-center items-center gap-2">
+                                                            <Link 
+                                                                href={`/zona/detalhes/${zona.idZona}`}
+                                                                className="p-1 lg:p-1.5 rounded-full text-blue-600 hover:bg-blue-100" 
+                                                                title="Ver Detalhes"
+                                                            >
+                                                                <MdVisibility size={16} className="lg:w-5 lg:h-5"/>
+                                                            </Link>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
                                 </div>
-                            ))}
-                        </div>
+                            </div>
+                        )}
 
                         {/* Paginação */}
                         {pageInfo && pageInfo.totalPages > 1 && (

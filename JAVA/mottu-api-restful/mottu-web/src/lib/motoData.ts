@@ -39,6 +39,10 @@ export const CILINDRADAS = [
     "200cc",
     "250cc",
     "300cc",
+    "2000W",
+    "3000W",
+    "4000W",
+    "5000W"
 ];
 
 export const TIPOS_COMBUSTIVEL = ["Gasolina", "Flex", "Eletrico"];

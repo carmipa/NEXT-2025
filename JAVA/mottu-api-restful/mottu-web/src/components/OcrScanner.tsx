@@ -179,12 +179,42 @@ const OcrScanner: React.FC<OcrScannerProps> = ({ onPlateRecognized }) => {
                                 screenshotFormat="image/jpeg"
                                 videoConstraints={{ facingMode: 'environment' }}
                                 className="w-full h-full object-cover"
+                                onUserMediaError={(error) => {
+                                    console.error('Erro ao acessar câmera:', error);
+                                    if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
+                                        setStatus('Permissão de câmera negada. Por favor, permita o acesso à câmera nas configurações do navegador.');
+                                    } else if (error.name === 'NotFoundError' || error.name === 'DevicesNotFoundError') {
+                                        setStatus('Nenhuma câmera encontrada. Verifique se há uma câmera conectada.');
+                                    } else if (error.name === 'NotReadableError' || error.name === 'TrackStartError') {
+                                        setStatus('Erro ao acessar a câmera. Ela pode estar sendo usada por outro aplicativo.');
+                                    } else if (error.name === 'OverconstrainedError' || error.name === 'ConstraintNotSatisfiedError') {
+                                        setStatus('A câmera não suporta as configurações solicitadas.');
+                                    } else {
+                                        // Verificar se é problema de HTTPS
+                                        const isSecureContext = window.isSecureContext;
+                                        const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+                                        
+                                        if (!isSecureContext && !isLocalhost) {
+                                            setStatus('⚠️ Acesso à câmera requer HTTPS. Use HTTPS ou acesse via localhost.');
+                                        } else {
+                                            setStatus(`Erro ao acessar câmera: ${error.message || error.name}`);
+                                        }
+                                    }
+                                }}
+                                onUserMedia={() => {
+                                    setStatus('Câmera conectada. Aponte para a placa.');
+                                }}
                             />
                             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                                 <div className="w-4/5 h-2/5 border-4 border-green-400 rounded-lg animate-pulse" />
                             </div>
                         </div>
                         <p className="text-center text-sm text-slate-300 min-h-[20px]">{status}</p>
+                        {!window.isSecureContext && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1' && (
+                            <div className="w-full p-3 bg-yellow-900/30 border border-yellow-600 rounded-md text-yellow-300 text-xs text-center">
+                                ⚠️ Acesso à câmera requer HTTPS. Use HTTPS ou acesse via localhost para desenvolvimento.
+                            </div>
+                        )}
                         <div className="w-full flex flex-col gap-2">
                             <button
                                 onClick={handleScan}

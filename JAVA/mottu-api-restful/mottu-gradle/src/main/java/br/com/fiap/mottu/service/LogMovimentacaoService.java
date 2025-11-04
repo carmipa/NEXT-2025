@@ -7,6 +7,8 @@ import br.com.fiap.mottu.model.Patio;
 import br.com.fiap.mottu.model.Veiculo;
 import br.com.fiap.mottu.model.LogMovimentacao.TipoMovimentacao;
 import br.com.fiap.mottu.repository.LogMovimentacaoRepository;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -23,6 +25,9 @@ public class LogMovimentacaoService {
     private static final Logger log = LoggerFactory.getLogger(LogMovimentacaoService.class);
 
     private final LogMovimentacaoRepository logRepository;
+    
+    @PersistenceContext
+    private EntityManager entityManager;
 
     public LogMovimentacaoService(LogMovimentacaoRepository logRepository) {
         this.logRepository = logRepository;
@@ -30,20 +35,25 @@ public class LogMovimentacaoService {
 
     /**
      * Registra uma entrada de veículo
+     * @param veiculo O veículo que está entrando
+     * @param box O box onde o veículo está sendo estacionado
+     * @param patioId O ID do pátio (para evitar carregar o Patio completo)
      */
     @Transactional
-    public LogMovimentacao registrarEntrada(Veiculo veiculo, Box box) {
+    public LogMovimentacao registrarEntrada(Veiculo veiculo, Box box, Long patioId) {
         log.info("Registrando entrada do veículo {} no box {}", veiculo.getPlaca(), box.getNome());
         
-        Patio patio = box.getPatio();
-        if (patio == null) {
-            throw new ResourceNotFoundException("Pátio não encontrado para o box " + box.getNome());
+        if (patioId == null) {
+            throw new ResourceNotFoundException("ID do pátio não fornecido para o box " + box.getNome());
         }
+        
+        // Obter apenas uma referência proxy do Patio sem carregar o objeto completo
+        Patio patioReference = entityManager.getReference(Patio.class, patioId);
 
         LogMovimentacao logMovimentacao = LogMovimentacao.builder()
                 .veiculo(veiculo)
                 .box(box)
-                .patio(patio)
+                .patio(patioReference) // Usar referência proxy para evitar inicialização de coleções
                 .tipoMovimentacao(TipoMovimentacao.ENTRADA)
                 .dataHoraMovimentacao(LocalDateTime.now())
                 .observacoes("Entrada registrada automaticamente")
@@ -54,18 +64,37 @@ public class LogMovimentacaoService {
         
         return savedLog;
     }
+    
+    /**
+     * Registra uma entrada de veículo (método compatível com código legado)
+     * @deprecated Use registrarEntrada(Veiculo, Box, Long) para evitar problemas de referência
+     */
+    @Deprecated
+    @Transactional
+    public LogMovimentacao registrarEntrada(Veiculo veiculo, Box box) {
+        Patio patioOriginal = box.getPatio();
+        if (patioOriginal == null) {
+            throw new ResourceNotFoundException("Pátio não encontrado para o box " + box.getNome());
+        }
+        return registrarEntrada(veiculo, box, patioOriginal.getIdPatio());
+    }
 
     /**
      * Registra uma saída de veículo
+     * @param veiculo O veículo que está saindo
+     * @param box O box de onde o veículo está saindo
+     * @param patioId O ID do pátio (para evitar carregar o Patio completo)
      */
     @Transactional
-    public LogMovimentacao registrarSaida(Veiculo veiculo, Box box) {
+    public LogMovimentacao registrarSaida(Veiculo veiculo, Box box, Long patioId) {
         log.info("Registrando saída do veículo {} do box {}", veiculo.getPlaca(), box.getNome());
         
-        Patio patio = box.getPatio();
-        if (patio == null) {
-            throw new ResourceNotFoundException("Pátio não encontrado para o box " + box.getNome());
+        if (patioId == null) {
+            throw new ResourceNotFoundException("ID do pátio não fornecido para o box " + box.getNome());
         }
+        
+        // Obter apenas uma referência proxy do Patio sem carregar o objeto completo
+        Patio patioReference = entityManager.getReference(Patio.class, patioId);
 
         // Buscar a entrada correspondente para calcular o tempo de estacionamento
         Optional<LogMovimentacao> entradaOpt = logRepository.findByVeiculoIdVeiculoAndBoxIdBoxAndTipoMovimentacaoOrderByDataHoraMovimentacaoDesc(
@@ -80,7 +109,7 @@ public class LogMovimentacaoService {
         LogMovimentacao logMovimentacao = LogMovimentacao.builder()
                 .veiculo(veiculo)
                 .box(box)
-                .patio(patio)
+                .patio(patioReference) // Usar referência proxy para evitar inicialização de coleções
                 .tipoMovimentacao(TipoMovimentacao.SAIDA)
                 .dataHoraMovimentacao(LocalDateTime.now())
                 .tempoEstacionamentoMinutos(tempoEstacionamentoMinutos)
@@ -92,6 +121,20 @@ public class LogMovimentacaoService {
                 savedLog.getIdLogMovimentacao(), tempoEstacionamentoMinutos);
         
         return savedLog;
+    }
+    
+    /**
+     * Registra uma saída de veículo (método compatível com código legado)
+     * @deprecated Use registrarSaida(Veiculo, Box, Long) para evitar problemas de referência
+     */
+    @Deprecated
+    @Transactional
+    public LogMovimentacao registrarSaida(Veiculo veiculo, Box box) {
+        Patio patioOriginal = box.getPatio();
+        if (patioOriginal == null) {
+            throw new ResourceNotFoundException("Pátio não encontrado para o box " + box.getNome());
+        }
+        return registrarSaida(veiculo, box, patioOriginal.getIdPatio());
     }
 
     /**

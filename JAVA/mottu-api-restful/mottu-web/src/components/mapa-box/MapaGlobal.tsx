@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Loader2 } from 'lucide-react';
-import { fetchWithCache } from '@/cache/cache';
+import { Loader2, RefreshCw } from 'lucide-react';
+import { fetchWithCache, invalidateCacheByKey } from '@/cache/cache';
 import 'leaflet/dist/leaflet.css';
 
 // Interfaces
@@ -34,11 +34,17 @@ export default function MapaGlobal({ onPatioSelect, patioSelecionado }: MapaGlob
     const centroBrasil = { lat: -14.235, lng: -51.9253, zoom: 4 };
 
     // Função para buscar dados da API e geocodificar endereços
-    const fetchPatiosAndGeocode = useCallback(async () => {
+    const fetchPatiosAndGeocode = useCallback(async (forceRefresh = false) => {
         setLoading(true);
         setMapError(null);
-        console.log('🌐 Buscando pátios da API...');
+        console.log('🌐 Buscando pátios da API...', forceRefresh ? '(forçando atualização)' : '');
+        
         try {
+            // Invalidar cache se forçado
+            if (forceRefresh) {
+                invalidateCacheByKey('/api/mapa-global');
+            }
+            
             const data = await fetchWithCache<PatioGlobal[]>('/api/mapa-global', 'mapas');
             if (!Array.isArray(data)) throw new Error('Formato de dados inválido');
             console.log(`✅ Pátios carregados: ${data.length}`);
@@ -78,6 +84,16 @@ export default function MapaGlobal({ onPatioSelect, patioSelecionado }: MapaGlob
 
     useEffect(() => {
         fetchPatiosAndGeocode();
+        
+        // Atualização automática a cada 2 minutos para pegar novos pátios
+        const intervalId = setInterval(() => {
+            console.log('🔄 Atualização automática do mapa global...');
+            fetchPatiosAndGeocode(true); // Forçar atualização
+        }, 120000); // 2 minutos
+        
+        return () => {
+            clearInterval(intervalId);
+        };
     }, [fetchPatiosAndGeocode]);
 
     useEffect(() => {
@@ -231,6 +247,19 @@ export default function MapaGlobal({ onPatioSelect, patioSelecionado }: MapaGlob
 
     return (
         <div className="relative bg-white rounded-lg overflow-hidden border" style={{ height: '80vh' }}>
+            {/* Botão de atualização manual */}
+            <div className="absolute top-4 right-4 z-[1000]">
+                <button
+                    onClick={() => fetchPatiosAndGeocode(true)}
+                    disabled={loading}
+                    className="bg-white hover:bg-gray-100 text-gray-700 px-4 py-2 rounded-lg shadow-lg flex items-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    title="Atualizar mapa com novos pátios"
+                >
+                    <RefreshCw size={18} className={loading ? 'animate-spin' : ''} />
+                    <span className="text-sm font-medium">Atualizar</span>
+                </button>
+            </div>
+            
             <Overlay />
             <div ref={mapRef} className="w-full h-full bg-gray-200" />
         </div>

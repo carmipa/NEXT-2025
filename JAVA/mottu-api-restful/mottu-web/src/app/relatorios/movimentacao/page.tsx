@@ -604,39 +604,81 @@ export default function MovimentacaoPage() {
                         <table className="w-full">
                             <thead className="bg-gray-50">
                                 <tr>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Placa</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tipo</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Data/Hora</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pátio</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Box</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        <div className="flex items-center gap-2">
+                                            <i className="ion-ios-pricetag text-blue-500"></i>
+                                            Placa
+                                        </div>
+                                    </th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        <div className="flex items-center gap-2">
+                                            <i className="ion-ios-swap text-purple-500"></i>
+                                            Tipo
+                                        </div>
+                                    </th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        <div className="flex items-center gap-2">
+                                            <i className="ion-ios-time text-orange-500"></i>
+                                            Data/Hora
+                                        </div>
+                                    </th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        <div className="flex items-center gap-2">
+                                            <i className="ion-ios-location text-green-500"></i>
+                                            Pátio
+                                        </div>
+                                    </th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        <div className="flex items-center gap-2">
+                                            <i className="ion-ios-square-outline text-indigo-500"></i>
+                                            Box
+                                        </div>
+                                    </th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        <div className="flex items-center gap-2">
+                                            <i className="ion-ios-checkmark-circle text-teal-500"></i>
+                                            Status
+                                        </div>
+                                    </th>
                                 </tr>
                             </thead>
                             <tbody className="bg-white divide-y divide-gray-200">
                                 {dadosMovimentacao.length > 0 ? (
                                     dadosMovimentacao.map((item, index) => (
-                                        <tr key={`${item.id}-${index}`} className="hover:bg-gray-50">
+                                        <tr key={`${item.id}-${index}`} className="hover:bg-gray-50 transition-colors">
                                             <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                                {item.placa}
+                                                <div className="flex items-center gap-2">
+                                                    <i className="ion-ios-pricetag text-blue-500 text-base"></i>
+                                                    <span className="font-mono">{item.placa}</span>
+                                                </div>
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap">
                                                 <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(item.tipo)}`}>
-                                                    <i className={`${getStatusIcon(item.tipo)} mr-1`}></i>
+                                                    <i className={`${getStatusIcon(item.tipo)} mr-1 text-sm`}></i>
                                                     {item.tipo}
                                                 </span>
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                {new Date(item.dataHora).toLocaleString('pt-BR')}
+                                                <div className="flex items-center gap-2">
+                                                    <i className="ion-ios-time text-orange-500"></i>
+                                                    <span>{new Date(item.dataHora).toLocaleString('pt-BR')}</span>
+                                                </div>
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                {item.patio}
+                                                <div className="flex items-center gap-2">
+                                                    <i className="ion-ios-location text-green-500"></i>
+                                                    <span>{item.patio}</span>
+                                                </div>
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                {item.box}
+                                                <div className="flex items-center gap-2">
+                                                    <i className="ion-ios-square-outline text-indigo-500"></i>
+                                                    <span className="font-mono text-xs">{item.box}</span>
+                                                </div>
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap">
                                                 <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                                    <i className="ion-ios-checkmark-circle mr-1"></i>
+                                                    <i className="ion-ios-checkmark-circle mr-1 text-sm"></i>
                                                     Concluído
                                                 </span>
                                             </td>

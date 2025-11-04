@@ -291,30 +291,49 @@ export default function BuscarBoxesPage() {
                         {boxes.map((box) => (
                           <div key={box.idBox} className="neumorphic-card-gradient p-3 sm:p-5 flex flex-col justify-between transition-all duration-300 hover:shadow-2xl hover:scale-105 transform hover:-translate-y-2 cursor-pointer">
                             <div>
-                              <div className="flex items-center mb-2 sm:mb-3">
-                                <span className="text-xs font-semibold bg-slate-200 text-slate-700 px-2 py-0.5 rounded-full mr-2">
-                                  ID: {box.idBox}
-                                </span>
-                                <h2 className="text-lg sm:text-xl font-bold text-[var(--color-mottu-dark)] truncate font-montserrat">
-                                  {box.nome}
-                                </h2>
+                              <div className="flex items-center justify-between mb-2 sm:mb-3">
+                                <div className="flex items-center gap-1 sm:gap-2">
+                                  <span className="text-xs font-semibold bg-[var(--neumorphic-bg)] text-[var(--color-mottu-dark)] px-2 sm:px-3 py-1 rounded-full shadow-inner" style={{fontFamily: 'Montserrat, sans-serif'}}>ID: {box.idBox}</span>
+                                  <h2 className="text-lg sm:text-xl font-bold text-[var(--color-mottu-dark)] truncate flex items-center gap-1 sm:gap-2" title={box.nome} style={{fontFamily: 'Montserrat, sans-serif'}}>
+                                    <i className="ion-ios-grid text-purple-500 text-base sm:text-lg"></i>
+                                    {box.nome}
+                                  </h2>
+                                </div>
                               </div>
                               
-                              <p className="text-xs sm:text-sm text-slate-600 mb-2">
-                                Status: <span className={`font-semibold ${box.status === 'L' ? 'text-green-600' : 'text-red-600'}`}>
-                                  {box.status === 'L' ? 'Livre' : 'Ocupado'}
-                                </span>
-                              </p>
-                              
-                              {box.dataEntrada && (
-                                <p className="text-xs sm:text-sm text-slate-500 mb-2">
-                                  Entrada: {new Date(box.dataEntrada).toLocaleDateString('pt-BR')}
-                                </p>
-                              )}
-                              
-                              {box.observacao && (
-                                <p className="text-xs sm:text-sm text-slate-500 mb-3 line-clamp-2">{box.observacao}</p>
-                              )}
+                              <div className="space-y-2 sm:space-y-3 text-xs sm:text-sm mb-3 sm:mb-4">
+                                <div className="flex items-center">
+                                  <i className={`ion-ios-checkmark-circle text-sm sm:text-base mr-1 sm:mr-2 ${box.status === 'L' ? 'text-green-500' : 'text-red-500'}`}></i>
+                                  <span className="font-semibold text-[var(--color-mottu-dark)] w-16 sm:w-20" style={{fontFamily: 'Montserrat, sans-serif'}}>Status:</span>
+                                  <span className={`font-semibold ml-1 sm:ml-2 ${box.status === 'L' ? 'text-green-600' : 'text-red-600'}`} style={{fontFamily: 'Montserrat, sans-serif'}}>
+                                    {box.status === 'L' ? 'Livre' : 'Ocupado'}
+                                  </span>
+                                </div>
+                                
+                                {box.dataEntrada && (
+                                  <div className="flex items-center">
+                                    <i className="ion-ios-calendar text-indigo-500 text-sm sm:text-base mr-1 sm:mr-2"></i>
+                                    <span className="font-semibold text-[var(--color-mottu-dark)] w-16 sm:w-20" style={{fontFamily: 'Montserrat, sans-serif'}}>Entrada:</span>
+                                    <span className="text-slate-600 ml-1 sm:ml-2" style={{fontFamily: 'Montserrat, sans-serif'}}>{new Date(box.dataEntrada).toLocaleDateString('pt-BR')}</span>
+                                  </div>
+                                )}
+                                
+                                {box.patio?.nomePatio && (
+                                  <div className="flex items-center">
+                                    <i className="ion-ios-home text-blue-500 text-sm sm:text-base mr-1 sm:mr-2"></i>
+                                    <span className="font-semibold text-[var(--color-mottu-dark)] w-16 sm:w-20" style={{fontFamily: 'Montserrat, sans-serif'}}>Pátio:</span>
+                                    <span className="text-slate-600 truncate ml-1 sm:ml-2" style={{fontFamily: 'Montserrat, sans-serif'}}>{box.patio.nomePatio}</span>
+                                  </div>
+                                )}
+                                
+                                {box.observacao && (
+                                  <div className="flex items-center">
+                                    <i className="ion-ios-document text-orange-500 text-sm sm:text-base mr-1 sm:mr-2"></i>
+                                    <span className="font-semibold text-[var(--color-mottu-dark)] w-16 sm:w-20" style={{fontFamily: 'Montserrat, sans-serif'}}>Obs:</span>
+                                    <span className="text-slate-500 truncate ml-1 sm:ml-2 text-xs sm:text-sm line-clamp-2" style={{fontFamily: 'Montserrat, sans-serif'}}>{box.observacao}</span>
+                                  </div>
+                                )}
+                              </div>
                             </div>
                             
                             <div className="flex justify-end items-center gap-1 sm:gap-2 border-t border-slate-200 pt-2 sm:pt-3 mt-3 sm:mt-4">
@@ -335,27 +354,63 @@ export default function BuscarBoxesPage() {
                           <table className="w-full">
                             <thead className="bg-slate-50">
                               <tr>
-                                <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider font-montserrat">ID</th>
-                                <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider font-montserrat">Nome</th>
-                                <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider font-montserrat">Status</th>
-                                <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider font-montserrat hidden sm:table-cell">Data Entrada</th>
-                                <th className="px-2 sm:px-4 py-2 sm:py-3 text-center text-xs font-medium text-slate-500 uppercase tracking-wider font-montserrat">Ações</th>
+                                <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider" style={{fontFamily: 'Montserrat, sans-serif'}}>
+                                  <div className="flex items-center gap-1">
+                                    <i className="ion-ios-information-circle text-purple-500 text-xs sm:text-sm"></i>
+                                    <span>ID</span>
+                                  </div>
+                                </th>
+                                <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider" style={{fontFamily: 'Montserrat, sans-serif'}}>
+                                  <div className="flex items-center gap-1">
+                                    <i className="ion-ios-grid text-purple-500 text-xs sm:text-sm"></i>
+                                    <span>Box</span>
+                                  </div>
+                                </th>
+                                <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider" style={{fontFamily: 'Montserrat, sans-serif'}}>
+                                  <div className="flex items-center gap-1">
+                                    <i className="ion-ios-checkmark-circle text-emerald-500 text-xs sm:text-sm"></i>
+                                    <span>Status</span>
+                                  </div>
+                                </th>
+                                <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider hidden sm:table-cell" style={{fontFamily: 'Montserrat, sans-serif'}}>
+                                  <div className="flex items-center gap-1">
+                                    <i className="ion-ios-calendar text-indigo-500 text-xs sm:text-sm"></i>
+                                    <span>Data Entrada</span>
+                                  </div>
+                                </th>
+                                <th className="px-2 sm:px-4 py-2 sm:py-3 text-center text-xs font-medium text-slate-500 uppercase tracking-wider" style={{fontFamily: 'Montserrat, sans-serif'}}>
+                                  <div className="flex items-center justify-center gap-1">
+                                    <i className="ion-ios-settings text-gray-500 text-xs sm:text-sm"></i>
+                                    <span>Ações</span>
+                                  </div>
+                                </th>
                               </tr>
                             </thead>
                             <tbody className="bg-white divide-y divide-slate-200">
                               {boxes.map((box) => (
                                 <tr key={box.idBox} className="hover:bg-slate-50 transition-all duration-300 hover:shadow-lg">
-                                  <td className="px-2 sm:px-4 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-slate-600 font-montserrat">{box.idBox}</td>
-                                  <td className="px-2 sm:px-4 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm font-medium text-slate-900 font-montserrat truncate max-w-[120px] sm:max-w-none">{box.nome}</td>
-                                  <td className="px-2 sm:px-4 py-3 sm:py-4 whitespace-nowrap">
-                                    <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                                      box.status === 'L' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                                    }`}>
-                                      {box.status === 'L' ? 'Livre' : 'Ocupado'}
-                                    </span>
+                                  <td className="px-2 sm:px-4 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-slate-600" style={{fontFamily: 'Montserrat, sans-serif'}}>{box.idBox}</td>
+                                  <td className="px-2 sm:px-4 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm font-medium text-slate-900 truncate max-w-[120px] sm:max-w-none" style={{fontFamily: 'Montserrat, sans-serif'}}>
+                                    <div className="flex items-center gap-1">
+                                      <i className="ion-ios-grid text-purple-500 text-xs"></i>
+                                      <span>{box.nome}</span>
+                                    </div>
                                   </td>
-                                  <td className="px-2 sm:px-4 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-slate-600 font-montserrat hidden sm:table-cell">
-                                    {box.dataEntrada ? new Date(box.dataEntrada).toLocaleDateString('pt-BR') : '-'}
+                                  <td className="px-2 sm:px-4 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm">
+                                    <div className="flex items-center gap-1">
+                                      <i className={`ion-ios-checkmark-circle text-xs ${box.status === 'L' ? 'text-green-500' : 'text-red-500'}`}></i>
+                                      <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                                        box.status === 'L' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                                      }`} style={{fontFamily: 'Montserrat, sans-serif'}}>
+                                        {box.status === 'L' ? 'Livre' : 'Ocupado'}
+                                      </span>
+                                    </div>
+                                  </td>
+                                  <td className="px-2 sm:px-4 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-slate-900 hidden sm:table-cell" style={{fontFamily: 'Montserrat, sans-serif'}}>
+                                    <div className="flex items-center gap-1">
+                                      <i className="ion-ios-calendar text-indigo-500 text-xs"></i>
+                                      <span>{box.dataEntrada ? new Date(box.dataEntrada).toLocaleDateString('pt-BR') : '-'}</span>
+                                    </div>
                                   </td>
                                   <td className="px-2 sm:px-4 py-3 sm:py-4 whitespace-nowrap text-center text-xs sm:text-sm font-medium">
                                     <div className="flex justify-center items-center gap-1 sm:gap-2">

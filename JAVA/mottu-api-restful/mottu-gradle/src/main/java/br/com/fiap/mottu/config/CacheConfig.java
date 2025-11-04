@@ -65,4 +65,28 @@ public class CacheConfig {
                 .recordStats());
         return cacheManager;
     }
+
+    /**
+     * Cache para estacionamentos
+     * Inclui: estacionamentos, estacionamentosAtivos, estacionamentosAtivosSSE,
+     * estacionamentoPorId, estacionamentoPorPlaca, estacionamentosPorPatio, estatisticasEstacionamento
+     */
+    @Bean("estacionamentoCacheManager")
+    public CacheManager estacionamentoCacheManager() {
+        CaffeineCacheManager cacheManager = new CaffeineCacheManager(
+                "estacionamentos",
+                "estacionamentosAtivos",
+                "estacionamentosAtivosSSE",
+                "estacionamentoPorId",
+                "estacionamentoPorPlaca",
+                "estacionamentosPorPatio",
+                "estatisticasEstacionamento"
+        );
+        cacheManager.setCaffeine(Caffeine.newBuilder()
+                .maximumSize(500)
+                .expireAfterWrite(Duration.ofMinutes(2))
+                .expireAfterAccess(Duration.ofMinutes(1))
+                .recordStats());
+        return cacheManager;
+    }
 }

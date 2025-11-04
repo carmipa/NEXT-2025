@@ -2,7 +2,8 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { buildApiUrl } from '@/config/api';
-import { Search, MapPin, Users, Filter, RefreshCw, Grid3X3, Layout, Globe } from 'lucide-react';
+import { Search, MapPin, Users, Filter, RefreshCw, Grid3X3, Layout, Globe, Eye } from 'lucide-react';
+import { VeiculoService } from '@/utils/api';
 import MapaVagasDinamico from '@/components/mapa-box/MapaVagasDinamico';
 import EstatisticasVagas from '@/components/mapa-box/EstatisticasVagas';
 import VistaCardPatio from '@/components/mapa-box/VistaCardPatio';
@@ -28,7 +29,7 @@ function VistaCardPatioWrapper({ vagas, paginaAtual, onPageChange }: {
     };
 
     const handleNextPage = () => {
-        const totalPages = Math.ceil(vagas.length / 6);
+        const totalPages = Math.ceil(vagas.length / 20);
         if (localPage < totalPages) {
             handlePageChange(localPage + 1);
         }
@@ -41,11 +42,13 @@ function VistaCardPatioWrapper({ vagas, paginaAtual, onPageChange }: {
                 vagaSelecionada={null}
                 onVagaSelect={() => {}}
                 currentPage={localPage}
-                itemsPerPage={6}
+                itemsPerPage={20}
+                placasVeiculosEmManutencao={placasVeiculosEmManutencao}
+                veiculosEmManutencao={veiculosEmManutencao}
             />
             {/* Controles de paginação externos */}
             {(() => {
-                const totalPages = Math.ceil(vagas.length / 6);
+                const totalPages = Math.ceil(vagas.length / 20);
                 if (totalPages <= 1) return null;
                 
                 return (
@@ -93,7 +96,7 @@ function VistaCardPatioWrapper({ vagas, paginaAtual, onPageChange }: {
                                     } else if (localPage <= 4) {
                                         pageNum = i + 1;
                                     } else if (localPage >= totalPages - 3) {
-                                        pageNum = totalPages - 6 + i;
+                                        pageNum = totalPages - 7 + i;
                                     } else {
                                         pageNum = localPage - 3 + i;
                                     }
@@ -147,8 +150,36 @@ export default function MapaBoxPage() {
     const [paginaAtualCards, setPaginaAtualCards] = useState(1);
     const [pesquisaPatio, setPesquisaPatio] = useState('');
     const [modoPesquisa, setModoPesquisa] = useState(false);
+    const [paginaAtualPatios, setPaginaAtualPatios] = useState(1);
+    const itemsPorPaginaPatios = 20;
 
     const [sseActive, setSseActive] = useState(false);
+    const [veiculosEmManutencao, setVeiculosEmManutencao] = useState(0);
+    const [placasVeiculosEmManutencao, setPlacasVeiculosEmManutencao] = useState<Set<string>>(new Set());
+
+    const fetchVeiculosEmManutencao = async () => {
+        try {
+            // Buscar veículos com status EM_MANUTENCAO
+            const response = await VeiculoService.listarPaginadoFiltrado(
+                { status: 'EM_MANUTENCAO' },
+                0,
+                1000 // Buscar muitos para pegar todos
+            );
+            setVeiculosEmManutencao(response.totalElements || 0);
+            // Armazenar as placas dos veículos em manutenção (normalizadas: maiúsculas e sem espaços)
+            const placas = new Set(
+                response.content
+                    .map(v => v.placa?.toUpperCase().trim().replace(/\s+/g, ''))
+                    .filter(placa => placa) // Filtrar placas vazias ou undefined
+            );
+            console.log('🔧 Veículos em manutenção encontrados:', response.totalElements, 'Placas:', Array.from(placas));
+            setPlacasVeiculosEmManutencao(placas);
+        } catch (err) {
+            console.error('Erro ao buscar veículos em manutenção:', err);
+            setVeiculosEmManutencao(0);
+            setPlacasVeiculosEmManutencao(new Set());
+        }
+    };
 
     const fetchVagas = async (forceRefresh = false) => {
         try {
@@ -163,6 +194,9 @@ export default function MapaBoxPage() {
             // Usar sistema de cache para vagas/mapa (TTL: 1 minuto)
             const data = await fetchMapas<VagaCompleta[]>('/api/vagas');
             setVagas(data);
+            
+            // Buscar veículos em manutenção em paralelo
+            fetchVeiculosEmManutencao();
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Erro desconhecido');
         } finally {
@@ -229,10 +263,17 @@ export default function MapaBoxPage() {
         vagasFiltradas.forEach(vaga => {
             const patioId = vaga.patio.idPatio;
             if (!patiosMap.has(patioId)) {
+                // Formatar endereço como string para compatibilidade
+                const enderecoObj = vaga.patio.endereco || {};
+                const enderecoStr = enderecoObj.cidade && enderecoObj.estado
+                    ? `${enderecoObj.cidade}, ${enderecoObj.estado}`
+                    : enderecoObj.cidade || enderecoObj.estado || '';
+                
                 patiosMap.set(patioId, {
                     id: patioId,
                     nome: vaga.patio.nomePatio,
-                    endereco: vaga.patio.endereco,
+                    endereco: enderecoStr, // String formatada
+                    enderecoObj: enderecoObj, // Objeto também disponível se necessário
                     vagas: []
                 });
             }
@@ -253,23 +294,38 @@ export default function MapaBoxPage() {
     const patiosFiltrados = useMemo(() => {
         if (!pesquisaPatio.trim()) return patios;
         
-        return patios.filter(patio => 
-            patio.nome.toLowerCase().includes(pesquisaPatio.toLowerCase()) ||
-            patio.endereco.toLowerCase().includes(pesquisaPatio.toLowerCase())
-        );
+        const pesquisaLower = pesquisaPatio.toLowerCase();
+        return patios.filter(patio => {
+            const nomeMatch = patio.nome.toLowerCase().includes(pesquisaLower);
+            const enderecoMatch = typeof patio.endereco === 'string' 
+                ? patio.endereco.toLowerCase().includes(pesquisaLower)
+                : (patio.endereco?.cidade || '').toLowerCase().includes(pesquisaLower) ||
+                  (patio.endereco?.estado || '').toLowerCase().includes(pesquisaLower);
+            return nomeMatch || enderecoMatch;
+        });
     }, [patios, pesquisaPatio]);
 
-    // Paginação por cards é controlada no wrapper; não há paginação nesta lista
+    // Calcular pátios paginados para o modo lista
+    const patiosPaginados = useMemo(() => {
+        const inicio = (paginaAtualPatios - 1) * itemsPorPaginaPatios;
+        const fim = inicio + itemsPorPaginaPatios;
+        return patiosFiltrados.slice(inicio, fim);
+    }, [patiosFiltrados, paginaAtualPatios]);
 
-    // Calcular estatísticas
+    const totalPaginasPatios = Math.ceil(patiosFiltrados.length / itemsPorPaginaPatios);
+
+    // Calcular estatísticas - usar todas as vagas, não apenas as filtradas
+    // Para manutenção, usar a contagem de veículos em manutenção (status EM_MANUTENCAO)
     const estatisticas = useMemo(() => {
-        const total = vagasFiltradas.length;
-        const livres = vagasFiltradas.filter(v => v.status === 'L').length;
-        const ocupadas = vagasFiltradas.filter(v => v.status === 'O').length;
-        const manutencao = vagasFiltradas.filter(v => v.status === 'M').length;
+        const total = vagas.length;
+        const livres = vagas.filter(v => v.status === 'L').length;
+        const ocupadas = vagas.filter(v => v.status === 'O').length;
+        // Usar veículos em manutenção em vez de vagas com status 'M'
+        const manutencao = veiculosEmManutencao;
+        const totalPatios = patios.length;
         
-        return { total, livres, ocupadas, manutencao };
-    }, [vagasFiltradas]);
+        return { total, livres, ocupadas, manutencao, patios: totalPatios };
+    }, [vagas, patios, veiculosEmManutencao]);
 
     const renderVisualizacao = () => {
         // Sistema de abas dinâmico para todos os modos
@@ -327,22 +383,87 @@ export default function MapaBoxPage() {
                 {visualizacao !== 'global' && visualizacaoLista === 'cards' && (
                     <div className="neumorphic-container">
                         <div className="flex flex-wrap gap-2 mb-4 overflow-x-auto pb-2">
-                            {patios.map(patio => (
-                                <button
-                                    key={patio.id}
-                                    onClick={() => setPatioSelecionado(patio.id)}
-                                    className={`px-3 sm:px-4 py-2 rounded-lg transition-all duration-200 flex items-center gap-2 whitespace-nowrap ${
-                                        patio.id === patioSelecionado
-                                            ? 'bg-blue-600 text-white shadow-md'
-                                            : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                                    }`}
-                                >
-                                    <span className="text-xs sm:text-sm font-medium">{patio.nome}</span>
-                                    <span className={`text-xs px-2 py-0.5 rounded-full ${patio.id === patioSelecionado ? 'bg-white/20' : 'bg-gray-300'}`}>
-                                        {patio.vagas.length}
-                                    </span>
-                                </button>
-                            ))}
+                            {(() => {
+                                const totalPatios = patiosFiltrados.length;
+                                const totalPagesPatios = Math.ceil(totalPatios / itemsPorPaginaPatios);
+                                const startIndexPatios = (paginaAtualPatios - 1) * itemsPorPaginaPatios;
+                                const endIndexPatios = startIndexPatios + itemsPorPaginaPatios;
+                                const patiosPaginadosCards = patiosFiltrados.slice(startIndexPatios, endIndexPatios);
+                                
+                                return (
+                                    <>
+                                        {patiosPaginadosCards.map(patio => (
+                                            <button
+                                                key={patio.id}
+                                                onClick={() => setPatioSelecionado(patio.id)}
+                                                className={`px-3 sm:px-4 py-2 rounded-lg transition-all duration-200 flex items-center gap-2 whitespace-nowrap ${
+                                                    patio.id === patioSelecionado
+                                                        ? 'bg-blue-600 text-white shadow-md'
+                                                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                                                }`}
+                                            >
+                                                <span className="text-xs sm:text-sm font-medium">{patio.nome}</span>
+                                                <span className={`text-xs px-2 py-0.5 rounded-full ${patio.id === patioSelecionado ? 'bg-white/20' : 'bg-gray-300'}`}>
+                                                    {patio.vagas.length}
+                                                </span>
+                                            </button>
+                                        ))}
+                                        
+                                        {/* Navegação de páginas se houver mais de 20 pátios */}
+                                        {totalPagesPatios > 1 && (
+                                            <div className="w-full flex flex-col sm:flex-row items-center justify-between mt-4 pt-4 border-t border-gray-200 gap-3">
+                                                <div className="text-sm text-gray-600">
+                                                    Mostrando {startIndexPatios + 1} a {Math.min(endIndexPatios, totalPatios)} de {totalPatios} pátios
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    <button
+                                                        onClick={() => setPaginaAtualPatios(Math.max(1, paginaAtualPatios - 1))}
+                                                        disabled={paginaAtualPatios === 1}
+                                                        className="px-3 py-1.5 rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm"
+                                                    >
+                                                        ‹ Anterior
+                                                    </button>
+                                                    <div className="flex items-center gap-1">
+                                                        {Array.from({ length: Math.min(totalPagesPatios, 7) }, (_, i) => {
+                                                            let pageNum;
+                                                            if (totalPagesPatios <= 7) {
+                                                                pageNum = i + 1;
+                                                            } else if (paginaAtualPatios <= 4) {
+                                                                pageNum = i + 1;
+                                                            } else if (paginaAtualPatios >= totalPagesPatios - 3) {
+                                                                pageNum = totalPagesPatios - 7 + i;
+                                                            } else {
+                                                                pageNum = paginaAtualPatios - 3 + i;
+                                                            }
+                                                            
+                                                            return (
+                                                                <button
+                                                                    key={pageNum}
+                                                                    onClick={() => setPaginaAtualPatios(pageNum)}
+                                                                    className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${
+                                                                        paginaAtualPatios === pageNum
+                                                                            ? 'bg-blue-600 text-white shadow-md'
+                                                                            : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                                                                    }`}
+                                                                >
+                                                                    {pageNum}
+                                                                </button>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                    <button
+                                                        onClick={() => setPaginaAtualPatios(Math.min(totalPagesPatios, paginaAtualPatios + 1))}
+                                                        disabled={paginaAtualPatios === totalPagesPatios}
+                                                        className="px-3 py-1.5 rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm"
+                                                    >
+                                                        Próximo ›
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </>
+                                );
+                            })()}
                         </div>
                     </div>
                 )}
@@ -401,28 +522,138 @@ export default function MapaBoxPage() {
                     </div>
                 )}
 
+                {/* Lista de Pátios - Modo Lista (mostra em todas as abas exceto global) */}
+                {visualizacao !== 'global' && visualizacaoLista === 'lista' && (
+                    <div className="neumorphic-container">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {patiosPaginados.map(patio => {
+                                const livres = patio.vagas.filter(v => v.status === 'L').length;
+                                const ocupadas = patio.vagas.filter(v => v.status === 'O').length;
+                                const manutencao = patio.vagas.filter(v => v.status === 'M').length;
+                                const totalVagas = patio.vagas.length;
+                                
+                                // Construir endereço completo (agora é string, não objeto)
+                                const enderecoCompleto = typeof patio.endereco === 'string'
+                                    ? patio.endereco
+                                    : (patio.enderecoObj?.cidade && patio.enderecoObj?.estado
+                                        ? `${patio.enderecoObj.cidade}, ${patio.enderecoObj.estado}`
+                                        : `${patio.enderecoObj?.cidade || ''}, ${patio.enderecoObj?.estado || ''}`.trim() || 'Endereço não informado');
+                                
+                                return (
+                                    <div 
+                                        key={patio.id} 
+                                        className="neumorphic-container hover:scale-105 transition-all duration-300"
+                                    >
+                                        <div className="flex items-start justify-between mb-3">
+                                            <div className="flex-1">
+                                                <h4 className="text-lg font-semibold text-gray-800 mb-1">
+                                                    {patio.nome}
+                                                </h4>
+                                                <p className="text-sm text-gray-600 flex items-center gap-1">
+                                                    <MapPin size={14} />
+                                                    {enderecoCompleto || 'Endereço não informado'}
+                                                </p>
+                                            </div>
+                                            <button
+                                                onClick={() => {
+                                                    setPatioSelecionado(patio.id);
+                                                    setVisualizacaoLista('cards');
+                                                    setVisualizacao('mapa');
+                                                }}
+                                                className="p-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors flex-shrink-0"
+                                                title="Ver mapa do pátio"
+                                            >
+                                                <Eye size={18} />
+                                            </button>
+                                        </div>
+                                        
+                                        <div className="grid grid-cols-2 gap-2 mb-3">
+                                            <div className="bg-green-50 rounded-lg p-2">
+                                                <div className="text-xs text-gray-600 mb-1">Livres</div>
+                                                <div className="text-lg font-bold text-green-600">{livres}</div>
+                                            </div>
+                                            <div className="bg-red-50 rounded-lg p-2">
+                                                <div className="text-xs text-gray-600 mb-1">Ocupadas</div>
+                                                <div className="text-lg font-bold text-red-600">{ocupadas}</div>
+                                            </div>
+                                            <div className="bg-yellow-50 rounded-lg p-2">
+                                                <div className="text-xs text-gray-600 mb-1">Manutenção</div>
+                                                <div className="text-lg font-bold text-yellow-600">{manutencao}</div>
+                                            </div>
+                                            <div className="bg-blue-50 rounded-lg p-2">
+                                                <div className="text-xs text-gray-600 mb-1">Total</div>
+                                                <div className="text-lg font-bold text-blue-600">{totalVagas}</div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div className="pt-3 border-t border-gray-200">
+                                            <button
+                                                onClick={() => {
+                                                    setPatioSelecionado(patio.id);
+                                                    setVisualizacaoLista('cards');
+                                                }}
+                                                className="w-full px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium"
+                                            >
+                                                Ver Detalhes
+                                            </button>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+
+                        {/* Paginação para lista de pátios */}
+                        {totalPaginasPatios > 1 && (
+                            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-6">
+                                <button
+                                    onClick={() => setPaginaAtualPatios(p => Math.max(1, p - 1))}
+                                    disabled={paginaAtualPatios === 1}
+                                    className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+                                >
+                                    <span>‹</span> Anterior
+                                </button>
+                                
+                                <div className="flex items-center gap-2">
+                                    <span className="text-sm text-gray-600">
+                                        Página {paginaAtualPatios} de {totalPaginasPatios}
+                                    </span>
+                                    <span className="text-sm text-gray-500">
+                                        ({patiosFiltrados.length} pátio{patiosFiltrados.length !== 1 ? 's' : ''})
+                                    </span>
+                                </div>
+                                
+                                <button
+                                    onClick={() => setPaginaAtualPatios(p => Math.min(totalPaginasPatios, p + 1))}
+                                    disabled={paginaAtualPatios === totalPaginasPatios}
+                                    className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+                                >
+                                    Próximo <span>›</span>
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                )}
                     
-                {/* Conteúdo do pátio selecionado - apenas para abas que não sejam global */}
-                {visualizacao !== 'global' && (
+                {/* Conteúdo do pátio selecionado - apenas para modo Cards, Mapa, Grade e Abas */}
+                {visualizacao !== 'global' && visualizacaoLista === 'cards' && (
                     <div className="neumorphic-container">
                         <h3 className="text-lg font-semibold mb-4">{patioAtual.nome}</h3>
-                        <p className="text-sm text-gray-600 mb-4">{patioAtual.endereco}</p>
+                        <p className="text-sm text-gray-600 mb-4">
+                            {typeof patioAtual.endereco === 'string'
+                                ? patioAtual.endereco || 'Endereço não informado'
+                                : (patioAtual.enderecoObj?.cidade && patioAtual.enderecoObj?.estado
+                                    ? `${patioAtual.enderecoObj.cidade}, ${patioAtual.enderecoObj.estado}`
+                                    : patioAtual.enderecoObj?.cidade || patioAtual.enderecoObj?.estado || 'Endereço não informado')}
+                        </p>
                     
                     {/* Renderizar o componente baseado no modo de visualização */}
-                    {visualizacao === 'patio' && visualizacaoLista === 'cards' && (
+                    {visualizacao === 'patio' && (
                         <VistaCardPatio 
                             vagas={patioAtual.vagas}
                             vagaSelecionada={null}
                             onVagaSelect={() => {}}
-                        />
-                    )}
-                    
-                    {/* Modo Lista: Mostrar TODOS os pátios em cards com paginação */}
-                    {visualizacao === 'patio' && visualizacaoLista === 'lista' && (
-                        <VistaCardPatioWrapper 
-                            vagas={vagasFiltradas}
-                            paginaAtual={paginaAtualCards}
-                            onPageChange={setPaginaAtualCards}
+                            placasVeiculosEmManutencao={placasVeiculosEmManutencao}
+                            veiculosEmManutencao={veiculosEmManutencao}
                         />
                     )}
                     
@@ -440,6 +671,8 @@ export default function MapaBoxPage() {
                             vagas={patioAtual.vagas}
                             viewMode="grade"
                             loading={loading}
+                            veiculosEmManutencao={veiculosEmManutencao}
+                            placasVeiculosEmManutencao={placasVeiculosEmManutencao}
                         />
                     )}
                     
@@ -580,69 +813,6 @@ export default function MapaBoxPage() {
                         loading={loading}
                     />
 
-                    {/* Filtros simplificados - apenas para abas que não sejam global */}
-                    {visualizacao !== 'global' && (
-                        <div className="neumorphic-container">
-                        <div className="flex items-center gap-2 mb-4">
-                            <Filter size={20} className="text-blue-600" />
-                            <h3 className="text-lg font-semibold" style={{fontFamily: 'Montserrat, sans-serif'}}>
-                                Filtros
-                            </h3>
-                        </div>
-                        <div className="flex flex-col sm:flex-row gap-3">
-                            {/* Select para tipo de filtro */}
-                            <div className="flex-1 min-w-0">
-                                <select
-                                    value={filtros.tipoFiltro || 'patio'}
-                                    onChange={(e) => setFiltros(prev => ({ 
-                                        ...prev, 
-                                        tipoFiltro: e.target.value,
-                                        valorFiltro: '' // Limpa o valor quando muda o tipo
-                                    }))}
-                                    className="w-full neumorphic-select"
-                                >
-                                    <option value="patio">🏢 Por Pátio</option>
-                                    <option value="status">📊 Por Status</option>
-                                    <option value="placa">🚗 Por Placa</option>
-                                    <option value="box">📦 Por Box</option>
-                                </select>
-                            </div>
-
-                            {/* Campo de pesquisa com ícone */}
-                            <div className="flex-1 min-w-0 relative">
-                                <div className="relative">
-                                    <Search 
-                                        size={18} 
-                                        className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none" 
-                                    />
-                                    <input
-                                        type="text"
-                                        value={filtros.valorFiltro || ''}
-                                        onChange={(e) => setFiltros(prev => ({ 
-                                            ...prev, 
-                                            valorFiltro: e.target.value 
-                                        }))}
-                                        className="w-full pl-10 pr-4 neumorphic-input"
-                                    />
-                                </div>
-                            </div>
-
-                            {/* Botão de Atualizar */}
-                            <div className="flex-shrink-0">
-                                <button
-                                    onClick={() => fetchVagas(true)}
-                                    disabled={loading}
-                                    className="neumorphic-button-advance flex items-center gap-2 px-4 py-2"
-                                    title="Forçar atualização (ignora cache)"
-                                >
-                                    <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
-                                    <span className="hidden sm:inline">Atualizar</span>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                    )}
-
                     {/* Conteúdo principal */}
                     {loading ? (
                         <div className="neumorphic-container">
@@ -713,7 +883,7 @@ export default function MapaBoxPage() {
                                 </div>
                             </div>
                             <div className="flex items-start">
-                                <div className="w-2 h-2 bg-orange-500 rounded-full mt-2 mr-3 flex-shrink-0"></div>
+                                <div className="w-2 h-2 bg-yellow-500 rounded-full mt-2 mr-3 flex-shrink-0"></div>
                                 <div>
                                     <strong className="text-sm">Navegação Intuitiva:</strong>
                                     <span className="text-xs text-gray-600 block mt-1">

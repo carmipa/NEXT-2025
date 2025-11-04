@@ -125,9 +125,44 @@ function MapaVagasContent() {
             }
             
             console.log('🌐 Fazendo requisição para URL:', url);
-            let res = await fetch(url, { cache: "no-store" });
+            let res = await fetch(`${url}${url.includes('?') ? '&' : '?'}_t=${Date.now()}`, { 
+                cache: "no-store",
+                headers: {
+                    'Cache-Control': 'no-cache, no-store, must-revalidate',
+                    'Pragma': 'no-cache',
+                    'Expires': '0'
+                }
+            });
             if (!res.ok) {
-                console.error('❌ Erro na requisição:', res.status, res.statusText);
+                const errorText = await res.text().catch(() => res.statusText);
+                console.error('❌ Erro na requisição:', res.status, res.statusText, errorText);
+                
+                // Se for erro 400, tentar buscar sem filtro de pátio
+                if (res.status === 400 && patioId) {
+                    console.warn('⚠️ Erro 400 com filtro de pátio, tentando sem filtro...');
+                    res = await fetch(`/api/vagas/mapa?_t=${Date.now()}`, { 
+                        cache: 'no-store',
+                        headers: {
+                            'Cache-Control': 'no-cache, no-store, must-revalidate',
+                            'Pragma': 'no-cache',
+                            'Expires': '0'
+                        }
+                    });
+                    if (res.ok) {
+                        const data = await res.json() as MapaResponse;
+                        if (alive) {
+                            setMapa(data);
+                            fetchAllVehiclesData(data.boxes);
+                            setPatioName('Todos os Pátios');
+                        }
+                        return;
+                    }
+                }
+                
+                // Se ainda houver erro, definir um estado de erro para mostrar ao usuário
+                if (alive) {
+                    console.error('❌ Falha ao carregar mapa:', res.status, errorText);
+                }
                 return;
             }
             let data = (await res.json()) as MapaResponse;
@@ -146,20 +181,29 @@ function MapaVagasContent() {
                 console.log('🧮 Grid calculado automaticamente => rows:', rowsAuto, 'cols:', colsAuto);
                 data = { ...data, rows: rowsAuto, cols: colsAuto };
             }
+            
             // Fallback: se filtrou por pátio e veio vazio, tentar sem filtro
             if (patioId && Array.isArray(data.boxes) && data.boxes.length === 0) {
                 console.warn('⚠️ Nenhum box retornado para patioId=', patioId, ' — tentando sem filtro...');
-                res = await fetch('/api/vagas/mapa', { cache: 'no-store' });
-                if (res.ok) {
-                    data = (await res.json()) as MapaResponse;
+                const fallbackRes = await fetch(`/api/vagas/mapa?_t=${Date.now()}`, { 
+                    cache: 'no-store',
+                    headers: {
+                        'Cache-Control': 'no-cache, no-store, must-revalidate',
+                        'Pragma': 'no-cache',
+                        'Expires': '0'
+                    }
+                });
+                if (fallbackRes.ok) {
+                    data = (await fallbackRes.json()) as MapaResponse;
                     console.log('🔁 Requisição sem filtro retornou:', {
                         totalBoxes: data.boxes?.length,
                         sample: data.boxes?.slice(0, 3)
                     });
                 } else {
-                    console.error('❌ Falha também sem filtro:', res.status, res.statusText);
+                    console.error('❌ Falha também sem filtro:', fallbackRes.status, fallbackRes.statusText);
                 }
             }
+            
             if (Array.isArray(data.boxes)) {
                 const sample = data.boxes.slice(0, 10).map(b => ({ idBox: b.idBox, nome: b.nome, status: b.status, placa: b.veiculo?.placa }));
                 console.log('🧪 Amostra de boxes (até 10):', sample);
@@ -274,17 +318,97 @@ function MapaVagasContent() {
     }, [placaParam]);
 
     const gridStyle = useMemo(() => {
-        if (!mapa) return { gridTemplateColumns: "repeat(5, minmax(0,1fr))" };
-        return { gridTemplateColumns: `repeat(${mapa.cols}, minmax(0,1fr))` };
+        if (!mapa) return { gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))" };
+        // Usar tamanho mínimo maior para garantir que os boxes não fiquem muito pequenos
+        // auto-fill cria quantas colunas couberem, respeitando o mínimo de 160px
+        return { gridTemplateColumns: `repeat(auto-fill, minmax(160px, 1fr))` };
     }, [mapa]);
 
     const isOcupado = (b: BoxFromApi) => (b.status ?? "").toUpperCase() === "O";
 
     const onLiberar = async (boxId: number) => {
-        if (!confirm(`Tem certeza que deseja liberar o box ${boxId}?`)) return;
-        const res = await fetch(`/api/vagas/liberar/${boxId}`, { method: "POST" });
-        if (res.ok) {
-            router.replace("/vagas/mapa");
+        console.log('🔓 Tentando liberar box:', boxId);
+        
+        // Buscar o nome do box antes de confirmar
+        const box = mapa?.boxes.find(b => b.idBox === boxId);
+        const boxNome = box?.nome || `Box ${boxId}`;
+        const placaBox = box?.veiculo?.placa || 'desconhecido';
+        
+        if (!confirm(`Tem certeza que deseja liberar o ${boxNome}?\nPlaca: ${placaBox}`)) {
+            console.log('❌ Usuário cancelou a liberação');
+            return;
+        }
+        
+        try {
+            console.log('📡 Enviando requisição para liberar box:', boxId);
+            const res = await fetch(`/api/vagas/liberar/${boxId}`, { 
+                method: "POST",
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            console.log('📥 Resposta recebida:', {
+                status: res.status,
+                statusText: res.statusText,
+                ok: res.ok,
+                headers: Object.fromEntries(res.headers.entries())
+            });
+            
+            if (!res.ok) {
+                let errorMessage = `Erro ${res.status}`;
+                try {
+                    const errorText = await res.text();
+                    console.error('❌ Erro completo:', errorText);
+                    
+                    // Tentar fazer parse do JSON
+                    try {
+                        const errorData = JSON.parse(errorText);
+                        errorMessage = errorData.error || errorData.message || errorText;
+                    } catch {
+                        errorMessage = errorText || `Erro ${res.status}`;
+                    }
+                } catch (parseError) {
+                    console.error('❌ Erro ao parsear resposta de erro:', parseError);
+                    errorMessage = `Erro ${res.status}: ${res.statusText}`;
+                }
+                
+                alert(`Erro ao liberar vaga: ${errorMessage}`);
+                console.error('❌ Erro ao liberar vaga:', res.status, errorMessage);
+                return;
+            }
+
+            const data = await res.json().catch(async () => {
+                // Se não for JSON, tentar text
+                const text = await res.text();
+                console.log('📄 Resposta não-JSON:', text);
+                return { ok: true, message: text || 'Vaga liberada com sucesso' };
+            });
+            
+            console.log('✅ Vaga liberada com sucesso:', data);
+            alert(`✅ ${boxNome} liberado com sucesso!`);
+            
+            // Limpar parâmetros da URL antes de recarregar para evitar erros 400
+            const url = new URL(window.location.href);
+            url.searchParams.delete('highlight');
+            url.searchParams.delete('placa');
+            url.searchParams.delete('box');
+            // Manter apenas o patioId se existir e for válido
+            if (patioIdParam) {
+                url.searchParams.set('patioId', patioIdParam);
+            } else {
+                url.searchParams.delete('patioId');
+            }
+            
+            // Recarregar o mapa após um breve delay para dar tempo do backend atualizar
+            setTimeout(() => {
+                console.log('🔄 Recarregando página...');
+                // Forçar reload completo com cache-busting
+                window.location.reload();
+            }, 1500);
+        } catch (error: any) {
+            console.error('❌ Erro ao liberar vaga:', error);
+            alert(`Erro ao liberar vaga: ${error.message || 'Erro desconhecido'}\n\nVerifique o console para mais detalhes.`);
         }
     };
 
@@ -402,7 +526,7 @@ function MapaVagasContent() {
                         {!mapa ? (
                             <div className="text-zinc-300 text-sm sm:text-base">Carregando mapa...</div>
                         ) : viewType === 'cards' ? (
-                            <div className="grid gap-2 sm:gap-3" style={gridStyle}>
+                            <div className="grid gap-3 sm:gap-4" style={gridStyle}>
                                 {paginatedBoxes.map((b) => {
                                     const isHighlighted = highlight && b.idBox?.toString() === highlight;
                                     const ocupado = isOcupado(b);
@@ -423,57 +547,40 @@ function MapaVagasContent() {
                                         <div
                                             key={b.idBox}
                                             className={[
-                                                "relative rounded-xl border p-3 sm:p-4 transition duration-300 ease-in-out flex flex-col justify-between",
+                                                "relative rounded-xl border p-4 sm:p-5 transition duration-300 ease-in-out flex flex-col justify-between",
                                                 ocupado ? "border-emerald-600 bg-emerald-600/10" : "border-zinc-700 bg-zinc-800",
-                                                isHighlighted ? "ring-4 ring-amber-400/80 scale-105" : "hover:bg-zinc-700"
+                                                isHighlighted ? "ring-4 ring-amber-400/80 scale-105 z-10" : "hover:bg-zinc-700"
                                             ].join(" ")}
-                                            style={{ minHeight: '100px' }}
+                                            style={{ minHeight: '160px', minWidth: '160px' }}
                                         >
-                                            {isHighlighted ? (
-                                                <>
-                                                    <div>
-                                                        <div className="text-xs sm:text-sm text-amber-300 font-bold">{b.nome}</div>
-                                                        <div className="mt-1 sm:mt-2 text-lg sm:text-xl md:text-2xl font-mono tracking-widest">
-                                                            {placaParam || b.veiculo?.placa || "OCUPADO"}
+                                            <div>
+                                                <div className={`text-xs sm:text-sm font-bold ${isHighlighted ? 'text-amber-300' : 'text-zinc-300'}`}>
+                                                    {b.nome || `BOX ${b.idBox}`}
+                                                </div>
+                                                <div className="mt-2 sm:mt-3 text-xl sm:text-2xl md:text-3xl font-mono tracking-widest break-all">
+                                                    {ocupado ? (placaParam || b.veiculo?.placa || "OCUPADO") : "LIVRE"}
+                                                </div>
+                                            </div>
+                                            <div className="mt-auto pt-1 sm:pt-2">
+                                                {ocupado ? (
+                                                    <>
+                                                        <div className="text-xs text-emerald-400 mb-2">OCUPADO</div>
+                                                        <div className="flex items-center justify-end gap-1 sm:gap-2">
+                                                            {(isHighlighted && highlightedVehicle) || vehiclesData.has(b.idBox) ? (
+                                                                <button
+                                                                    onClick={() => handleOpenModal(isHighlighted && highlightedVehicle ? highlightedVehicle : vehiclesData.get(b.idBox)!)}
+                                                                    className="px-2 py-1 text-xs rounded-md bg-emerald-600 hover:bg-emerald-700 text-white flex items-center gap-1 transition-colors">
+                                                                    <i className="ion-ios-eye text-xs"></i> <span style={{fontFamily: 'Montserrat, sans-serif'}} className="hidden sm:inline">Detalhes</span>
+                                                                    <span style={{fontFamily: 'Montserrat, sans-serif'}} className="sm:hidden">Ver</span>
+                                                                </button>
+                                                            ) : null}
+                                                            <button onClick={() => onLiberar(b.idBox)} className="px-2 sm:px-3 py-1 rounded-lg bg-rose-600 hover:bg-rose-700 text-xs sm:text-sm">Liberar</button>
                                                         </div>
-                                                    </div>
-                                                    <div className="mt-auto pt-1 sm:pt-2 flex items-center justify-end gap-1 sm:gap-2">
-                                                        {highlightedVehicle && (
-                                                            <button
-                                                                onClick={() => handleOpenModal(highlightedVehicle)}
-                                                                className="px-2 py-1 text-xs rounded-md bg-emerald-600 hover:bg-emerald-700 text-white flex items-center gap-1 transition-colors">
-                                                                <i className="ion-ios-eye text-xs"></i> <span style={{fontFamily: 'Montserrat, sans-serif'}} className="hidden sm:inline">Detalhes</span>
-                                                                <span style={{fontFamily: 'Montserrat, sans-serif'}} className="sm:hidden">Ver</span>
-                                                            </button>
-                                                        )}
-                                                        <button onClick={() => onLiberar(b.idBox)} className="px-2 py-1 text-xs rounded-md bg-rose-600 hover:bg-rose-700">Liberar</button>
-                                                    </div>
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <div>
-                                                        <div className="text-xs sm:text-sm text-zinc-300">{b.nome || `BOX ${b.idBox}`}</div>
-                                                        <div className="mt-1 sm:mt-2 text-lg sm:text-xl md:text-2xl font-mono tracking-widest">
-                                                            {ocupado ? (isHighlighted ? (placaParam || b.veiculo?.placa || "OCUPADO") : (b.veiculo?.placa || "OCUPADO")) : "LIVRE"}
-                                                        </div>
-                                                    </div>
-                                                    <div className="mt-auto pt-1 sm:pt-2">
-                                                        {ocupado ? (
-                                                            <div className="flex items-center justify-end gap-1 sm:gap-2">
-                                                                {vehiclesData.has(b.idBox) && (
-                                                                    <button
-                                                                        onClick={() => handleOpenModal(vehiclesData.get(b.idBox)!)}
-                                                                        className="px-2 py-1 text-xs rounded-md bg-emerald-600 hover:bg-emerald-700 text-white flex items-center gap-1 transition-colors">
-                                                                        <i className="ion-ios-eye text-xs"></i> <span style={{fontFamily: 'Montserrat, sans-serif'}} className="hidden sm:inline">Detalhes</span>
-                                                                        <span style={{fontFamily: 'Montserrat, sans-serif'}} className="sm:hidden">Ver</span>
-                                                                    </button>
-                                                                )}
-                                                                <button onClick={() => onLiberar(b.idBox)} className="px-2 sm:px-3 py-1 rounded-lg bg-rose-600 hover:bg-rose-700 text-xs sm:text-sm"> Liberar </button>
-                                                            </div>
-                                                        ) : ( <span className="text-xs text-zinc-400">Disponível</span> )}
-                                                    </div>
-                                                </>
-                                            )}
+                                                    </>
+                                                ) : (
+                                                    <span className="text-xs text-zinc-400">Disponível</span>
+                                                )}
+                                            </div>
                                         </div>
                                     );
                                 })}

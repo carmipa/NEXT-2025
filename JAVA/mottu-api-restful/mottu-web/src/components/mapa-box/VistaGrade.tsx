@@ -8,6 +8,8 @@ interface VistaGradeProps {
     vagas: VagaCompleta[];
     vagaSelecionada: VagaCompleta | null;
     onVagaSelect: (vaga: VagaCompleta) => void;
+    veiculosEmManutencao?: number;
+    placasVeiculosEmManutencao?: Set<string>;
 }
 
 interface HoverInfo {
@@ -16,7 +18,7 @@ interface HoverInfo {
     y: number;
 }
 
-export default function VistaGrade({ vagas, vagaSelecionada, onVagaSelect }: VistaGradeProps) {
+export default function VistaGrade({ vagas, vagaSelecionada, onVagaSelect, veiculosEmManutencao = 0, placasVeiculosEmManutencao = new Set() }: VistaGradeProps) {
     const [hoverInfo, setHoverInfo] = useState<HoverInfo | null>(null);
     const [filtroStatus, setFiltroStatus] = useState<string>('');
 
@@ -38,24 +40,36 @@ export default function VistaGrade({ vagas, vagaSelecionada, onVagaSelect }: Vis
     }, [vagas]);
 
     // Filtrar vagas por status se necessário
+    // Considerar também veículos em manutenção quando o filtro for 'M'
     const vagasFiltradas = useMemo(() => {
         if (!filtroStatus) return vagasPorPatio;
         
         return vagasPorPatio.map(grupo => ({
             ...grupo,
-            vagas: grupo.vagas.filter(vaga => vaga.status === filtroStatus)
+            vagas: grupo.vagas.filter(vaga => {
+                // Verificar se o veículo está em manutenção (comparação case-insensitive)
+                const placaNormalizada = vaga.veiculo?.placa?.toUpperCase().trim().replace(/\s+/g, '') || '';
+                const veiculoEmManutencao = vaga.veiculo && placasVeiculosEmManutencao.size > 0 && 
+                    Array.from(placasVeiculosEmManutencao).some(placa => 
+                        placa.toUpperCase().trim().replace(/\s+/g, '') === placaNormalizada
+                    );
+                const statusEfetivo: 'L' | 'O' | 'M' = veiculoEmManutencao ? 'M' : vaga.status;
+                return statusEfetivo === filtroStatus;
+            })
         })).filter(grupo => grupo.vagas.length > 0);
-    }, [vagasPorPatio, filtroStatus]);
+    }, [vagasPorPatio, filtroStatus, placasVeiculosEmManutencao]);
 
     // Estatísticas rápidas
+    // Usar veículos em manutenção em vez de vagas com status 'M'
     const estatisticas = useMemo(() => {
         const total = vagas.length;
         const livres = vagas.filter(v => v.status === 'L').length;
         const ocupados = vagas.filter(v => v.status === 'O').length;
-        const manutencao = vagas.filter(v => v.status === 'M').length;
+        // Usar contagem de veículos em manutenção passada como prop
+        const manutencao = veiculosEmManutencao;
         
         return { total, livres, ocupados, manutencao };
-    }, [vagas]);
+    }, [vagas, veiculosEmManutencao]);
 
     const handleMouseEnter = (vaga: VagaCompleta, event: React.MouseEvent) => {
         setHoverInfo({
@@ -127,10 +141,10 @@ export default function VistaGrade({ vagas, vagaSelecionada, onVagaSelect }: Vis
                 </div>
                 <div className="neumorphic-container hover:scale-105 transition-all duration-300">
                     <div className="flex items-center gap-2 mb-2">
-                        <Clock size={20} className="text-orange-500" />
+                        <Clock size={20} className="text-yellow-500" />
                         <span className="text-sm text-gray-500 font-medium">Manutenção</span>
                     </div>
-                    <div className="text-2xl font-bold text-orange-500">{estatisticas.manutencao}</div>
+                    <div className="text-2xl font-bold text-yellow-500">{estatisticas.manutencao}</div>
                 </div>
             </div>
 
@@ -161,7 +175,11 @@ export default function VistaGrade({ vagas, vagaSelecionada, onVagaSelect }: Vis
                                         <h4 className="text-xl font-semibold">{grupo.patio.nomePatio}</h4>
                                         {grupo.patio.endereco && (
                                             <p className="text-sm text-gray-600">
-                                                {grupo.patio.endereco.cidade}, {grupo.patio.endereco.estado}
+                                                {typeof grupo.patio.endereco === 'string'
+                                                    ? grupo.patio.endereco
+                                                    : (grupo.patio.endereco.cidade && grupo.patio.endereco.estado
+                                                        ? `${grupo.patio.endereco.cidade}, ${grupo.patio.endereco.estado}`
+                                                        : grupo.patio.endereco.cidade || grupo.patio.endereco.estado || 'Endereço não informado')}
                                             </p>
                                         )}
                                     </div>
@@ -172,14 +190,25 @@ export default function VistaGrade({ vagas, vagaSelecionada, onVagaSelect }: Vis
 
                                 {/* Grade de vagas */}
                                 <div 
-                                    className="grid gap-1 p-4 bg-gray-50 rounded-lg"
+                                    className="grid gap-2 p-4 bg-gray-50 rounded-lg"
                                     style={{
                                         gridTemplateColumns: `repeat(${colunas}, 1fr)`
                                     }}
                                 >
                                     {grupo.vagas.map((vaga, index) => {
                                         const isSelecionada = vagaSelecionada?.idBox === vaga.idBox;
-                                        const statusColors = STATUS_COLORS[vaga.status];
+                                        
+                                        // Verificar se o veículo está em manutenção
+                                        // Se a vaga tem um veículo e a placa está no Set de placas em manutenção,
+                                        // então o status efetivo é 'M' (manutenção)
+                                        // Comparar placas de forma case-insensitive e sem espaços
+                                        const placaNormalizada = vaga.veiculo?.placa?.toUpperCase().trim().replace(/\s+/g, '') || '';
+                                        const veiculoEmManutencao = vaga.veiculo && placasVeiculosEmManutencao.size > 0 && 
+                                            Array.from(placasVeiculosEmManutencao).some(placa => 
+                                                placa.toUpperCase().trim().replace(/\s+/g, '') === placaNormalizada
+                                            );
+                                        const statusEfetivo: 'L' | 'O' | 'M' = veiculoEmManutencao ? 'M' : vaga.status;
+                                        const statusColors = STATUS_COLORS[statusEfetivo];
                                         
                                         // Gerar chave única que evita duplicatas
                                         const uniqueKey = `${grupo.patio.idPatio}-${vaga.idBox || 'undefined'}-${index}`;
@@ -192,22 +221,27 @@ export default function VistaGrade({ vagas, vagaSelecionada, onVagaSelect }: Vis
                                                 onMouseLeave={handleMouseLeave}
                                                 onMouseMove={handleMouseMove}
                                                 className={`
-                                                    relative w-full aspect-square rounded border-2 transition-all duration-200
+                                                    relative w-full aspect-square rounded-md border-2 transition-all duration-200
                                                     ${statusColors.bg} ${statusColors.border}
                                                     ${isSelecionada 
-                                                        ? 'ring-2 ring-white scale-110 shadow-lg' 
-                                                        : 'hover:scale-105 hover:shadow-md'
+                                                        ? 'ring-2 ring-white ring-offset-2 scale-110 shadow-lg z-10' 
+                                                        : 'hover:scale-105 hover:shadow-md hover:z-5'
                                                     }
-                                                    ${vaga.status === 'L' ? 'cursor-pointer' : 'cursor-default'}
-                                                    flex items-center justify-center
+                                                    ${statusEfetivo === 'L' ? 'cursor-pointer' : 'cursor-default'}
+                                                    flex flex-col items-center justify-center p-1
                                                 `}
-                                                title={`${vaga.nome} - ${STATUS_LABELS[vaga.status]}`}
+                                                title={`${vaga.nomeBox || vaga.nome || 'Vaga'} - ${STATUS_LABELS[statusEfetivo]}${veiculoEmManutencao ? ' (Veículo em manutenção)' : ''}${vaga.veiculo ? ` - ${vaga.veiculo.placa}` : ''}`}
                                             >
-                                                {/* Ícone baseado no status */}
-                                                <div className="text-white text-lg font-bold">
-                                                    {vaga.status === 'L' && 'L'}
-                                                    {vaga.status === 'O' && '🚫'}
-                                                    {vaga.status === 'M' && '🔧'}
+                                                {/* Ícone e nome do box baseado no status efetivo */}
+                                                <div className="text-white text-xs sm:text-sm font-bold text-center px-1">
+                                                    <div className="mb-1">
+                                                        {statusEfetivo === 'L' && '🟢'}
+                                                        {statusEfetivo === 'O' && '🔴'}
+                                                        {statusEfetivo === 'M' && '🟡'}
+                                                    </div>
+                                                    <div className="truncate max-w-full" title={vaga.nomeBox || vaga.nome || 'Vaga'}>
+                                                        {vaga.nomeBox || vaga.nome || index + 1}
+                                                    </div>
                                                 </div>
 
                                                 {/* Indicador de veículo */}
@@ -239,7 +273,7 @@ export default function VistaGrade({ vagas, vagaSelecionada, onVagaSelect }: Vis
                                         <span className="text-gray-600">Ocupado</span>
                                     </div>
                                     <div className="flex items-center gap-2">
-                                        <div className="w-4 h-4 bg-orange-500 rounded"></div>
+                                        <div className="w-4 h-4 bg-yellow-500 rounded"></div>
                                         <span className="text-gray-600">Manutenção</span>
                                     </div>
                                 </div>
@@ -260,25 +294,58 @@ export default function VistaGrade({ vagas, vagaSelecionada, onVagaSelect }: Vis
                     }}
                 >
                     <div className="flex items-center gap-2 mb-2">
-                        <div className={`w-3 h-3 rounded-full ${
-                            hoverInfo.vaga.status === 'L' ? 'bg-green-500' :
-                            hoverInfo.vaga.status === 'O' ? 'bg-red-500' : 'bg-orange-500'
-                        }`}></div>
-                        <span className="font-semibold text-gray-800">{hoverInfo.vaga.nome}</span>
-                        <span className="text-sm text-gray-500">({STATUS_LABELS[hoverInfo.vaga.status]})</span>
+                        {(() => {
+                            // Verificar se o veículo está em manutenção no tooltip também (comparação case-insensitive)
+                            const placaNormalizada = hoverInfo.vaga.veiculo?.placa?.toUpperCase().trim().replace(/\s+/g, '') || '';
+                            const veiculoEmManutencao = hoverInfo.vaga.veiculo && placasVeiculosEmManutencao.size > 0 && 
+                                Array.from(placasVeiculosEmManutencao).some(placa => 
+                                    placa.toUpperCase().trim().replace(/\s+/g, '') === placaNormalizada
+                                );
+                            const statusEfetivo: 'L' | 'O' | 'M' = veiculoEmManutencao ? 'M' : hoverInfo.vaga.status;
+                            return (
+                                <>
+                                    <div className={`w-3 h-3 rounded-full ${
+                                        statusEfetivo === 'L' ? 'bg-green-500' :
+                                        statusEfetivo === 'O' ? 'bg-red-500' : 'bg-yellow-500'
+                                    }`}></div>
+                                    <span className="font-semibold text-gray-800">{hoverInfo.vaga.nomeBox || (hoverInfo.vaga as any).nome || 'Vaga'}</span>
+                                    <span className="text-sm text-gray-500">({STATUS_LABELS[statusEfetivo]}{veiculoEmManutencao ? ' - Veículo em manutenção' : ''})</span>
+                                </>
+                            );
+                        })()}
                     </div>
                     
                     <div className="text-sm text-gray-600 space-y-1">
                         <p><strong>Pátio:</strong> {hoverInfo.vaga.patio.nomePatio}</p>
                         {hoverInfo.vaga.veiculo && (
                             <>
-                                <p><strong>Veículo:</strong> {hoverInfo.vaga.veiculo.placa}</p>
+                                <p><strong>Placa:</strong> {hoverInfo.vaga.veiculo.placa}</p>
                                 <p><strong>Modelo:</strong> {hoverInfo.vaga.veiculo.modelo}</p>
-                                <p><strong>Cliente:</strong> {hoverInfo.vaga.veiculo.cliente.nome}</p>
+                                <p><strong>Fabricante:</strong> {hoverInfo.vaga.veiculo.fabricante}</p>
+                                {(hoverInfo.vaga.veiculo as any).status && (
+                                    <p><strong>Status do Veículo:</strong> 
+                                        <span className={`ml-2 px-2 py-1 rounded text-xs ${
+                                            (hoverInfo.vaga.veiculo as any).status === 'EM_MANUTENCAO' 
+                                                ? 'bg-yellow-100 text-yellow-800' 
+                                                : (hoverInfo.vaga.veiculo as any).status === 'OPERACIONAL'
+                                                ? 'bg-green-100 text-green-800'
+                                                : 'bg-gray-100 text-gray-800'
+                                        }`}>
+                                            {(hoverInfo.vaga.veiculo as any).status}
+                                        </span>
+                                    </p>
+                                )}
+                                {(hoverInfo.vaga.veiculo as any).cliente && (
+                                    <p><strong>Cliente:</strong> {(hoverInfo.vaga.veiculo as any).cliente.nome}</p>
+                                )}
                             </>
                         )}
-                        <p><strong>Entrada:</strong> {new Date(hoverInfo.vaga.dataEntrada).toLocaleDateString('pt-BR')}</p>
-                        <p><strong>Saída:</strong> {new Date(hoverInfo.vaga.dataSaida).toLocaleDateString('pt-BR')}</p>
+                        {(hoverInfo.vaga as any).dataEntrada && (
+                            <p><strong>Entrada:</strong> {new Date((hoverInfo.vaga as any).dataEntrada).toLocaleDateString('pt-BR')}</p>
+                        )}
+                        {(hoverInfo.vaga as any).dataSaida && (
+                            <p><strong>Saída:</strong> {new Date((hoverInfo.vaga as any).dataSaida).toLocaleDateString('pt-BR')}</p>
+                        )}
                     </div>
                 </div>
             )}
@@ -315,12 +382,12 @@ export default function VistaGrade({ vagas, vagaSelecionada, onVagaSelect }: Vis
                         <div>
                             <strong className="text-sm">Cores Intuitivas:</strong>
                             <span className="text-xs text-gray-600 block mt-1">
-                                Verde = Livre, Vermelho = Ocupado, Laranja = Manutenção.
+                                Verde = Livre, Vermelho = Ocupado, Amarelo = Manutenção.
                             </span>
                         </div>
                     </div>
                     <div className="flex items-start">
-                        <div className="w-2 h-2 bg-orange-500 rounded-full mt-2 mr-3 flex-shrink-0"></div>
+                        <div className="w-2 h-2 bg-yellow-500 rounded-full mt-2 mr-3 flex-shrink-0"></div>
                         <div>
                             <strong className="text-sm">Grade Responsiva:</strong>
                             <span className="text-xs text-gray-600 block mt-1">

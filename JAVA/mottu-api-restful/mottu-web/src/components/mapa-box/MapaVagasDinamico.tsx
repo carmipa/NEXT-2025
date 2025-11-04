@@ -13,9 +13,11 @@ interface MapaVagasDinamicoProps {
     viewMode: ViewMode;
     loading: boolean;
     patioSelecionado?: number | null;
+    veiculosEmManutencao?: number;
+    placasVeiculosEmManutencao?: Set<string>;
 }
 
-export default function MapaVagasDinamico({ vagas, viewMode, loading, patioSelecionado }: MapaVagasDinamicoProps) {
+export default function MapaVagasDinamico({ vagas, viewMode, loading, patioSelecionado, veiculosEmManutencao = 0, placasVeiculosEmManutencao = new Set() }: MapaVagasDinamicoProps) {
     const [vagaSelecionada, setVagaSelecionada] = useState<VagaCompleta | null>(null);
 
     if (loading) {
@@ -64,6 +66,8 @@ export default function MapaVagasDinamico({ vagas, viewMode, loading, patioSelec
                     vagas={vagas}
                     vagaSelecionada={vagaSelecionada}
                     onVagaSelect={setVagaSelecionada}
+                    veiculosEmManutencao={veiculosEmManutencao}
+                    placasVeiculosEmManutencao={placasVeiculosEmManutencao}
                 />
             )}
             {viewMode === 'abas' && (

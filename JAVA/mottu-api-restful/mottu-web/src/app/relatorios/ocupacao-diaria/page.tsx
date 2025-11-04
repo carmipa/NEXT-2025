@@ -33,6 +33,7 @@ export default function OcupacaoDiariaPage() {
     const [viewMode, setViewMode] = useState<'cards' | 'list'>('cards');
     const [page, setPage] = useState(1);
     const pageSize = 6;
+    const [sseActive, setSseActive] = useState(false); // Adicionado para indicar status SSE
 
     // Carregar ocupação atual ao montar o componente
     useEffect(() => {
@@ -55,22 +56,54 @@ export default function OcupacaoDiariaPage() {
         let es: EventSource | null = null;
         try {
             const url = buildApiUrl('/api/relatorios/ocupacao/stream');
+            console.log('🔄 Conectando ao SSE de ocupação:', url);
             es = new EventSource(url);
+            
+            es.onopen = () => {
+                console.log('✅ SSE de ocupação conectado com sucesso');
+                setSseActive(true);
+            };
+            
             es.onmessage = (ev) => {
                 try {
                     const payload = JSON.parse(ev.data);
-                    if (Array.isArray(payload)) setOcupacaoAtual(payload);
-                } catch {}
+                    console.log('📊 Dados SSE recebidos:', payload);
+                    
+                    if (Array.isArray(payload)) {
+                        setOcupacaoAtual(payload);
+                        console.log('✅ Ocupação atual atualizada via SSE:', payload.length, 'pátios');
+                        setSseActive(true);
+                    }
+                } catch (err) {
+                    console.error('❌ Erro ao processar dados SSE:', err);
+                }
             };
-        } catch {}
+            
+            es.onerror = (error) => {
+                console.error('❌ Erro no SSE de ocupação:', error);
+                setSseActive(false);
+                // Tentar reconectar após 5 segundos
+                setTimeout(() => {
+                    if (es && es.readyState === EventSource.CLOSED) {
+                        console.log('🔄 Tentando reconectar SSE...');
+                        es.close();
+                    }
+                }, 5000);
+            };
+        } catch (err) {
+            console.error('❌ Erro ao criar EventSource:', err);
+        }
 
-        // Polling periódico para o histórico diário
+        // Polling periódico para o histórico diário (fallback se SSE falhar)
         const pollId = setInterval(() => {
             gerarRelatorio();
         }, 30000); // 30s
 
         return () => {
-            if (es) es.close();
+            if (es) {
+                console.log('🔌 Fechando conexão SSE');
+                es.close();
+            }
             clearInterval(pollId);
         };
     }, []);
@@ -114,22 +147,59 @@ export default function OcupacaoDiariaPage() {
             setLoading(true);
             setError('');
             
+            console.log('🔄 Gerando relatório de ocupação diária:', dataInicioFinal, 'até', dataFimFinal);
+            
             // Usar cache otimizado para relatórios
             const { RelatoriosApi } = await import('@/utils/api/relatorios');
             const data = await RelatoriosApi.getOcupacaoDiaria(dataInicioFinal, dataFimFinal);
             
+            console.log('✅ Dados de ocupação diária recebidos:', data);
+            
             // Processar dados para o formato esperado pelo gráfico
-            const dadosProcessados = data.map((item: any) => ({
-                data: item.data,
-                totalVagas: item.ocupados + item.livres,
-                ocupadas: item.ocupados,
-                livres: item.livres,
-                percentual: item.ocupados > 0 ? Math.round((item.ocupados / (item.ocupados + item.livres)) * 100) : 0
-            }));
+            // O backend retorna: { dia: LocalDate (string ISO), ocupados: Long, livres: Long }
+            const dadosProcessados = data.map((item: any) => {
+                // O backend retorna 'dia' como string ISO (ex: "2024-01-15")
+                const dataStr = item.dia || item.data || '';
+                const ocupados = Number(item.ocupados || 0);
+                const livres = Number(item.livres || 0);
+                const totalVagas = ocupados + livres;
+                
+                // Validar e formatar a data
+                let dataFormatada = dataStr;
+                if (dataStr) {
+                    try {
+                        // Se já está no formato ISO, usar diretamente
+                        const dataObj = new Date(dataStr);
+                        if (!isNaN(dataObj.getTime())) {
+                            dataFormatada = dataObj.toISOString().split('T')[0]; // Formato YYYY-MM-DD
+                        } else {
+                            console.warn('⚠️ Data inválida recebida:', dataStr);
+                            dataFormatada = new Date().toISOString().split('T')[0]; // Fallback para hoje
+                        }
+                    } catch (e) {
+                        console.warn('⚠️ Erro ao processar data:', dataStr, e);
+                        dataFormatada = new Date().toISOString().split('T')[0]; // Fallback para hoje
+                    }
+                } else {
+                    dataFormatada = new Date().toISOString().split('T')[0]; // Fallback para hoje
+                }
+                
+                return {
+                    data: dataFormatada,
+                    totalVagas: totalVagas,
+                    ocupadas: ocupados,
+                    livres: livres,
+                    percentual: totalVagas > 0 ? Math.round((ocupados / totalVagas) * 100) : 0
+                };
+            });
+            
+            console.log('📊 Dados processados para gráfico:', dadosProcessados.length, 'registros');
+            console.log('📊 Primeiro registro:', dadosProcessados[0]);
+            
             setDadosOcupacao(dadosProcessados);
             
         } catch (err) {
-            console.error('Erro ao gerar relatório:', err);
+            console.error('❌ Erro ao gerar relatório:', err);
             setError('Erro de conexão com o servidor. Verifique se a API está rodando.');
             setDadosOcupacao([]);
         } finally {
@@ -172,6 +242,12 @@ export default function OcupacaoDiariaPage() {
                                 </div>
                             ) : ocupacaoAtual.length > 0 ? (
                                 <div>
+                                    <div className="flex items-center justify-end gap-2 mb-2">
+                                        <div className={`flex items-center gap-2 px-2 py-1 rounded-full border text-xs ${sseActive ? 'bg-green-50 border-green-200 text-green-700' : 'bg-gray-50 border-gray-200 text-gray-600'}`}>
+                                            <span className={`w-2 h-2 rounded-full ${sseActive ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`}></span>
+                                            <span>{sseActive ? 'Tempo Real' : 'Polling'}</span>
+                                        </div>
+                                    </div>
                                     <div className="text-xl lg:text-2xl font-bold text-blue-600">
                                         {Math.round(ocupacaoAtual.reduce((acc, patio) => acc + patio.taxaOcupacao, 0) / ocupacaoAtual.length)}%
                                     </div>
@@ -239,16 +315,28 @@ export default function OcupacaoDiariaPage() {
                                     <div key={patio.patioId} className="neumorphic-container p-4">
                                         <div className="flex items-center justify-between mb-3">
                                             <h4 className="font-semibold text-gray-800 text-sm lg:text-base truncate flex items-center gap-2">
-                                                <i className="ion-ios-home text-gray-500"></i>
+                                                <i className="ion-ios-home text-blue-500"></i>
                                                 {patio.nomePatio}
                                             </h4>
-                                            <span className="text-sm font-bold text-blue-600">{patio.taxaOcupacao.toFixed(1)}%</span>
+                                            <span className="text-sm font-bold text-blue-600 flex items-center gap-1">
+                                                <i className="ion-ios-pulse text-blue-500"></i>
+                                                {patio.taxaOcupacao.toFixed(1)}%
+                                            </span>
                                         </div>
                                         <div className="text-xs lg:text-sm text-gray-600 space-y-1">
-                                            <div>Total: {patio.totalBoxes} boxes</div>
+                                            <div className="flex items-center gap-2">
+                                                <i className="ion-ios-grid text-blue-400"></i>
+                                                Total: {patio.totalBoxes} boxes
+                                            </div>
                                             <div className="flex justify-between">
-                                                <span className="text-red-600 flex items-center gap-1"><i className="ion-ios-close-circle"></i>Ocupados: {patio.boxesOcupados}</span>
-                                                <span className="text-green-600 flex items-center gap-1"><i className="ion-ios-checkmark-circle"></i>Livres: {patio.boxesLivres}</span>
+                                                <span className="text-red-600 flex items-center gap-1">
+                                                    <i className="ion-ios-close-circle text-red-500"></i>
+                                                    Ocupados: {patio.boxesOcupados}
+                                                </span>
+                                                <span className="text-green-600 flex items-center gap-1">
+                                                    <i className="ion-ios-checkmark-circle text-green-500"></i>
+                                                    Livres: {patio.boxesLivres}
+                                                </span>
                                             </div>
                                         </div>
                                         <div className="w-full bg-gray-200 rounded-full h-2 mt-3">
@@ -262,26 +350,74 @@ export default function OcupacaoDiariaPage() {
                             </div>
                         ) : (
                             <div className="overflow-x-auto">
-                                <table className="w-full min-w-[600px]">
+                                <table className="w-full">
                                     <thead className="bg-gray-50">
                                         <tr>
-                                            <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pátio</th>
-                                            <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
-                                            <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ocupados</th>
-                                            <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Livres</th>
-                                            <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">% Ocupação</th>
+                                            <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                <div className="flex items-center gap-2">
+                                                    <i className="ion-ios-home text-gray-600"></i>
+                                                    Pátio
+                                                </div>
+                                            </th>
+                                            <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                <div className="flex items-center gap-2">
+                                                    <i className="ion-ios-grid text-blue-500"></i>
+                                                    Total
+                                                </div>
+                                            </th>
+                                            <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                <div className="flex items-center gap-2">
+                                                    <i className="ion-ios-close-circle text-red-500"></i>
+                                                    Ocupados
+                                                </div>
+                                            </th>
+                                            <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                <div className="flex items-center gap-2">
+                                                    <i className="ion-ios-checkmark-circle text-green-500"></i>
+                                                    Livres
+                                                </div>
+                                            </th>
+                                            <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                <div className="flex items-center gap-2">
+                                                    <i className="ion-ios-pulse text-blue-500"></i>
+                                                    % Ocupação
+                                                </div>
+                                            </th>
                                         </tr>
                                     </thead>
                                     <tbody className="bg-white divide-y divide-gray-200">
                                         {paginaOcupacao.map(patio => (
                                             <tr key={patio.patioId} className="hover:bg-gray-50">
-                                                <td className="px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-900 flex items-center gap-2">
-                                                    <i className="ion-ios-home text-gray-500"></i>{patio.nomePatio}
+                                                <td className="px-4 py-2 text-sm font-medium text-gray-900">
+                                                    <div className="flex items-center gap-2">
+                                                        <i className="ion-ios-home text-gray-500"></i>
+                                                        <span className="truncate max-w-xs">{patio.nomePatio}</span>
+                                                    </div>
                                                 </td>
-                                                <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-600">{patio.totalBoxes}</td>
-                                                <td className="px-4 py-2 whitespace-nowrap text-sm text-red-600">{patio.boxesOcupados}</td>
-                                                <td className="px-4 py-2 whitespace-nowrap text-sm text-green-600">{patio.boxesLivres}</td>
-                                                <td className="px-4 py-2 whitespace-nowrap text-sm font-semibold text-blue-600">{patio.taxaOcupacao.toFixed(1)}%</td>
+                                                <td className="px-4 py-2 text-sm text-gray-600 whitespace-nowrap">
+                                                    <div className="flex items-center gap-2">
+                                                        <i className="ion-ios-grid text-blue-400"></i>
+                                                        <span>{patio.totalBoxes}</span>
+                                                    </div>
+                                                </td>
+                                                <td className="px-4 py-2 text-sm text-red-600 font-medium whitespace-nowrap">
+                                                    <div className="flex items-center gap-2">
+                                                        <i className="ion-ios-close-circle text-red-500"></i>
+                                                        <span>{patio.boxesOcupados}</span>
+                                                    </div>
+                                                </td>
+                                                <td className="px-4 py-2 text-sm text-green-600 font-medium whitespace-nowrap">
+                                                    <div className="flex items-center gap-2">
+                                                        <i className="ion-ios-checkmark-circle text-green-500"></i>
+                                                        <span>{patio.boxesLivres}</span>
+                                                    </div>
+                                                </td>
+                                                <td className="px-4 py-2 text-sm font-semibold text-blue-600 whitespace-nowrap">
+                                                    <div className="flex items-center gap-2">
+                                                        <i className="ion-ios-pulse text-blue-500"></i>
+                                                        <span>{patio.taxaOcupacao.toFixed(1)}%</span>
+                                                    </div>
+                                                </td>
                                             </tr>
                                         ))}
                                     </tbody>
@@ -373,59 +509,95 @@ export default function OcupacaoDiariaPage() {
 
                 {/* Gráfico de Ocupação */}
                 <div className="neumorphic-container mb-8">
-                    <h3 className="text-lg font-semibold text-gray-800 mb-4" style={{fontFamily: 'Montserrat, sans-serif'}}>
-                        Gráfico de Ocupação
-                    </h3>
-                    <div className="h-80">
+                    <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-lg font-semibold text-gray-800" style={{fontFamily: 'Montserrat, sans-serif'}}>
+                            <i className="ion-ios-analytics text-blue-500 mr-2"></i>
+                            Gráfico de Ocupação
+                        </h3>
+                        {sseActive && (
+                            <div className="flex items-center gap-2 text-xs text-green-600">
+                                <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                                <span>Atualizando em tempo real</span>
+                            </div>
+                        )}
+                    </div>
+                    <div className="h-80 w-full">
                         {dadosOcupacao.length > 0 ? (
-                            <ResponsiveContainer width="100%" height="100%">
-                                {(() => {
-                                    const dataLog = dadosOcupacao.map(d => ({
-                                        ...d,
-                                        ocupadasLog: Math.max(1, d.ocupadas),
-                                        livresLog: Math.max(1, d.livres),
-                                    }));
-                                    const colors = { ocupadas: '#ef4444', livres: '#22c55e', percentual: '#3b82f6' };
-                                    return (
-                                <LineChart data={dataLog} margin={{ top: 10, right: 20, left: 10, bottom: 10 }}>
-                                    <CartesianGrid strokeDasharray="3 3" />
+                            <ResponsiveContainer width="100%" height="100%" key={`line-chart-${dadosOcupacao.length}-${Date.now()}`}>
+                                <LineChart 
+                                    data={dadosOcupacao} 
+                                    margin={{ top: 10, right: 20, left: 10, bottom: 10 }}
+                                >
+                                    <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                                     <XAxis 
                                         dataKey="data" 
-                                        tickFormatter={(value) => new Date(value).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
-                                    />
-                                    <YAxis scale="log" domain={[1, 'auto']} allowDataOverflow tickCount={6} />
-                                    <Tooltip 
-                                        labelFormatter={(value) => new Date(value).toLocaleDateString('pt-BR')}
-                                        formatter={(val, name, props) => {
-                                            const payload = (props as unknown as { payload?: any })?.payload ?? {};
-                                            const n = String(name ?? '');
-                                            if (n.includes('Ocupadas')) return [payload.ocupadas ?? 0, 'Ocupadas'];
-                                            if (n.includes('Livres')) return [payload.livres ?? 0, 'Livres'];
-                                            return [payload.totalVagas ?? 0, 'Total'];
+                                        stroke="#6b7280"
+                                        tickFormatter={(value) => {
+                                            try {
+                                                const date = new Date(value);
+                                                if (isNaN(date.getTime())) return value;
+                                                return date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+                                            } catch {
+                                                return value;
+                                            }
                                         }}
+                                        style={{ fontSize: '12px' }}
                                     />
-                                    <Legend />
+                                    <YAxis 
+                                        stroke="#6b7280"
+                                        domain={[0, 'auto']}
+                                        allowDataOverflow={false}
+                                        style={{ fontSize: '12px' }}
+                                    />
+                                    <Tooltip 
+                                        labelFormatter={(value) => {
+                                            try {
+                                                const date = new Date(value);
+                                                if (isNaN(date.getTime())) return value;
+                                                return date.toLocaleDateString('pt-BR', { 
+                                                    day: '2-digit', 
+                                                    month: '2-digit',
+                                                    year: 'numeric'
+                                                });
+                                            } catch {
+                                                return value;
+                                            }
+                                        }}
+                                        contentStyle={{ 
+                                            backgroundColor: '#ffffff', 
+                                            border: '1px solid #e5e7eb', 
+                                            borderRadius: '8px',
+                                            padding: '10px'
+                                        }}
+                                        labelStyle={{ color: '#111827', fontWeight: 'bold' }}
+                                    />
+                                    <Legend 
+                                        wrapperStyle={{ paddingTop: '20px' }}
+                                        iconType="line"
+                                    />
                                     <Line 
                                         type="monotone" 
-                                        dataKey="ocupadasLog" 
-                                        stroke={colors.ocupadas}
-                                        strokeWidth={2}
+                                        dataKey="ocupadas" 
+                                        stroke="#ef4444"
+                                        strokeWidth={3}
                                         name="Ocupadas"
-                                        dot={{ r: 4, fill: colors.ocupadas }}
-                                        activeDot={{ r: 6, fill: colors.ocupadas }}
+                                        dot={{ r: 5, fill: '#ef4444' }}
+                                        activeDot={{ r: 7, fill: '#ef4444' }}
+                                        isAnimationActive={true}
+                                        animationDuration={500}
                                     />
                                     <Line 
                                         type="monotone" 
-                                        dataKey="livresLog" 
-                                        stroke={colors.livres}
-                                        strokeWidth={2}
+                                        dataKey="livres" 
+                                        stroke="#22c55e"
+                                        strokeWidth={3}
                                         name="Livres"
-                                        dot={{ r: 4, fill: colors.livres }}
-                                        activeDot={{ r: 6, fill: colors.livres }}
+                                        dot={{ r: 5, fill: '#22c55e' }}
+                                        activeDot={{ r: 7, fill: '#22c55e' }}
+                                        isAnimationActive={true}
+                                        animationDuration={500}
                                     />
                                 </LineChart>
-                                    );
-                                })()}
                             </ResponsiveContainer>
                         ) : (
                             <div className="h-full bg-gray-50 rounded-lg flex items-center justify-center">
@@ -446,25 +618,88 @@ export default function OcupacaoDiariaPage() {
 
                 {/* Gráfico de Barras Colorido (stacked) */}
                 <div className="neumorphic-container mb-8">
-                    <h3 className="text-lg font-semibold text-gray-800 mb-4" style={{fontFamily: 'Montserrat, sans-serif'}}>
-                        Distribuição Diária (Ocupadas x Livres)
-                    </h3>
+                    <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-lg font-semibold text-gray-800" style={{fontFamily: 'Montserrat, sans-serif'}}>
+                            <i className="ion-ios-bar-chart text-green-500 mr-2"></i>
+                            Distribuição Diária (Ocupadas x Livres)
+                        </h3>
+                        {sseActive && (
+                            <div className="flex items-center gap-2 text-xs text-green-600">
+                                <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                                <span>Atualizando em tempo real</span>
+                            </div>
+                        )}
+                    </div>
                     <div className="h-80">
                         {dadosOcupacao.length > 0 ? (
-                            <ResponsiveContainer width="100%" height="100%">
-                                <BarChart data={dadosOcupacao} margin={{ top: 10, right: 20, left: 10, bottom: 10 }}>
-                                    <CartesianGrid strokeDasharray="3 3" />
+                            <ResponsiveContainer width="100%" height="100%" key={`bar-chart-${dadosOcupacao.length}-${ocupacaoAtual.length}`}>
+                                <BarChart 
+                                    data={dadosOcupacao} 
+                                    margin={{ top: 10, right: 20, left: 10, bottom: 10 }}
+                                >
+                                    <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                                     <XAxis 
                                         dataKey="data" 
-                                        tickFormatter={(value) => new Date(value).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
+                                        stroke="#6b7280"
+                                        tickFormatter={(value) => {
+                                            try {
+                                                const date = new Date(value);
+                                                if (isNaN(date.getTime())) return value;
+                                                return date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+                                            } catch {
+                                                return value;
+                                            }
+                                        }}
+                                        style={{ fontSize: '12px' }}
                                     />
-                                    <YAxis />
+                                    <YAxis 
+                                        stroke="#6b7280"
+                                        domain={[0, 'auto']}
+                                        style={{ fontSize: '12px' }}
+                                    />
                                     <Tooltip 
-                                        labelFormatter={(value) => new Date(value).toLocaleDateString('pt-BR')}
+                                        labelFormatter={(value) => {
+                                            try {
+                                                const date = new Date(value);
+                                                if (isNaN(date.getTime())) return value;
+                                                return date.toLocaleDateString('pt-BR', { 
+                                                    day: '2-digit', 
+                                                    month: '2-digit',
+                                                    year: 'numeric'
+                                                });
+                                            } catch {
+                                                return value;
+                                            }
+                                        }}
+                                        contentStyle={{ 
+                                            backgroundColor: '#ffffff', 
+                                            border: '1px solid #e5e7eb', 
+                                            borderRadius: '8px',
+                                            padding: '10px'
+                                        }}
+                                        labelStyle={{ color: '#111827', fontWeight: 'bold' }}
                                     />
-                                    <Legend />
-                                    <Bar dataKey="ocupadas" name="Ocupadas" stackId="a" fill="#ef4444" />
-                                    <Bar dataKey="livres" name="Livres" stackId="a" fill="#22c55e" />
+                                    <Legend 
+                                        wrapperStyle={{ paddingTop: '20px' }}
+                                    />
+                                    <Bar 
+                                        dataKey="ocupadas" 
+                                        name="Ocupadas" 
+                                        stackId="a" 
+                                        fill="#ef4444" 
+                                        isAnimationActive={true} 
+                                        animationDuration={500}
+                                        radius={[0, 0, 0, 0]}
+                                    />
+                                    <Bar 
+                                        dataKey="livres" 
+                                        name="Livres" 
+                                        stackId="a" 
+                                        fill="#22c55e" 
+                                        isAnimationActive={true} 
+                                        animationDuration={500}
+                                        radius={[4, 4, 0, 0]}
+                                    />
                                 </BarChart>
                             </ResponsiveContainer>
                         ) : (
@@ -489,11 +724,36 @@ export default function OcupacaoDiariaPage() {
                         <table className="w-full min-w-[600px]">
                             <thead className="bg-gray-50">
                                 <tr>
-                                    <th className="px-3 lg:px-6 py-2 lg:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Data</th>
-                                    <th className="px-3 lg:px-6 py-2 lg:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Vagas</th>
-                                    <th className="px-3 lg:px-6 py-2 lg:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ocupadas</th>
-                                    <th className="px-3 lg:px-6 py-2 lg:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Livres</th>
-                                    <th className="px-3 lg:px-6 py-2 lg:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">% Ocupação</th>
+                                    <th className="px-3 lg:px-6 py-2 lg:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        <div className="flex items-center gap-2">
+                                            <i className="ion-ios-calendar text-blue-500"></i>
+                                            Data
+                                        </div>
+                                    </th>
+                                    <th className="px-3 lg:px-6 py-2 lg:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        <div className="flex items-center gap-2">
+                                            <i className="ion-ios-grid text-gray-600"></i>
+                                            Total Vagas
+                                        </div>
+                                    </th>
+                                    <th className="px-3 lg:px-6 py-2 lg:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        <div className="flex items-center gap-2">
+                                            <i className="ion-ios-close-circle text-red-500"></i>
+                                            Ocupadas
+                                        </div>
+                                    </th>
+                                    <th className="px-3 lg:px-6 py-2 lg:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        <div className="flex items-center gap-2">
+                                            <i className="ion-ios-checkmark-circle text-green-500"></i>
+                                            Livres
+                                        </div>
+                                    </th>
+                                    <th className="px-3 lg:px-6 py-2 lg:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        <div className="flex items-center gap-2">
+                                            <i className="ion-ios-pulse text-blue-500"></i>
+                                            % Ocupação
+                                        </div>
+                                    </th>
                                 </tr>
                             </thead>
                             <tbody className="bg-white divide-y divide-gray-200">
@@ -501,19 +761,46 @@ export default function OcupacaoDiariaPage() {
                                     dadosOcupacao.map((item, index) => (
                                         <tr key={index} className="hover:bg-gray-50">
                                             <td className="px-3 lg:px-6 py-3 lg:py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                                {new Date(item.data).toLocaleDateString('pt-BR')}
+                                                <div className="flex items-center gap-2">
+                                                    <i className="ion-ios-calendar text-blue-400"></i>
+                                                    <span>{(() => {
+                                                        try {
+                                                            const date = new Date(item.data);
+                                                            if (isNaN(date.getTime())) {
+                                                                return item.data || 'Data inválida';
+                                                            }
+                                                            return date.toLocaleDateString('pt-BR', {
+                                                                day: '2-digit',
+                                                                month: '2-digit',
+                                                                year: 'numeric'
+                                                            });
+                                                        } catch {
+                                                            return item.data || 'Data inválida';
+                                                        }
+                                                    })()}</span>
+                                                </div>
                                             </td>
                                             <td className="px-3 lg:px-6 py-3 lg:py-4 whitespace-nowrap text-sm text-gray-500">
-                                                {item.totalVagas}
+                                                <div className="flex items-center gap-2">
+                                                    <i className="ion-ios-grid text-gray-400"></i>
+                                                    <span>{item.totalVagas}</span>
+                                                </div>
                                             </td>
                                             <td className="px-3 lg:px-6 py-3 lg:py-4 whitespace-nowrap text-sm text-red-600 font-medium">
-                                                {item.ocupadas}
+                                                <div className="flex items-center gap-2">
+                                                    <i className="ion-ios-close-circle text-red-500"></i>
+                                                    <span>{item.ocupadas}</span>
+                                                </div>
                                             </td>
                                             <td className="px-3 lg:px-6 py-3 lg:py-4 whitespace-nowrap text-sm text-green-600 font-medium">
-                                                {item.livres}
+                                                <div className="flex items-center gap-2">
+                                                    <i className="ion-ios-checkmark-circle text-green-500"></i>
+                                                    <span>{item.livres}</span>
+                                                </div>
                                             </td>
                                             <td className="px-3 lg:px-6 py-3 lg:py-4 whitespace-nowrap">
-                                                <div className="flex items-center">
+                                                <div className="flex items-center gap-2">
+                                                    <i className="ion-ios-pulse text-blue-400"></i>
                                                     <div className="w-16 bg-gray-200 rounded-full h-2 mr-2">
                                                         <div 
                                                             className="bg-blue-600 h-2 rounded-full" 

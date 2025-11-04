@@ -4,6 +4,7 @@ package br.com.fiap.mottu.dto.cliente;
 import br.com.fiap.mottu.dto.contato.ContatoRequestDto;
 import br.com.fiap.mottu.dto.endereco.EnderecoRequestDto;
 import br.com.fiap.mottu.dto.cnh.CnhRequestDto;
+import br.com.fiap.mottu.validation.IdadeMinima;
 import lombok.Value;
 
 import jakarta.validation.Valid;
@@ -31,6 +32,7 @@ public class ClienteRequestDto implements Serializable {
 
     @NotNull(message = "A data de nascimento não pode ser nula.")
     @Past(message = "A data de nascimento deve ser no passado.")
+    @IdadeMinima(idade = 18, message = "A pessoa deve ter pelo menos 18 anos de idade.")
     LocalDate dataNascimento;
 
     @NotBlank(message = "O CPF não pode estar em branco.")

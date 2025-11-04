@@ -304,55 +304,55 @@ function BoxPageContent() {
               {getPaginatedData().map((item: BoxResponseDto) => (
                 <div key={item.idBox} className="neumorphic-card-gradient p-3 sm:p-5 flex flex-col justify-between transition-all duration-300 hover:shadow-2xl hover:scale-105 transform hover:-translate-y-2 cursor-pointer">
                   <div>
-                    <div className="flex items-center mb-2 sm:mb-3">
-                      <span className="text-xs font-semibold bg-slate-200 text-slate-700 px-2 py-0.5 rounded-full mr-2">
-                        ID: {item.idBox}
-                      </span>
-                      <h2 className="text-lg sm:text-xl font-bold text-[var(--color-mottu-dark)] truncate">
-                        {item.nome}
-                      </h2>
+                    <div className="flex items-center justify-between mb-2 sm:mb-3">
+                      <div className="flex items-center gap-1 sm:gap-2">
+                        <span className="text-xs font-semibold bg-[var(--neumorphic-bg)] text-[var(--color-mottu-dark)] px-2 sm:px-3 py-1 rounded-full shadow-inner" style={{fontFamily: 'Montserrat, sans-serif'}}>ID: {item.idBox}</span>
+                        <h2 className="text-lg sm:text-xl font-bold text-[var(--color-mottu-dark)] truncate flex items-center gap-1 sm:gap-2" title={item.nome} style={{fontFamily: 'Montserrat, sans-serif'}}>
+                          <i className="ion-ios-grid text-purple-500 text-base sm:text-lg"></i>
+                          {item.nome}
+                        </h2>
+                      </div>
                     </div>
                     
-                    <p className="text-xs sm:text-sm text-slate-600 mb-2">
-                      Status: <span className={`font-semibold flex items-center gap-1 ${item.status === 'L' ? 'text-green-600' : 'text-red-600'}`}>
-                        {item.status === 'L' ? (
-                          <>
-                            <CheckCircle size={12} className="sm:w-3.5 sm:h-3.5" />
-                            Livre
-                          </>
-                        ) : (
-                          <>
-                            <XCircle size={12} className="sm:w-3.5 sm:h-3.5" />
-                            Ocupado
-                          </>
-                        )}
-                      </span>
-                    </p>
-                    
-                    {item.dataEntrada && (
-                      <p className="text-xs sm:text-sm text-slate-500 mb-1">
-                        Entrada: {new Date(item.dataEntrada).toLocaleDateString('pt-BR')}
-                      </p>
-                    )}
-                    
-                    {item.dataSaida && (
-                      <p className="text-xs sm:text-sm text-slate-500 mb-1">
-                        Saída: {new Date(item.dataSaida).toLocaleDateString('pt-BR')}
-                      </p>
-                    )}
-                    
-                    {item.observacao && (
-                      <p className="text-xs sm:text-sm text-slate-500 mb-3 line-clamp-2">{item.observacao}</p>
-                    )}
-
-                    {/* Pátio do box */}
-                    {item.patio?.nomePatio && (
-                      <div className="mt-1 sm:mt-2 text-xs sm:text-sm text-slate-700">
-                        <span className="inline-flex items-center gap-1 bg-slate-100 border border-slate-200 text-slate-700 px-2 py-0.5 rounded-full">
-                          <Building size={14} /> {item.patio.nomePatio}
+                    <div className="space-y-2 sm:space-y-3 text-xs sm:text-sm mb-3 sm:mb-4">
+                      <div className="flex items-center">
+                        <i className={`ion-ios-checkmark-circle text-sm sm:text-base mr-1 sm:mr-2 ${item.status === 'L' ? 'text-green-500' : 'text-red-500'}`}></i>
+                        <span className="font-semibold text-[var(--color-mottu-dark)] w-16 sm:w-20" style={{fontFamily: 'Montserrat, sans-serif'}}>Status:</span>
+                        <span className={`font-semibold ml-1 sm:ml-2 ${item.status === 'L' ? 'text-green-600' : 'text-red-600'}`} style={{fontFamily: 'Montserrat, sans-serif'}}>
+                          {item.status === 'L' ? 'Livre' : 'Ocupado'}
                         </span>
                       </div>
-                    )}
+                      
+                      {item.dataEntrada && (
+                        <div className="flex items-center">
+                          <i className="ion-ios-calendar text-indigo-500 text-sm sm:text-base mr-1 sm:mr-2"></i>
+                          <span className="font-semibold text-[var(--color-mottu-dark)] w-16 sm:w-20" style={{fontFamily: 'Montserrat, sans-serif'}}>Entrada:</span>
+                          <span className="text-slate-600 ml-1 sm:ml-2" style={{fontFamily: 'Montserrat, sans-serif'}}>{new Date(item.dataEntrada).toLocaleDateString('pt-BR')}</span>
+                        </div>
+                      )}
+                      
+                      {item.dataSaida && (
+                        <div className="flex items-center">
+                          <i className="ion-ios-calendar-outline text-indigo-500 text-sm sm:text-base mr-1 sm:mr-2"></i>
+                          <span className="font-semibold text-[var(--color-mottu-dark)] w-16 sm:w-20" style={{fontFamily: 'Montserrat, sans-serif'}}>Saída:</span>
+                          <span className="text-slate-600 ml-1 sm:ml-2" style={{fontFamily: 'Montserrat, sans-serif'}}>{new Date(item.dataSaida).toLocaleDateString('pt-BR')}</span>
+                        </div>
+                      )}
+                      
+                      <div className="flex items-center">
+                        <i className="ion-ios-home text-blue-500 text-sm sm:text-base mr-1 sm:mr-2"></i>
+                        <span className="font-semibold text-[var(--color-mottu-dark)] w-16 sm:w-20" style={{fontFamily: 'Montserrat, sans-serif'}}>Pátio:</span>
+                        <span className="text-slate-600 truncate ml-1 sm:ml-2" style={{fontFamily: 'Montserrat, sans-serif'}}>{item.patio?.nomePatio || '-'}</span>
+                      </div>
+                      
+                      {item.observacao && (
+                        <div className="flex items-center">
+                          <i className="ion-ios-document text-orange-500 text-sm sm:text-base mr-1 sm:mr-2"></i>
+                          <span className="font-semibold text-[var(--color-mottu-dark)] w-16 sm:w-20" style={{fontFamily: 'Montserrat, sans-serif'}}>Obs:</span>
+                          <span className="text-slate-500 truncate ml-1 sm:ml-2 text-xs sm:text-sm line-clamp-2" style={{fontFamily: 'Montserrat, sans-serif'}}>{item.observacao}</span>
+                        </div>
+                      )}
+                    </div>
                   </div>
                   
                   <div className="flex justify-end items-center gap-1 sm:gap-2 border-t border-slate-200 pt-2 sm:pt-3 mt-3 sm:mt-4">
@@ -373,26 +373,74 @@ function BoxPageContent() {
                 <table className="w-full">
                   <thead className="bg-slate-50">
                     <tr>
-                      <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">ID</th>
-                      <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Nome</th>
-                      <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Status</th>
-                      <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Pátio</th>
-                      <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider hidden sm:table-cell">Observação</th>
-                      <th className="px-2 sm:px-4 py-2 sm:py-3 text-center text-xs font-medium text-slate-500 uppercase tracking-wider">Ações</th>
+                      <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider" style={{fontFamily: 'Montserrat, sans-serif'}}>
+                        <div className="flex items-center gap-1">
+                          <i className="ion-ios-information-circle text-purple-500 text-xs sm:text-sm"></i>
+                          <span>ID</span>
+                        </div>
+                      </th>
+                      <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider" style={{fontFamily: 'Montserrat, sans-serif'}}>
+                        <div className="flex items-center gap-1">
+                          <i className="ion-ios-grid text-purple-500 text-xs sm:text-sm"></i>
+                          <span>Box</span>
+                        </div>
+                      </th>
+                      <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider" style={{fontFamily: 'Montserrat, sans-serif'}}>
+                        <div className="flex items-center gap-1">
+                          <i className="ion-ios-checkmark-circle text-emerald-500 text-xs sm:text-sm"></i>
+                          <span>Status</span>
+                        </div>
+                      </th>
+                      <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider" style={{fontFamily: 'Montserrat, sans-serif'}}>
+                        <div className="flex items-center gap-1">
+                          <i className="ion-ios-home text-blue-500 text-xs sm:text-sm"></i>
+                          <span>Pátio</span>
+                        </div>
+                      </th>
+                      <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider hidden sm:table-cell" style={{fontFamily: 'Montserrat, sans-serif'}}>
+                        <div className="flex items-center gap-1">
+                          <i className="ion-ios-document text-orange-500 text-xs sm:text-sm"></i>
+                          <span>Observação</span>
+                        </div>
+                      </th>
+                      <th className="px-2 sm:px-4 py-2 sm:py-3 text-center text-xs font-medium text-slate-500 uppercase tracking-wider" style={{fontFamily: 'Montserrat, sans-serif'}}>
+                        <div className="flex items-center justify-center gap-1">
+                          <i className="ion-ios-settings text-gray-500 text-xs sm:text-sm"></i>
+                          <span>Ações</span>
+                        </div>
+                      </th>
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-slate-200">
                     {getPaginatedData().map((item: BoxResponseDto) => (
                       <tr key={item.idBox} className="hover:bg-slate-50">
-                        <td className="px-2 sm:px-4 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-slate-900">{item.idBox}</td>
-                        <td className="px-2 sm:px-4 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm font-medium text-slate-900 truncate max-w-[120px] sm:max-w-none">{item.nome}</td>
-                        <td className="px-2 sm:px-4 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-slate-900">
-                          <span className={`font-semibold ${item.status === 'L' ? 'text-green-600' : 'text-red-600'}`}>
-                            {item.status === 'L' ? 'Livre' : 'Ocupado'}
-                          </span>
+                        <td className="px-2 sm:px-4 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-slate-600" style={{fontFamily: 'Montserrat, sans-serif'}}>{item.idBox}</td>
+                        <td className="px-2 sm:px-4 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm font-medium text-slate-900 truncate max-w-[120px] sm:max-w-none" style={{fontFamily: 'Montserrat, sans-serif'}}>
+                          <div className="flex items-center gap-1">
+                            <i className="ion-ios-grid text-purple-500 text-xs"></i>
+                            <span>{item.nome}</span>
+                          </div>
                         </td>
-                        <td className="px-2 sm:px-4 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-slate-900">{item.patio?.nomePatio || '-'}</td>
-                        <td className="px-2 sm:px-4 py-3 sm:py-4 text-xs sm:text-sm text-slate-900 max-w-xs truncate hidden sm:table-cell">{item.observacao || '-'}</td>
+                        <td className="px-2 sm:px-4 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-slate-900">
+                          <div className="flex items-center gap-1">
+                            <i className={`ion-ios-checkmark-circle text-xs ${item.status === 'L' ? 'text-green-500' : 'text-red-500'}`}></i>
+                            <span className={`font-semibold ${item.status === 'L' ? 'text-green-600' : 'text-red-600'}`} style={{fontFamily: 'Montserrat, sans-serif'}}>
+                              {item.status === 'L' ? 'Livre' : 'Ocupado'}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="px-2 sm:px-4 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-slate-900" style={{fontFamily: 'Montserrat, sans-serif'}}>
+                          <div className="flex items-center gap-1">
+                            <i className="ion-ios-home text-blue-500 text-xs"></i>
+                            <span>{item.patio?.nomePatio || '-'}</span>
+                          </div>
+                        </td>
+                        <td className="px-2 sm:px-4 py-3 sm:py-4 text-xs sm:text-sm text-slate-900 max-w-xs truncate hidden sm:table-cell" style={{fontFamily: 'Montserrat, sans-serif'}}>
+                          <div className="flex items-center gap-1">
+                            <i className="ion-ios-document text-orange-500 text-xs"></i>
+                            <span className="truncate">{item.observacao || '-'}</span>
+                          </div>
+                        </td>
                         <td className="px-2 sm:px-4 py-3 sm:py-4 whitespace-nowrap text-center text-xs sm:text-sm font-medium">
                           <div className="flex justify-center items-center gap-1 sm:gap-2">
                             <Link 

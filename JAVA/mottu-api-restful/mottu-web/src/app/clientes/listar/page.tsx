@@ -211,18 +211,23 @@ export default function ListarClientesPage() {
                                         <div key={cliente.idCliente} className="neumorphic-card-gradient p-4 sm:p-6 flex flex-col justify-between transition-all duration-300 hover:scale-105 hover:-translate-y-2 hover:shadow-2xl cursor-pointer">
                                             <div>
                                                 <div className="flex items-center justify-between mb-3 sm:mb-4">
-                                                    <div className="flex items-center gap-2">
+                                                    <div className="flex items-center gap-1 sm:gap-2">
                                                         <span className="text-xs font-semibold bg-[var(--neumorphic-bg)] text-[var(--color-mottu-dark)] px-2 sm:px-3 py-1 rounded-full shadow-inner" style={{fontFamily: 'Montserrat, sans-serif'}}>ID: {cliente.idCliente}</span>
-                                                        <h2 className="text-lg sm:text-xl font-bold text-[var(--color-mottu-dark)] truncate" title={`${cliente.nome} ${cliente.sobrenome}`} style={{fontFamily: 'Montserrat, sans-serif'}}>{cliente.nome} {cliente.sobrenome}</h2>
+                                                        <h2 className="text-lg sm:text-xl font-bold text-[var(--color-mottu-dark)] truncate flex items-center gap-1 sm:gap-2" title={`${cliente.nome} ${cliente.sobrenome}`} style={{fontFamily: 'Montserrat, sans-serif'}}>
+                                                            <i className="ion-ios-person text-blue-500 text-base sm:text-lg"></i>
+                                                            {cliente.nome} {cliente.sobrenome}
+                                                        </h2>
                                                     </div>
                                                 </div>
-                                                <div className="space-y-2 text-xs sm:text-sm mb-3 sm:mb-4">
+                                                <div className="space-y-2 sm:space-y-3 text-xs sm:text-sm mb-3 sm:mb-4">
                                                     <div className="flex items-center">
-                                                        <span className="font-semibold text-[var(--color-mottu-dark)] w-10 sm:w-12" style={{fontFamily: 'Montserrat, sans-serif'}}>CPF:</span> 
+                                                        <i className="ion-ios-card text-green-500 text-sm sm:text-base mr-1 sm:mr-2"></i>
+                                                        <span className="font-semibold text-[var(--color-mottu-dark)] w-16 sm:w-20" style={{fontFamily: 'Montserrat, sans-serif'}}>CPF:</span> 
                                                         <span className="text-slate-600 ml-1 sm:ml-2 text-xs sm:text-sm" style={{fontFamily: 'Montserrat, sans-serif'}}>{cliente.cpf}</span>
                                                     </div>
                                                     <div className="flex items-center">
-                                                        <span className="font-semibold text-[var(--color-mottu-dark)] w-10 sm:w-12" style={{fontFamily: 'Montserrat, sans-serif'}}>Email:</span> 
+                                                        <i className="ion-ios-mail text-cyan-500 text-sm sm:text-base mr-1 sm:mr-2"></i>
+                                                        <span className="font-semibold text-[var(--color-mottu-dark)] w-16 sm:w-20" style={{fontFamily: 'Montserrat, sans-serif'}}>Email:</span> 
                                                         <span className="text-slate-600 truncate ml-1 sm:ml-2 text-xs sm:text-sm" style={{fontFamily: 'Montserrat, sans-serif'}}>{cliente.contatoResponseDto?.email || '-'}</span>
                                                     </div>
                                                 </div>
@@ -243,20 +248,60 @@ export default function ListarClientesPage() {
                                         <table className="w-full text-xs sm:text-sm">
                                             <thead>
                                                 <tr>
-                                                    <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-xs sm:text-sm font-semibold text-[var(--color-mottu-dark)]" style={{fontFamily: 'Montserrat, sans-serif'}}>ID</th>
-                                                    <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-xs sm:text-sm font-semibold text-[var(--color-mottu-dark)]" style={{fontFamily: 'Montserrat, sans-serif'}}>Nome</th>
-                                                    <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-xs sm:text-sm font-semibold text-[var(--color-mottu-dark)] hidden sm:table-cell" style={{fontFamily: 'Montserrat, sans-serif'}}>CPF</th>
-                                                    <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-xs sm:text-sm font-semibold text-[var(--color-mottu-dark)] hidden md:table-cell" style={{fontFamily: 'Montserrat, sans-serif'}}>Email</th>
-                                                    <th className="px-2 sm:px-4 py-2 sm:py-3 text-center text-xs sm:text-sm font-semibold text-[var(--color-mottu-dark)]" style={{fontFamily: 'Montserrat, sans-serif'}}>Ações</th>
+                                                    <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-xs sm:text-sm font-semibold text-[var(--color-mottu-dark)]" style={{fontFamily: 'Montserrat, sans-serif'}}>
+                                                        <div className="flex items-center gap-1">
+                                                            <i className="ion-ios-information-circle text-purple-500 text-xs sm:text-sm"></i>
+                                                            <span>ID</span>
+                                                        </div>
+                                                    </th>
+                                                    <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-xs sm:text-sm font-semibold text-[var(--color-mottu-dark)]" style={{fontFamily: 'Montserrat, sans-serif'}}>
+                                                        <div className="flex items-center gap-1">
+                                                            <i className="ion-ios-person text-blue-500 text-xs sm:text-sm"></i>
+                                                            <span>Nome</span>
+                                                        </div>
+                                                    </th>
+                                                    <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-xs sm:text-sm font-semibold text-[var(--color-mottu-dark)] hidden sm:table-cell" style={{fontFamily: 'Montserrat, sans-serif'}}>
+                                                        <div className="flex items-center gap-1">
+                                                            <i className="ion-ios-card text-green-500 text-xs sm:text-sm"></i>
+                                                            <span>CPF</span>
+                                                        </div>
+                                                    </th>
+                                                    <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-xs sm:text-sm font-semibold text-[var(--color-mottu-dark)] hidden md:table-cell" style={{fontFamily: 'Montserrat, sans-serif'}}>
+                                                        <div className="flex items-center gap-1">
+                                                            <i className="ion-ios-mail text-cyan-500 text-xs sm:text-sm"></i>
+                                                            <span>Email</span>
+                                                        </div>
+                                                    </th>
+                                                    <th className="px-2 sm:px-4 py-2 sm:py-3 text-center text-xs sm:text-sm font-semibold text-[var(--color-mottu-dark)]" style={{fontFamily: 'Montserrat, sans-serif'}}>
+                                                        <div className="flex items-center justify-center gap-1">
+                                                            <i className="ion-ios-settings text-gray-500 text-xs sm:text-sm"></i>
+                                                            <span>Ações</span>
+                                                        </div>
+                                                    </th>
                                                 </tr>
                                             </thead>
                                             <tbody className="divide-y divide-slate-200">
                                                 {clientes.map((cliente) => (
                                                     <tr key={cliente.idCliente} className="hover:bg-slate-50 transition-colors">
                                                         <td className="px-2 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm text-slate-600" style={{fontFamily: 'Montserrat, sans-serif'}}>{cliente.idCliente}</td>
-                                                        <td className="px-2 sm:px-4 py-2 sm:py-3 font-semibold text-[var(--color-mottu-dark)] text-xs sm:text-sm" style={{fontFamily: 'Montserrat, sans-serif'}}>{cliente.nome} {cliente.sobrenome}</td>
-                                                        <td className="px-2 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm text-slate-900 hidden sm:table-cell" style={{fontFamily: 'Montserrat, sans-serif'}}>{cliente.cpf}</td>
-                                                        <td className="px-2 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm text-slate-600 hidden md:table-cell" style={{fontFamily: 'Montserrat, sans-serif'}}>{cliente.contatoResponseDto?.email || '-'}</td>
+                                                        <td className="px-2 sm:px-4 py-2 sm:py-3 font-semibold text-[var(--color-mottu-dark)] text-xs sm:text-sm" style={{fontFamily: 'Montserrat, sans-serif'}}>
+                                                            <div className="flex items-center gap-1">
+                                                                <i className="ion-ios-person text-blue-500 text-xs"></i>
+                                                                <span>{cliente.nome} {cliente.sobrenome}</span>
+                                                            </div>
+                                                        </td>
+                                                        <td className="px-2 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm text-slate-900 hidden sm:table-cell" style={{fontFamily: 'Montserrat, sans-serif'}}>
+                                                            <div className="flex items-center gap-1">
+                                                                <i className="ion-ios-card text-green-500 text-xs"></i>
+                                                                <span>{cliente.cpf}</span>
+                                                            </div>
+                                                        </td>
+                                                        <td className="px-2 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm text-slate-600 hidden md:table-cell" style={{fontFamily: 'Montserrat, sans-serif'}}>
+                                                            <div className="flex items-center gap-1">
+                                                                <i className="ion-ios-mail text-cyan-500 text-xs"></i>
+                                                                <span className="truncate">{cliente.contatoResponseDto?.email || '-'}</span>
+                                                            </div>
+                                                        </td>
                                                         <td className="px-2 sm:px-4 py-2 sm:py-3">
                                                             <div className="flex justify-center items-center gap-1 sm:gap-2">
                                                                 <Link href={`/clientes/detalhes/${cliente.idCliente}`} className="p-1 rounded text-blue-600 hover:bg-blue-100 transition-colors" title="Ver Detalhes">

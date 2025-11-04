@@ -6,7 +6,7 @@ import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { BoxService } from '@/utils/api';
 import { BoxResponseDto } from '@/types/box';
-import { Loader2, AlertCircle, Box as BoxIcon, Edit, ArrowLeft } from 'lucide-react';
+import { Loader2, AlertCircle, Box as BoxIcon, ArrowLeft } from 'lucide-react';
 import '@/types/styles/neumorphic.css';
 import '@/styles/neumorphic.css';
 
@@ -81,11 +81,6 @@ export default function DetalhesBoxPage() {
                                 <ArrowLeft size={16} className="text-blue-600"/> 
                                 <span className="hidden sm:inline">Voltar</span>
                                 <span className="sm:hidden">←</span>
-                            </Link>
-                            <Link href={`/box/alterar/${box.idBox}`} className="btn btn-primary-green text-xs sm:text-sm px-3 sm:px-4 py-2">
-                                <Edit size={16} className="text-yellow-400"/> 
-                                <span className="hidden sm:inline">Editar</span>
-                                <span className="sm:hidden">✏️</span>
                             </Link>
                         </div>
                     </div>

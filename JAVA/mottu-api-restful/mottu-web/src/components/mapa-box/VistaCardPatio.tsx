@@ -8,6 +8,8 @@ interface VistaCardPatioProps {
     vagas: VagaCompleta[];
     vagaSelecionada: VagaCompleta | null;
     onVagaSelect: (vaga: VagaCompleta) => void;
+    veiculosEmManutencao?: number;
+    placasVeiculosEmManutencao?: Set<string>;
 }
 
 interface StatusBox {
@@ -73,7 +75,7 @@ function getStatusIcon(status: 'growing' | 'decreasing' | 'stable') {
     }
 }
 
-export default function VistaCardPatio({ vagas, vagaSelecionada, onVagaSelect, itemsPerPage = 6, currentPage = 1 }: VistaCardPatioProps & { itemsPerPage?: number; currentPage?: number }) {
+export default function VistaCardPatio({ vagas, vagaSelecionada, onVagaSelect, itemsPerPage = 20, currentPage = 1, veiculosEmManutencao = 0, placasVeiculosEmManutencao = new Set() }: VistaCardPatioProps & { itemsPerPage?: number; currentPage?: number }) {
     
     // Agrupar vagas por pátio e calcular estatísticas
     const patiosComStatus = useMemo(() => {
@@ -132,7 +134,8 @@ export default function VistaCardPatio({ vagas, vagaSelecionada, onVagaSelect, i
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                 {patiosPaginados.map((patioInfo, index) => {
                 const { patio, vagas: vagasPatio, ocupacao, ocupadas, livres, manutencao, statusInfo, media, maxima } = patioInfo;
-                const boxesVisiveis = vagasPatio.slice(0, 10);
+                // Mostrar mais boxes visíveis (12 em vez de 10) para compensar o tamanho maior
+                const boxesVisiveis = vagasPatio.slice(0, 12);
                 const boxesRestantes = vagasPatio.length - boxesVisiveis.length;
                 
                 // Cor dinâmica baseada no ID do pátio (não no índice da paginação)
@@ -142,17 +145,18 @@ export default function VistaCardPatio({ vagas, vagaSelecionada, onVagaSelect, i
                 return (
                     <div
                         key={patio.idPatio}
-                        className="bg-white rounded-lg sm:rounded-xl shadow-md overflow-hidden transition-all duration-300 hover:shadow-xl hover:scale-[1.01] sm:hover:scale-[1.02] border border-gray-200"
+                        className="bg-white rounded-lg sm:rounded-xl shadow-md overflow-hidden transition-all duration-300 hover:shadow-xl hover:scale-[1.01] sm:hover:scale-[1.02] border border-gray-200 min-h-[450px] sm:min-h-[500px]"
                     >
                         {/* Informações do Topo (antes do header) */}
                         {patio.endereco && (
                             <div className="px-5 pt-4 pb-3 bg-gray-50">
                                 <p className="text-xs text-gray-600 font-medium mb-1">{patio.nomePatio}</p>
                                 <p className="text-xs text-gray-500">
-                                    {patio.endereco.logradouro || patio.endereco.rua || 'N/A'}, {patio.endereco.numero || ''}
-                                    {patio.endereco.bairro && ` - ${patio.endereco.bairro}`}
-                                    {patio.endereco.cidade && `, ${patio.endereco.cidade}`}
-                                    {patio.endereco.estado && ` - ${patio.endereco.estado}`}
+                                    {typeof patio.endereco === 'string' 
+                                        ? patio.endereco
+                                        : (patio.endereco.cidade && patio.endereco.estado
+                                            ? `${patio.endereco.cidade}, ${patio.endereco.estado}`
+                                            : patio.endereco.cidade || patio.endereco.estado || 'Endereço não informado')}
                                 </p>
                             </div>
                         )}
@@ -203,20 +207,44 @@ export default function VistaCardPatio({ vagas, vagaSelecionada, onVagaSelect, i
                             {/* Status dos Boxes */}
                             <div>
                                 <p className="text-xs sm:text-sm font-semibold text-gray-700 mb-2">Status dos Boxes</p>
-                                <div className="grid grid-cols-5 gap-1.5 sm:gap-2 mb-2">
+                                <div className="grid grid-cols-4 sm:grid-cols-5 gap-2 sm:gap-3 mb-2">
                                     {boxesVisiveis.map((vaga, index) => {
+                                        // Verificar se o veículo está em manutenção (mesma lógica da VistaGrade)
+                                        // Comparar placas de forma case-insensitive e sem espaços
+                                        const placaNormalizada = vaga.veiculo?.placa?.toUpperCase().trim().replace(/\s+/g, '') || '';
+                                        const veiculoEmManutencao = vaga.veiculo && placasVeiculosEmManutencao.size > 0 && 
+                                            Array.from(placasVeiculosEmManutencao).some(placa => 
+                                                placa.toUpperCase().trim().replace(/\s+/g, '') === placaNormalizada
+                                            );
+                                        const statusEfetivo: 'L' | 'O' | 'M' = veiculoEmManutencao ? 'M' : vaga.status;
+                                        
+                                        // Determinar cor baseada no status efetivo: 'O' = ocupado (vermelho), 'L' = livre (verde), 'M' = manutenção (amarelo)
                                         const corBox = 
-                                            vaga.status === 'O' ? 'bg-red-500' :
-                                            vaga.status === 'L' ? 'bg-green-500' :
-                                            'bg-yellow-500';
+                                            statusEfetivo === 'O' ? 'bg-red-500 hover:bg-red-600' :
+                                            statusEfetivo === 'L' ? 'bg-green-500 hover:bg-green-600' :
+                                            'bg-yellow-500 hover:bg-yellow-600';
+                                        
+                                        // Debug: log para verificar status
+                                        if (index === 0) {
+                                            console.log('🎨 VistaCardPatio - Primeira vaga:', {
+                                                idBox: vaga.idBox,
+                                                nomeBox: vaga.nomeBox,
+                                                statusOriginal: vaga.status,
+                                                statusEfetivo: statusEfetivo,
+                                                veiculoEmManutencao: veiculoEmManutencao,
+                                                placa: vaga.veiculo?.placa,
+                                                corAplicada: corBox
+                                            });
+                                        }
                                         
                                         return (
                                             <button
                                                 key={`${patio.idPatio}-${vaga.idBox}-${index}`}
                                                 onClick={() => onVagaSelect(vaga)}
-                                                className={`${corBox} text-white text-xs font-bold rounded sm:rounded-md p-1.5 sm:p-2 shadow-sm transition-all duration-200 hover:scale-110 hover:shadow-md ${vagaSelecionada?.idBox === vaga.idBox ? 'ring-2 ring-blue-500 ring-offset-1 scale-110' : ''}`}
+                                                className={`${corBox} text-white text-xs sm:text-sm font-bold rounded-md sm:rounded-lg p-2.5 sm:p-3 min-h-[48px] sm:min-h-[56px] flex items-center justify-center shadow-sm transition-all duration-200 hover:scale-105 hover:shadow-md ${vagaSelecionada?.idBox === vaga.idBox ? 'ring-2 ring-blue-500 ring-offset-1 scale-105' : ''}`}
+                                                title={`Box ${vaga.nomeBox || index + 1} - ${statusEfetivo === 'L' ? 'Livre' : statusEfetivo === 'O' ? 'Ocupado' : 'Manutenção'}${veiculoEmManutencao ? ' (Veículo em manutenção)' : ''}${vaga.veiculo ? ` - ${vaga.veiculo.placa}` : ''}`}
                                             >
-                                                {index + 1}
+                                                <span className="truncate max-w-full">{vaga.nomeBox || index + 1}</span>
                                             </button>
                                         );
                                     })}
@@ -233,7 +261,9 @@ export default function VistaCardPatio({ vagas, vagaSelecionada, onVagaSelect, i
                             <div className="flex items-center gap-2 text-sm text-gray-500 pt-3 border-t-2 border-gray-100">
                                 <MapPin size={14} className="text-gray-400" />
                                 <span className="text-xs text-gray-500">
-                                    {patio.endereco?.cidade || 'N/A'}
+                                    {typeof patio.endereco === 'string'
+                                        ? patio.endereco
+                                        : (patio.endereco?.cidade || 'N/A')}
                                 </span>
                             </div>
                         </div>

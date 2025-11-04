@@ -1,0 +1,131 @@
+-- Script para verificar e corrigir múltiplos estacionamentos ativos
+-- Execute no SQL Developer
+
+-- ==================================================
+-- 1. VERIFICAR MÚLTIPLOS ESTACIONAMENTOS ATIVOS PARA A MESMA PLACA
+-- ==================================================
+SELECT 
+    v.PLACA,
+    COUNT(*) as TOTAL_ESTACIONAMENTOS_ATIVOS,
+    LISTAGG(
+        e.ID_ESTACIONAMENTO || ' (Box: ' || b.NOME || ', Pátio: ' || p.NOME_PATIO || ', Data: ' || 
+        TO_CHAR(e.DATA_ENTRADA, 'DD/MM/YYYY HH24:MI:SS') || ')', 
+        ' | '
+    ) WITHIN GROUP (ORDER BY e.DATA_ENTRADA DESC) as DETALHES_ESTACIONAMENTOS
+FROM RELACAODIRETA.TB_VEICULO v
+JOIN RELACAODIRETA.TB_ESTACIONAMENTO e ON v.ID_VEICULO = e.TB_VEICULO_ID_VEICULO
+JOIN RELACAODIRETA.TB_BOX b ON e.TB_BOX_ID_BOX = b.ID_BOX
+JOIN RELACAODIRETA.TB_PATIO p ON e.TB_PATIO_ID_PATIO = p.ID_PATIO
+WHERE e.ESTA_ESTACIONADO = 1
+GROUP BY v.PLACA
+HAVING COUNT(*) > 1
+ORDER BY COUNT(*) DESC;
+
+-- ==================================================
+-- 2. VERIFICAR O BOX curitiba001 ESPECIFICAMENTE
+-- ==================================================
+SELECT 
+    e.ID_ESTACIONAMENTO,
+    v.PLACA,
+    b.ID_BOX,
+    b.NOME as BOX_NOME,
+    b.STATUS as BOX_STATUS,
+    p.ID_PATIO,
+    p.NOME_PATIO,
+    e.ESTA_ESTACIONADO,
+    e.DATA_ENTRADA,
+    e.DATA_SAIDA,
+    TO_CHAR(e.DATA_ULTIMA_ATUALIZACAO, 'DD/MM/YYYY HH24:MI:SS') as ULTIMA_ATUALIZACAO
+FROM RELACAODIRETA.TB_ESTACIONAMENTO e
+JOIN RELACAODIRETA.TB_VEICULO v ON e.TB_VEICULO_ID_VEICULO = v.ID_VEICULO
+JOIN RELACAODIRETA.TB_BOX b ON e.TB_BOX_ID_BOX = b.ID_BOX
+JOIN RELACAODIRETA.TB_PATIO p ON e.TB_PATIO_ID_PATIO = p.ID_PATIO
+WHERE b.NOME = 'curitiba001'
+ORDER BY e.DATA_ULTIMA_ATUALIZACAO DESC;
+
+-- ==================================================
+-- 3. VERIFICAR TODOS OS ESTACIONAMENTOS ATIVOS DA PLACA EGX1D92
+-- ==================================================
+SELECT 
+    e.ID_ESTACIONAMENTO,
+    v.PLACA,
+    b.ID_BOX,
+    b.NOME as BOX_NOME,
+    b.STATUS as BOX_STATUS,
+    p.ID_PATIO,
+    p.NOME_PATIO,
+    e.ESTA_ESTACIONADO,
+    e.DATA_ENTRADA,
+    e.DATA_SAIDA,
+    TO_CHAR(e.DATA_ULTIMA_ATUALIZACAO, 'DD/MM/YYYY HH24:MI:SS') as ULTIMA_ATUALIZACAO
+FROM RELACAODIRETA.TB_ESTACIONAMENTO e
+JOIN RELACAODIRETA.TB_VEICULO v ON e.TB_VEICULO_ID_VEICULO = v.ID_VEICULO
+JOIN RELACAODIRETA.TB_BOX b ON e.TB_BOX_ID_BOX = b.ID_BOX
+JOIN RELACAODIRETA.TB_PATIO p ON e.TB_PATIO_ID_PATIO = p.ID_PATIO
+WHERE UPPER(v.PLACA) = 'EGX1D92'
+ORDER BY e.DATA_ULTIMA_ATUALIZACAO DESC;
+
+-- ==================================================
+-- 4. CORRIGIR: Se houver múltiplos estacionamentos ativos para a mesma placa,
+-- manter apenas o mais recente e liberar os outros
+-- ==================================================
+-- ATENÇÃO: Execute apenas se confirmar que há múltiplos estacionamentos ativos
+-- 
+-- Este script mantém apenas o estacionamento mais recente (com DATA_ENTRADA mais recente)
+-- e libera todos os outros estacionamentos ativos da mesma placa
+
+-- Primeiro, verificar quantos serão afetados
+SELECT 
+    v.PLACA,
+    COUNT(*) as TOTAL_ATIVOS,
+    MIN(e.ID_ESTACIONAMENTO) KEEP (DENSE_RANK FIRST ORDER BY e.DATA_ENTRADA DESC) as ESTACIONAMENTO_MANTER,
+    LISTAGG(e.ID_ESTACIONAMENTO, ', ') WITHIN GROUP (ORDER BY e.DATA_ENTRADA DESC) as TODOS_IDS
+FROM RELACAODIRETA.TB_VEICULO v
+JOIN RELACAODIRETA.TB_ESTACIONAMENTO e ON v.ID_VEICULO = e.TB_VEICULO_ID_VEICULO
+WHERE e.ESTA_ESTACIONADO = 1
+GROUP BY v.PLACA
+HAVING COUNT(*) > 1;
+
+-- Se confirmar que há múltiplos, execute este UPDATE:
+-- (DESCOMENTE PARA EXECUTAR)
+/*
+UPDATE RELACAODIRETA.TB_ESTACIONAMENTO e
+SET 
+    e.ESTA_ESTACIONADO = 0,
+    e.DATA_SAIDA = CURRENT_TIMESTAMP,
+    e.DATA_ULTIMA_ATUALIZACAO = CURRENT_TIMESTAMP
+WHERE e.ESTA_ESTACIONADO = 1
+AND (e.ID_ESTACIONAMENTO, e.TB_VEICULO_ID_VEICULO) NOT IN (
+    -- Subquery: manter apenas o estacionamento mais recente de cada veículo
+    SELECT 
+        e2.ID_ESTACIONAMENTO,
+        e2.TB_VEICULO_ID_VEICULO
+    FROM RELACAODIRETA.TB_ESTACIONAMENTO e2
+    WHERE e2.ESTA_ESTACIONADO = 1
+    AND e2.TB_VEICULO_ID_VEICULO = e.TB_VEICULO_ID_VEICULO
+    AND e2.DATA_ENTRADA = (
+        SELECT MAX(e3.DATA_ENTRADA)
+        FROM RELACAODIRETA.TB_ESTACIONAMENTO e3
+        WHERE e3.TB_VEICULO_ID_VEICULO = e2.TB_VEICULO_ID_VEICULO
+        AND e3.ESTA_ESTACIONADO = 1
+    )
+    AND ROWNUM = 1
+);
+
+-- Liberar os boxes correspondentes
+UPDATE RELACAODIRETA.TB_BOX b
+SET 
+    b.STATUS = 'L',
+    b.DATA_SAIDA = CURRENT_TIMESTAMP
+WHERE b.ID_BOX IN (
+    SELECT e.TB_BOX_ID_BOX
+    FROM RELACAODIRETA.TB_ESTACIONAMENTO e
+    WHERE e.ESTA_ESTACIONADO = 0
+    AND e.DATA_SAIDA >= CURRENT_TIMESTAMP - INTERVAL '1' MINUTE
+);
+
+COMMIT;
+*/
+
+
+

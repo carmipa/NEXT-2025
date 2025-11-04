@@ -40,6 +40,10 @@ export default {
         'card-violet-border': '#A78BFA',
         'card-gray': '#F9FAFB',
         'card-gray-border': '#E5E7EB',
+        'card-cyan': '#ECFEFF',
+        'card-cyan-border': '#67E8F9',
+        'card-rose': '#FFF1F2',
+        'card-rose-border': '#FCA5A5',
       },
       backgroundImage: {
         'mottu-gradient': 'linear-gradient(45deg, #007A1F 0%, #008A25 20%, #009C2C 50%, #00B033 80%, #00C23A 100%)',

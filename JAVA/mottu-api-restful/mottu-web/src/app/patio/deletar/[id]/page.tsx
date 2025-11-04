@@ -7,6 +7,12 @@ import Link from 'next/link';
 import { PatioService } from '@/utils/api';
 import { PatioResponseDto } from '@/types/patio';
 import { Loader2, AlertCircle, Trash2, ArrowLeft } from 'lucide-react';
+import {
+    ResourceInUseException,
+    ResourceNotFoundException,
+    OperationNotAllowedException,
+    ApiException,
+} from '@/utils/exceptions';
 
 export default function DeletarPatioPage() {
     const params = useParams();
@@ -29,7 +35,17 @@ export default function DeletarPatioPage() {
                 const data = await PatioService.getById(id);
                 setPatio(data);
             } catch (err: any) {
-                setError(err.response?.data?.message || "Pátio não encontrado.");
+                let errorMessage = "Pátio não encontrado.";
+                
+                if (err instanceof ResourceNotFoundException) {
+                    errorMessage = err.message;
+                } else if (err instanceof ApiException) {
+                    errorMessage = err.message;
+                } else if (err.response?.data?.message) {
+                    errorMessage = err.response.data.message;
+                }
+                
+                setError(errorMessage);
             } finally {
                 setIsLoading(false);
             }
@@ -45,7 +61,21 @@ export default function DeletarPatioPage() {
             await PatioService.delete(id);
             router.push('/patio/listar');
         } catch (err: any) {
-            setError(err.response?.data?.message || "Erro ao excluir pátio.");
+            let errorMessage = "Erro ao excluir pátio.";
+            
+            if (err instanceof ResourceInUseException) {
+                errorMessage = err.message;
+            } else if (err instanceof ResourceNotFoundException) {
+                errorMessage = err.message;
+            } else if (err instanceof OperationNotAllowedException) {
+                errorMessage = err.message;
+            } else if (err instanceof ApiException) {
+                errorMessage = err.message;
+            } else if (err.response?.data?.message) {
+                errorMessage = err.response.data.message;
+            }
+            
+            setError(errorMessage);
             setIsDeleting(false);
         }
     };

@@ -3,6 +3,16 @@
 import axios from "axios";
 import { SpringPage } from "@/types/common";
 import {
+    createExceptionFromResponse,
+    ApiException,
+    ResourceNotFoundException,
+    ResourceInUseException,
+    OperationNotAllowedException,
+    ValidationException,
+    DuplicatedResourceException,
+    InvalidInputException,
+} from "@/utils/exceptions";
+import {
     ClienteRequestDto,
     ClienteResponseDto,
     ClienteFilter,
@@ -39,6 +49,15 @@ import {
     EnderecoResponseDto,
     EnderecoFilter
 } from "@/types/endereco";
+import {
+    EstacionamentoRequestDto,
+    EstacionamentoResponseDto,
+    EstacionamentoFilter,
+    PlacaRequestDto,
+    EstacionamentoPage,
+    EstacionamentoDataTableResponse,
+} from "@/types/estacionamento";
+import { DataTableRequest } from "@/types/datatable";
 
 // ---- OCR / Radar types ----
 export interface OcrSession {
@@ -65,7 +84,39 @@ const api = axios.create({
     baseURL: API_BASE_URL,
     withCredentials: true,
     timeout: 30000,
+    // Configuração para não tentar fazer parse de respostas vazias
+    validateStatus: (status) => {
+        return status >= 200 && status < 300; // aceita 2xx incluindo 204
+    },
 });
+
+// Interceptor para tratar respostas vazias (204 No Content)
+api.interceptors.response.use(
+    (response) => {
+        // Se a resposta é 204 No Content (sem corpo), retorna response diretamente
+        if (response.status === 204 || response.data === '') {
+            return { ...response, data: null };
+        }
+        return response;
+    },
+    (error) => {
+        // Trata erros de parsing JSON quando a resposta está vazia
+        if (error.response?.status === 204) {
+            // 204 é sucesso, não erro
+            return Promise.resolve({ data: null, status: 204, headers: error.response.headers });
+        }
+        
+        // Se o erro for de parsing JSON com resposta vazia e status 2xx
+        if (error.message?.includes('Unexpected end of JSON input') && 
+            error.response?.status >= 200 && error.response?.status < 300) {
+            // Resposta vazia válida (como 204)
+            return Promise.resolve({ data: null, status: error.response.status, headers: error.response.headers });
+        }
+        
+        // Converte erro para exceção personalizada
+        throw createExceptionFromResponse(error);
+    }
+);
 
 // util p/ limpar filtros
 const cleanFilterParams = (filter: object): Record<string, any> =>
@@ -463,19 +514,187 @@ export const ZonaService = {
 
 // ---------------- ESTACIONAMENTO ----------------
 export const EstacionamentoService = {
-    estacionar: async (placa: string, boxId?: number | null): Promise<BoxResponseDto> => {
-        const params: Record<string, any> = { placa };
-        if (boxId !== undefined && boxId !== null) params.boxId = boxId;
-        const { data } = await api.post<BoxResponseDto>(
-            "/estacionamento/estacionar",
-            null,
+    // Listar todos com paginação e filtros
+    listarPaginadoFiltrado: async (
+        filter: EstacionamentoFilter = {},
+        page = 0,
+        size = 10,
+        sort = "dataUltimaAtualizacao,desc"
+    ): Promise<EstacionamentoPage> => {
+        const params = { ...cleanFilterParams(filter), page, size, sort };
+        const { data } = await api.get<EstacionamentoPage>(
+            "/estacionamentos/search",
             { params }
         );
         return data;
     },
 
+    // Buscar por ID
+    getById: async (id: number): Promise<EstacionamentoResponseDto> => {
+        const { data } = await api.get<EstacionamentoResponseDto>(`/estacionamentos/${id}`);
+        return data;
+    },
+
+    // Listar estacionamentos ativos (com paginação)
+    listarAtivos: async (
+        page = 0,
+        size = 100,
+        sort = "dataUltimaAtualizacao,desc"
+    ): Promise<EstacionamentoPage> => {
+        const { data } = await api.get<EstacionamentoPage>(
+            "/estacionamentos/ativos",
+            { params: { page, size, sort } }
+        );
+        return data;
+    },
+
+    // Listar todos os ativos (sem paginação, para SSE e dashboards)
+    listarTodosAtivos: async (): Promise<EstacionamentoResponseDto[]> => {
+        const { data } = await api.get<EstacionamentoResponseDto[]>(
+            "/estacionamentos/ativos/todos"
+        );
+        return data;
+    },
+
+    // Buscar estacionamento ativo por placa
+    buscarAtivoPorPlaca: async (placa: string): Promise<EstacionamentoResponseDto> => {
+        const { data } = await api.get<EstacionamentoResponseDto>(
+            `/estacionamentos/placa/${encodeURIComponent(placa)}`
+        );
+        return data;
+    },
+
+    // Verificar se veículo está estacionado
+    verificarSeEstaEstacionado: async (placa: string): Promise<boolean> => {
+        const { data } = await api.get<boolean>(
+            `/estacionamentos/placa/${encodeURIComponent(placa)}/verificar`
+        );
+        return data;
+    },
+
+    // Listar estacionamentos ativos por pátio
+    listarAtivosPorPatio: async (patioId: number): Promise<EstacionamentoResponseDto[]> => {
+        const { data } = await api.get<EstacionamentoResponseDto[]>(
+            `/estacionamentos/patio/${patioId}/ativos`
+        );
+        return data;
+    },
+
+    // Histórico de estacionamentos por veículo
+    buscarHistoricoPorVeiculo: async (
+        veiculoId: number,
+        page = 0,
+        size = 20
+    ): Promise<EstacionamentoPage> => {
+        const { data } = await api.get<EstacionamentoPage>(
+            `/estacionamentos/veiculo/${veiculoId}/historico`,
+            { params: { page, size } }
+        );
+        return data;
+    },
+
+    // Histórico de estacionamentos por placa
+    buscarHistoricoPorPlaca: async (
+        placa: string,
+        page = 0,
+        size = 20
+    ): Promise<EstacionamentoPage> => {
+        const { data } = await api.get<EstacionamentoPage>(
+            `/estacionamentos/placa/${encodeURIComponent(placa)}/historico`,
+            { params: { page, size } }
+        );
+        return data;
+    },
+
+    // Estacionar veículo (NOVO - usa nova API /estacionamentos/estacionar)
+    estacionar: async (
+        placa: string,
+        boxId?: number | null,
+        patioId?: number | null,
+        observacoes?: string
+    ): Promise<EstacionamentoResponseDto> => {
+        const payload: PlacaRequestDto = { placa };
+        const params: Record<string, any> = {};
+        if (boxId !== undefined && boxId !== null) params.boxId = boxId;
+        if (patioId !== undefined && patioId !== null) params.patioId = patioId;
+        if (observacoes) params.observacoes = observacoes;
+        
+        const { data } = await api.post<EstacionamentoResponseDto>(
+            "/estacionamentos/estacionar",
+            payload,
+            { params }
+        );
+        return data;
+    },
+
+    // Liberar veículo (NOVO - usa nova API /estacionamentos/liberar)
+    liberar: async (placa: string, observacoes?: string): Promise<EstacionamentoResponseDto> => {
+        const payload: PlacaRequestDto = { placa };
+        const params: Record<string, any> = {};
+        if (observacoes) params.observacoes = observacoes;
+        
+        const { data } = await api.post<EstacionamentoResponseDto>(
+            "/estacionamentos/liberar",
+            payload,
+            { params }
+        );
+        return data;
+    },
+
+    // Criar estacionamento (genérico)
+    criar: async (payload: EstacionamentoRequestDto): Promise<EstacionamentoResponseDto> => {
+        const { data } = await api.post<EstacionamentoResponseDto>("/estacionamentos", payload);
+        return data;
+    },
+
+    // Atualizar estacionamento
+    atualizar: async (
+        id: number,
+        payload: EstacionamentoRequestDto
+    ): Promise<EstacionamentoResponseDto> => {
+        const { data } = await api.put<EstacionamentoResponseDto>(
+            `/estacionamentos/${id}`,
+            payload
+        );
+        return data;
+    },
+
+    // Deletar estacionamento
+    deletar: async (id: number): Promise<void> => {
+        await api.delete(`/estacionamentos/${id}`);
+    },
+
+    // Estatísticas - contar estacionados
+    contarEstacionados: async (): Promise<number> => {
+        const { data } = await api.get<number>("/estacionamentos/estatisticas/total-ativos");
+        return data;
+    },
+
+    // Estatísticas - contar estacionados por pátio
+    contarEstacionadosPorPatio: async (patioId: number): Promise<number> => {
+        const { data } = await api.get<number>(
+            `/estacionamentos/estatisticas/patio/${patioId}/total-ativos`
+        );
+        return data;
+    },
+
+    // DataTable support
+    buscarParaDataTable: async (
+        request: DataTableRequest,
+        filter?: EstacionamentoFilter
+    ): Promise<EstacionamentoDataTableResponse> => {
+        const { data } = await api.post<EstacionamentoDataTableResponse>(
+            "/estacionamentos/datatable",
+            request,
+            { params: cleanFilterParams(filter || {}) }
+        );
+        return data;
+    },
+
+    // MÉTODO LEGADO (mantido para compatibilidade)
+    // @deprecated Use liberar() em vez disso
     liberarVaga: async (placa: string): Promise<void> => {
-        await api.post("/estacionamento/liberar", null, { params: { placa } });
+        await EstacionamentoService.liberar(placa);
     },
 };
 

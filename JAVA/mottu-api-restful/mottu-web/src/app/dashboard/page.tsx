@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useState, useCallback } from "react";
-import { VeiculoService, PatioService, API_BASE_URL } from "@/utils/api";
+import { VeiculoService, PatioService, API_BASE_URL, EstacionamentoService } from "@/utils/api";
 import { DashboardApi } from "@/utils/api/dashboard";
 import { VeiculoLocalizacaoResponseDto, VeiculoResponseDto } from "@/types/veiculo";
+import { EstacionamentoResponseDto } from "@/types/estacionamento";
 import { Loader2 } from "lucide-react";
 import '@/styles/neumorphic.css';
 import {
@@ -61,10 +62,39 @@ export default function DashboardPage() {
 
                 console.log("📅 Período:", ini, "até", fim);
 
-                const [patiosData, resumoApi, veiculosEstacionadosData, serieApi, totalVeiculos, totalClientes] = await Promise.all([
+                // Usar nova API de estacionamentos
+                const estacionamentosAtivos = await EstacionamentoService.listarTodosAtivos();
+                
+                // Converter EstacionamentoResponseDto[] para VeiculoLocalizacaoResponseDto[]
+                const veiculosEstacionadosData: VeiculoLocalizacaoResponseDto[] = estacionamentosAtivos.map((e: EstacionamentoResponseDto) => ({
+                    idVeiculo: e.veiculo.idVeiculo,
+                    placa: e.veiculo.placa,
+                    modelo: e.veiculo.modelo,
+                    fabricante: e.veiculo.fabricante,
+                    status: e.veiculo.status as 'OPERACIONAL' | 'EM_MANUTENCAO' | 'INATIVO' | undefined,
+                    tagBleId: e.veiculo.tagBleId,
+                    boxAssociado: {
+                        idBox: e.box.idBox,
+                        nome: e.box.nome,
+                        status: e.box.status as 'L' | 'O',
+                        dataEntrada: e.box.dataEntrada || '',
+                        dataSaida: e.box.dataSaida || '',
+                        patioId: e.patio.idPatio,
+                        patioStatus: e.patio.status || '',
+                    },
+                    patioAssociado: {
+                        idPatio: e.patio.idPatio,
+                        nomePatio: e.patio.nomePatio,
+                        status: e.patio.status || 'A',
+                        observacao: null,
+                        dataCadastro: '',
+                    },
+                    dataConsulta: e.dataUltimaAtualizacao,
+                }));
+
+                const [patiosData, resumoApi, serieApi, totalVeiculos, totalClientes] = await Promise.all([
                     PatioService.listarPaginadoFiltrado({}, 0, 1),
                     DashboardApi.resumo(),
-                    VeiculoService.listarEstacionados(),
                     DashboardApi.ocupacaoPorDia(ini, fim),
                     DashboardApi.totalVeiculos(),
                     DashboardApi.totalClientes(),
@@ -108,28 +138,51 @@ export default function DashboardPage() {
     useEffect(() => {
         if (!enableRealtime) return;
 
-        // 1) Tentar SSE para a lista de estacionadas
-        const sseUrl = `${API_BASE_URL}/veiculos/estacionados/stream`;
-        let es: EventSource | null = null;
-        try {
-            es = new EventSource(sseUrl);
-            es.onopen = () => console.log("🔌 SSE conectado (estacionados)");
-            es.onmessage = (ev) => {
-                try {
-                    const data = JSON.parse(ev.data);
-                    if (Array.isArray(data)) {
-                        setVeiculosEstacionados(data);
-                    }
-                } catch {}
-            };
-            es.onerror = () => {
-                console.warn("⚠️ SSE erro (estacionados), fallback para polling");
-                es && es.close();
-                es = null;
-            };
-        } catch (e) {
-            console.warn("⚠️ Falha ao iniciar SSE (estacionados):", e);
-        }
+        // 1) Usar nova API de estacionamentos (com polling mais eficiente)
+        const fetchEstacionamentos = async () => {
+            try {
+                const estacionamentos = await EstacionamentoService.listarTodosAtivos();
+                
+                // Converter EstacionamentoResponseDto[] para VeiculoLocalizacaoResponseDto[]
+                const veiculos: VeiculoLocalizacaoResponseDto[] = estacionamentos.map((e: EstacionamentoResponseDto) => ({
+                    idVeiculo: e.veiculo.idVeiculo,
+                    placa: e.veiculo.placa,
+                    modelo: e.veiculo.modelo,
+                    fabricante: e.veiculo.fabricante,
+                    status: e.veiculo.status as 'OPERACIONAL' | 'EM_MANUTENCAO' | 'INATIVO' | undefined,
+                    tagBleId: e.veiculo.tagBleId,
+                    boxAssociado: {
+                        idBox: e.box.idBox,
+                        nome: e.box.nome,
+                        status: e.box.status as 'L' | 'O',
+                        dataEntrada: e.box.dataEntrada || '',
+                        dataSaida: e.box.dataSaida || '',
+                        patioId: e.patio.idPatio,
+                        patioStatus: e.patio.status || '',
+                    },
+                    patioAssociado: {
+                        idPatio: e.patio.idPatio,
+                        nomePatio: e.patio.nomePatio,
+                        status: e.patio.status || 'A',
+                        observacao: null,
+                        dataCadastro: '',
+                    },
+                    dataConsulta: e.dataUltimaAtualizacao,
+                }));
+                
+                setVeiculosEstacionados(veiculos);
+            } catch (error) {
+                console.error("❌ Erro ao buscar estacionamentos:", error);
+            }
+        };
+
+        // Buscar imediatamente
+        fetchEstacionamentos();
+
+        // TODO: Quando backend implementar SSE para estacionamentos, usar:
+        // const sseUrl = `${API_BASE_URL}/estacionamentos/stream`;
+        // Por enquanto, usar polling mais frequente para estacionamentos
+        const estacionamentosInterval = setInterval(fetchEstacionamentos, 3000); // A cada 3s
 
         // 2) Polling de resumo/serie/contagens (mantemos separados do SSE)
         const id = setInterval(() => {
@@ -139,7 +192,7 @@ export default function DashboardPage() {
 
         return () => {
             clearInterval(id);
-            if (es) es.close();
+            clearInterval(estacionamentosInterval);
         };
     }, [enableRealtime, pollingMs, fetchData]);
 
@@ -384,7 +437,7 @@ export default function DashboardPage() {
                                     }`}
                                 >
                                     <i className={`ion-ios-list ${viewType === 'list' ? 'text-white' : 'text-zinc-400'}`}></i>
-                                    Lista
+                                    Tabela
                                 </button>
                             </div>
                         </div>
@@ -395,25 +448,39 @@ export default function DashboardPage() {
                                 {currentVeiculos.length > 0 ? (
                                     currentVeiculos.map((v) => (
                                         <div key={v.idVeiculo} className="neumorphic-card-gradient p-5 transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-emerald-500/20 cursor-pointer">
-                                            <div className="flex items-center justify-between mb-4">
-                                                <div className="flex items-center gap-2">
-                                                    <span className="text-xs font-semibold bg-[var(--neumorphic-bg)] text-[var(--color-mottu-dark)] px-3 py-1 rounded-full shadow-inner" style={{fontFamily: 'Montserrat, sans-serif'}}>ID: {v.idVeiculo}</span>
-                                                    <h3 className="text-lg font-bold text-[var(--color-mottu-dark)] font-mono" style={{fontFamily: 'Montserrat, sans-serif'}}>{v.placa}</h3>
+                                            <div className="flex items-center justify-between mb-2 sm:mb-3">
+                                                <div className="flex items-center gap-1 sm:gap-2">
+                                                    <span className="text-xs font-semibold bg-[var(--neumorphic-bg)] text-[var(--color-mottu-dark)] px-2 sm:px-3 py-1 rounded-full shadow-inner" style={{fontFamily: 'Montserrat, sans-serif'}}>ID: {v.idVeiculo}</span>
+                                                    <h3 className="text-lg sm:text-xl font-bold text-[var(--color-mottu-dark)] truncate flex items-center gap-1 sm:gap-2 font-mono" title={v.placa} style={{fontFamily: 'Montserrat, sans-serif'}}>
+                                                        <i className="ion-ios-pricetag text-blue-500 text-base sm:text-lg"></i>
+                                                        {v.placa}
+                                                    </h3>
                                                 </div>
-                                                <span className="text-xs font-semibold bg-green-200 text-green-800 px-2 py-0.5 rounded-full" style={{fontFamily: 'Montserrat, sans-serif'}}>Estacionada</span>
+                                                <span className={`text-xs font-semibold px-2 py-0.5 rounded-full flex items-center gap-1 ${v.boxAssociado ? 'bg-green-200 text-green-800' : 'bg-gray-200 text-gray-800'}`} style={{fontFamily: 'Montserrat, sans-serif'}}>
+                                                    <i className={`ion-ios-checkmark-circle text-xs ${v.boxAssociado ? 'text-green-600' : 'text-gray-600'}`}></i>
+                                                    Estacionada
+                                                </span>
                                             </div>
-                                            <div className="space-y-3 text-sm mb-4">
-                                                <div className="flex items-center gap-2">
-                                                    <i className="ion-ios-bicycle text-blue-500"></i>
-                                                    <span className="text-[var(--color-mottu-dark)]" style={{fontFamily: 'Montserrat, sans-serif'}}><strong>Modelo:</strong> {v.modelo}</span>
+                                            <div className="space-y-2 sm:space-y-3 text-xs sm:text-sm mb-3 sm:mb-4">
+                                                <div className="flex items-center">
+                                                    <i className="ion-ios-pricetag text-blue-500 text-sm sm:text-base mr-1 sm:mr-2"></i>
+                                                    <span className="font-semibold text-[var(--color-mottu-dark)] w-16 sm:w-20" style={{fontFamily: 'Montserrat, sans-serif'}}>Placa:</span>
+                                                    <span className="text-slate-600 ml-1 sm:ml-2 font-mono" style={{fontFamily: 'Montserrat, sans-serif'}}>{v.placa}</span>
                                                 </div>
-                                                <div className="flex items-center gap-2">
-                                                    <i className="ion-ios-square text-yellow-500"></i>
-                                                    <span className="text-[var(--color-mottu-dark)]" style={{fontFamily: 'Montserrat, sans-serif'}}><strong>Box:</strong> {v.boxAssociado?.nome}</span>
+                                                <div className="flex items-center">
+                                                    <i className="ion-ios-bicycle text-red-500 text-sm sm:text-base mr-1 sm:mr-2"></i>
+                                                    <span className="font-semibold text-[var(--color-mottu-dark)] w-16 sm:w-20" style={{fontFamily: 'Montserrat, sans-serif'}}>Modelo:</span>
+                                                    <span className="text-slate-600 ml-1 sm:ml-2" style={{fontFamily: 'Montserrat, sans-serif'}}>{v.modelo}</span>
                                                 </div>
-                                                <div className="flex items-center gap-2">
-                                                    <i className="ion-ios-home text-red-500"></i>
-                                                    <span className="text-[var(--color-mottu-dark)]" style={{fontFamily: 'Montserrat, sans-serif'}}><strong>Pátio:</strong> {v.patioAssociado?.nomePatio || "-"}</span>
+                                                <div className="flex items-center">
+                                                    <i className="ion-ios-grid text-purple-500 text-sm sm:text-base mr-1 sm:mr-2"></i>
+                                                    <span className="font-semibold text-[var(--color-mottu-dark)] w-16 sm:w-20" style={{fontFamily: 'Montserrat, sans-serif'}}>Box:</span>
+                                                    <span className="text-slate-600 truncate ml-1 sm:ml-2" style={{fontFamily: 'Montserrat, sans-serif'}}>{v.boxAssociado?.nome || '-'}</span>
+                                                </div>
+                                                <div className="flex items-center">
+                                                    <i className="ion-ios-home text-blue-500 text-sm sm:text-base mr-1 sm:mr-2"></i>
+                                                    <span className="font-semibold text-[var(--color-mottu-dark)] w-16 sm:w-20" style={{fontFamily: 'Montserrat, sans-serif'}}>Pátio:</span>
+                                                    <span className="text-slate-600 truncate ml-1 sm:ml-2" style={{fontFamily: 'Montserrat, sans-serif'}}>{v.patioAssociado?.nomePatio || "-"}</span>
                                                 </div>
                                             </div>
                                             <div className="flex justify-end">
@@ -441,28 +508,73 @@ export default function DashboardPage() {
                                     <table className="w-full text-left text-sm">
                                         <thead>
                                         <tr>
-                                            <th className="px-4 py-3 text-left text-sm font-semibold text-[var(--color-mottu-dark)]" style={{fontFamily: 'Montserrat, sans-serif'}}>Matrícula</th>
-                                            <th className="px-4 py-3 text-left text-sm font-semibold text-[var(--color-mottu-dark)]" style={{fontFamily: 'Montserrat, sans-serif'}}>Modelo</th>
-                                            <th className="px-4 py-3 text-left text-sm font-semibold text-[var(--color-mottu-dark)]" style={{fontFamily: 'Montserrat, sans-serif'}}>Localização (Box)</th>
-                                            <th className="px-4 py-3 text-left text-sm font-semibold text-[var(--color-mottu-dark)]" style={{fontFamily: 'Montserrat, sans-serif'}}>Pátio</th>
-                                            <th className="px-4 py-3 text-center text-sm font-semibold text-[var(--color-mottu-dark)]" style={{fontFamily: 'Montserrat, sans-serif'}}>Ações</th>
+                                            <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-xs sm:text-sm font-medium text-slate-500 uppercase tracking-wider" style={{fontFamily: 'Montserrat, sans-serif'}}>
+                                                <div className="flex items-center gap-1">
+                                                    <i className="ion-ios-pricetag text-blue-500 text-xs sm:text-sm"></i>
+                                                    <span>Matrícula</span>
+                                                </div>
+                                            </th>
+                                            <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-xs sm:text-sm font-medium text-slate-500 uppercase tracking-wider" style={{fontFamily: 'Montserrat, sans-serif'}}>
+                                                <div className="flex items-center gap-1">
+                                                    <i className="ion-ios-bicycle text-red-500 text-xs sm:text-sm"></i>
+                                                    <span>Modelo</span>
+                                                </div>
+                                            </th>
+                                            <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-xs sm:text-sm font-medium text-slate-500 uppercase tracking-wider" style={{fontFamily: 'Montserrat, sans-serif'}}>
+                                                <div className="flex items-center gap-1">
+                                                    <i className="ion-ios-grid text-purple-500 text-xs sm:text-sm"></i>
+                                                    <span>Localização (Box)</span>
+                                                </div>
+                                            </th>
+                                            <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-xs sm:text-sm font-medium text-slate-500 uppercase tracking-wider" style={{fontFamily: 'Montserrat, sans-serif'}}>
+                                                <div className="flex items-center gap-1">
+                                                    <i className="ion-ios-home text-blue-500 text-xs sm:text-sm"></i>
+                                                    <span>Pátio</span>
+                                                </div>
+                                            </th>
+                                            <th className="px-2 sm:px-4 py-2 sm:py-3 text-center text-xs sm:text-sm font-medium text-slate-500 uppercase tracking-wider" style={{fontFamily: 'Montserrat, sans-serif'}}>
+                                                <div className="flex items-center justify-center gap-1">
+                                                    <i className="ion-ios-settings text-gray-500 text-xs sm:text-sm"></i>
+                                                    <span>Ações</span>
+                                                </div>
+                                            </th>
                                         </tr>
                                         </thead>
                                         <tbody className="divide-y divide-slate-200">
                                         {currentVeiculos.length > 0 ? (
                                             currentVeiculos.map((v) => (
                                                 <tr key={v.idVeiculo} className="hover:bg-slate-50 transition-colors">
-                                                    <td className="px-4 py-3 font-mono text-slate-800" style={{fontFamily: 'Montserrat, sans-serif'}}>{v.placa}</td>
-                                                    <td className="px-4 py-3 text-slate-800" style={{fontFamily: 'Montserrat, sans-serif'}}>{v.modelo}</td>
-                                                    <td className="px-4 py-3 text-slate-800" style={{fontFamily: 'Montserrat, sans-serif'}}>{v.boxAssociado?.nome}</td>
-                                                    <td className="px-4 py-3 text-slate-800" style={{fontFamily: 'Montserrat, sans-serif'}}>{v.patioAssociado?.nomePatio || "-"}</td>
-                                                    <td className="px-4 py-3">
+                                                    <td className="px-2 sm:px-4 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-slate-900" style={{fontFamily: 'Montserrat, sans-serif'}}>
+                                                        <div className="flex items-center gap-1">
+                                                            <i className="ion-ios-pricetag text-blue-500 text-xs"></i>
+                                                            <span className="font-mono">{v.placa}</span>
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-2 sm:px-4 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-slate-900" style={{fontFamily: 'Montserrat, sans-serif'}}>
+                                                        <div className="flex items-center gap-1">
+                                                            <i className="ion-ios-bicycle text-red-500 text-xs"></i>
+                                                            <span>{v.modelo}</span>
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-2 sm:px-4 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-slate-900" style={{fontFamily: 'Montserrat, sans-serif'}}>
+                                                        <div className="flex items-center gap-1">
+                                                            <i className="ion-ios-grid text-purple-500 text-xs"></i>
+                                                            <span>{v.boxAssociado?.nome || '-'}</span>
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-2 sm:px-4 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-slate-900" style={{fontFamily: 'Montserrat, sans-serif'}}>
+                                                        <div className="flex items-center gap-1">
+                                                            <i className="ion-ios-home text-blue-500 text-xs"></i>
+                                                            <span>{v.patioAssociado?.nomePatio || "-"}</span>
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-2 sm:px-4 py-3 sm:py-4 whitespace-nowrap text-center text-xs sm:text-sm font-medium">
                                                         <button
                                                             onClick={() => handleOpenModal(v.idVeiculo)}
-                                                            className="p-2 rounded-full text-blue-600 hover:bg-blue-100 transition-all duration-300 hover:scale-110"
+                                                            className="p-1 sm:p-2 rounded-full text-blue-600 hover:bg-blue-100 transition-all duration-300 hover:scale-110"
                                                             title="Ver Detalhes"
                                                         >
-                                                            <i className="ion-ios-eye text-xl"></i>
+                                                            <i className="ion-ios-eye text-sm sm:text-xl"></i>
                                                         </button>
                                                     </td>
                                                 </tr>

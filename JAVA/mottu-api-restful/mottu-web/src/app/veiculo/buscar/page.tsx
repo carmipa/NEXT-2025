@@ -23,6 +23,19 @@ export default function BuscarVeiculosPage() {
     const [hasSearched, setHasSearched] = useState(false);
     const [filter, setFilter] = useState<VeiculoFilter>(initialFilterState);
     const [viewType, setViewType] = useState<'cards' | 'table'>('cards');
+
+    const getStatusChip = (status: string | undefined) => {
+        switch (status) {
+            case 'OPERACIONAL':
+                return <span className="text-xs font-semibold bg-green-200 text-green-800 px-2 py-0.5 rounded-full">Operacional</span>;
+            case 'EM_MANUTENCAO':
+                return <span className="text-xs font-semibold bg-yellow-200 text-yellow-800 px-2 py-0.5 rounded-full">Manutenção</span>;
+            case 'INATIVO':
+                return <span className="text-xs font-semibold bg-red-200 text-red-800 px-2 py-0.5 rounded-full">Inativo</span>;
+            default:
+                return <span className="text-xs font-semibold bg-gray-200 text-gray-800 px-2 py-0.5 rounded-full">N/A</span>;
+        }
+    };
     
     // Estados para busca rápida
     const [quickQuery, setQuickQuery] = useState('');
@@ -112,7 +125,8 @@ export default function BuscarVeiculosPage() {
                                     <input
                                         type="text"
                                         value={quickQuery}
-                                        onChange={(e) => setQuickQuery(e.target.value)}
+                                        onChange={(e) => setQuickQuery(e.target.value.toUpperCase())}
+                                        style={{ textTransform: 'uppercase' }}
                                         className="neumorphic-input w-full text-sm lg:text-base"
                                         placeholder={quickField === 'placa' ? 'Digite a placa...'
                                             : quickField === 'modelo' ? 'Digite o modelo...'
@@ -142,14 +156,10 @@ export default function BuscarVeiculosPage() {
                                 <div className="mt-2 md:mt-6 flex flex-col sm:flex-row justify-center gap-3 sm:gap-4">
                                     <button 
                                         type="submit" 
-                                        disabled={!quickQuery.trim()}
-                                        className={`group relative text-white font-bold py-3 lg:py-4 px-6 lg:px-8 rounded-xl shadow-xl transform transition-all duration-300 border-2 flex items-center justify-center gap-2 btn-buscar-turquesa ${!quickQuery.trim() ? 'cursor-not-allowed' : 'hover:scale-105'}`}
-                                        style={{
-                                            opacity: !quickQuery.trim() ? 0.5 : 1
-                                        }}
+                                        className={`group relative text-white font-bold py-3 lg:py-4 px-6 lg:px-8 rounded-xl shadow-xl transform transition-all duration-300 border-2 flex items-center justify-center gap-2 btn-buscar-turquesa hover:scale-105`}
                                         title="Buscar veículos"
                                     >
-                                        <div className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-20 transition-opacity duration-300" style={{backgroundColor: '#2BC49A'}}></div>
+                                        <div className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-80 transition-opacity duration-300" style={{backgroundColor: '#2BC49A'}}></div>
                                         <div className="relative flex items-center gap-2">
                                             <i className="ion-ios-search text-lg"></i>
                                             <span className="text-sm lg:text-base font-black">BUSCAR</span>
@@ -223,14 +233,36 @@ export default function BuscarVeiculosPage() {
                                                 <div className="flex items-center justify-between mb-3 sm:mb-4">
                                                     <div className="flex items-center gap-1 sm:gap-2">
                                                         <span className="text-xs font-semibold bg-[var(--neumorphic-bg)] text-[var(--color-mottu-dark)] px-2 sm:px-3 py-1 rounded-full shadow-inner" style={{fontFamily: 'Montserrat, sans-serif'}}>ID: {veiculo.idVeiculo}</span>
-                                                        <h2 className="text-lg sm:text-xl font-bold text-[var(--color-mottu-dark)] truncate" title={veiculo.placa} style={{fontFamily: 'Montserrat, sans-serif'}}>{veiculo.placa}</h2>
+                                                        <h2 className="text-lg sm:text-xl font-bold text-[var(--color-mottu-dark)] truncate flex items-center gap-1 sm:gap-2" title={veiculo.placa} style={{fontFamily: 'Montserrat, sans-serif'}}>
+                                                            <i className="ion-ios-pricetag text-blue-500 text-base sm:text-lg"></i>
+                                                            {veiculo.placa}
+                                                        </h2>
                                                     </div>
+                                                    {getStatusChip(veiculo.status)}
                                                 </div>
-                                                <div className="space-y-2 text-xs sm:text-sm mb-3 sm:mb-4">
+                                                <div className="space-y-2 sm:space-y-3 text-xs sm:text-sm mb-3 sm:mb-4">
                                                     <div className="flex items-center">
+                                                        <i className="ion-ios-bicycle text-red-500 text-sm sm:text-base mr-1 sm:mr-2"></i>
                                                         <span className="font-semibold text-[var(--color-mottu-dark)] w-16 sm:w-20" style={{fontFamily: 'Montserrat, sans-serif'}}>Modelo:</span> 
                                                         <span className="text-slate-600 truncate ml-1 sm:ml-2" style={{fontFamily: 'Montserrat, sans-serif'}}>{veiculo.modelo}</span>
                                                     </div>
+                                                    <div className="flex items-center">
+                                                        <i className="ion-ios-build text-orange-500 text-sm sm:text-base mr-1 sm:mr-2"></i>
+                                                        <span className="font-semibold text-[var(--color-mottu-dark)] w-16 sm:w-20" style={{fontFamily: 'Montserrat, sans-serif'}}>Fabricante:</span> 
+                                                        <span className="text-slate-600 truncate ml-1 sm:ml-2" style={{fontFamily: 'Montserrat, sans-serif'}}>{veiculo.fabricante}</span>
+                                                    </div>
+                                                    <div className="flex items-center">
+                                                        <i className="ion-ios-calendar text-indigo-500 text-sm sm:text-base mr-1 sm:mr-2"></i>
+                                                        <span className="font-semibold text-[var(--color-mottu-dark)] w-16 sm:w-20" style={{fontFamily: 'Montserrat, sans-serif'}}>Ano:</span> 
+                                                        <span className="text-slate-600 ml-1 sm:ml-2" style={{fontFamily: 'Montserrat, sans-serif'}}>{veiculo.ano}</span>
+                                                    </div>
+                                                    {veiculo.tagBleId && (
+                                                        <div className="flex items-center">
+                                                            <i className="ion-ios-bluetooth text-blue-500 text-sm sm:text-base mr-1 sm:mr-2"></i>
+                                                            <span className="font-semibold text-[var(--color-mottu-dark)] w-16 sm:w-20" style={{fontFamily: 'Montserrat, sans-serif'}}>Tag:</span> 
+                                                            <span className="text-slate-600 truncate ml-1 sm:ml-2 font-mono" style={{fontFamily: 'Montserrat, sans-serif'}}>{veiculo.tagBleId}</span>
+                                                        </div>
+                                                    )}
                                                 </div>
                                             </div>
                                             <div className="flex justify-end items-center gap-1 sm:gap-2 pt-3 sm:pt-4 mt-auto">
@@ -247,12 +279,54 @@ export default function BuscarVeiculosPage() {
                                         <table className="w-full">
                                             <thead>
                                                 <tr>
-                                                    <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-xs sm:text-sm font-semibold text-[var(--color-mottu-dark)]" style={{fontFamily: 'Montserrat, sans-serif'}}>ID</th>
-                                                    <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-xs sm:text-sm font-semibold text-[var(--color-mottu-dark)]" style={{fontFamily: 'Montserrat, sans-serif'}}>Placa</th>
-                                                    <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-xs sm:text-sm font-semibold text-[var(--color-mottu-dark)] hidden sm:table-cell" style={{fontFamily: 'Montserrat, sans-serif'}}>Modelo</th>
-                                                    <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-xs sm:text-sm font-semibold text-[var(--color-mottu-dark)] hidden md:table-cell" style={{fontFamily: 'Montserrat, sans-serif'}}>Fabricante</th>
-                                                    <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-xs sm:text-sm font-semibold text-[var(--color-mottu-dark)] hidden lg:table-cell" style={{fontFamily: 'Montserrat, sans-serif'}}>Ano</th>
-                                                    <th className="px-2 sm:px-4 py-2 sm:py-3 text-center text-xs sm:text-sm font-semibold text-[var(--color-mottu-dark)]" style={{fontFamily: 'Montserrat, sans-serif'}}>Ações</th>
+                                                    <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-xs sm:text-sm font-semibold text-[var(--color-mottu-dark)]" style={{fontFamily: 'Montserrat, sans-serif'}}>
+                                                        <div className="flex items-center gap-1">
+                                                            <i className="ion-ios-information-circle text-purple-500 text-xs sm:text-sm"></i>
+                                                            <span>ID</span>
+                                                        </div>
+                                                    </th>
+                                                    <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-xs sm:text-sm font-semibold text-[var(--color-mottu-dark)]" style={{fontFamily: 'Montserrat, sans-serif'}}>
+                                                        <div className="flex items-center gap-1">
+                                                            <i className="ion-ios-pricetag text-blue-500 text-xs sm:text-sm"></i>
+                                                            <span>Placa</span>
+                                                        </div>
+                                                    </th>
+                                                    <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-xs sm:text-sm font-semibold text-[var(--color-mottu-dark)] hidden sm:table-cell" style={{fontFamily: 'Montserrat, sans-serif'}}>
+                                                        <div className="flex items-center gap-1">
+                                                            <i className="ion-ios-bicycle text-red-500 text-xs sm:text-sm"></i>
+                                                            <span>Modelo</span>
+                                                        </div>
+                                                    </th>
+                                                    <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-xs sm:text-sm font-semibold text-[var(--color-mottu-dark)] hidden md:table-cell" style={{fontFamily: 'Montserrat, sans-serif'}}>
+                                                        <div className="flex items-center gap-1">
+                                                            <i className="ion-ios-build text-orange-500 text-xs sm:text-sm"></i>
+                                                            <span>Fabricante</span>
+                                                        </div>
+                                                    </th>
+                                                    <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-xs sm:text-sm font-semibold text-[var(--color-mottu-dark)] hidden lg:table-cell" style={{fontFamily: 'Montserrat, sans-serif'}}>
+                                                        <div className="flex items-center gap-1">
+                                                            <i className="ion-ios-calendar text-indigo-500 text-xs sm:text-sm"></i>
+                                                            <span>Ano</span>
+                                                        </div>
+                                                    </th>
+                                                    <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-xs sm:text-sm font-semibold text-[var(--color-mottu-dark)] hidden lg:table-cell" style={{fontFamily: 'Montserrat, sans-serif'}}>
+                                                        <div className="flex items-center gap-1">
+                                                            <i className="ion-ios-bluetooth text-blue-500 text-xs sm:text-sm"></i>
+                                                            <span>Tag</span>
+                                                        </div>
+                                                    </th>
+                                                    <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-xs sm:text-sm font-semibold text-[var(--color-mottu-dark)]" style={{fontFamily: 'Montserrat, sans-serif'}}>
+                                                        <div className="flex items-center gap-1">
+                                                            <i className="ion-ios-checkmark-circle text-emerald-500 text-xs sm:text-sm"></i>
+                                                            <span>Status</span>
+                                                        </div>
+                                                    </th>
+                                                    <th className="px-2 sm:px-4 py-2 sm:py-3 text-center text-xs sm:text-sm font-semibold text-[var(--color-mottu-dark)]" style={{fontFamily: 'Montserrat, sans-serif'}}>
+                                                        <div className="flex items-center justify-center gap-1">
+                                                            <i className="ion-ios-settings text-gray-500 text-xs sm:text-sm"></i>
+                                                            <span>Ações</span>
+                                                        </div>
+                                                    </th>
                                                 </tr>
                                             </thead>
                                             <tbody className="divide-y divide-slate-200">
@@ -263,6 +337,19 @@ export default function BuscarVeiculosPage() {
                                                         <td className="px-2 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm text-slate-900 hidden sm:table-cell truncate max-w-[120px]" style={{fontFamily: 'Montserrat, sans-serif'}} title={veiculo.modelo}>{veiculo.modelo}</td>
                                                         <td className="px-2 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm text-slate-900 hidden md:table-cell truncate max-w-[120px]" style={{fontFamily: 'Montserrat, sans-serif'}} title={veiculo.fabricante}>{veiculo.fabricante}</td>
                                                         <td className="px-2 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm text-slate-600 hidden lg:table-cell" style={{fontFamily: 'Montserrat, sans-serif'}}>{veiculo.ano}</td>
+                                                        <td className="px-2 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm text-slate-600 hidden lg:table-cell font-mono" style={{fontFamily: 'Montserrat, sans-serif'}} title={veiculo.tagBleId || 'Sem tag'}>
+                                                            {veiculo.tagBleId ? (
+                                                                <span className="flex items-center gap-1">
+                                                                    <i className="ion-ios-bluetooth text-blue-500 text-xs"></i>
+                                                                    {veiculo.tagBleId}
+                                                                </span>
+                                                            ) : (
+                                                                <span className="text-slate-400 italic">N/A</span>
+                                                            )}
+                                                        </td>
+                                                        <td className="px-2 sm:px-4 py-2 sm:py-3">
+                                                            {getStatusChip(veiculo.status)}
+                                                        </td>
                                                         <td className="px-2 sm:px-4 py-2 sm:py-3">
                                                             <div className="flex justify-center items-center gap-1">
                                                                 <Link href={`/veiculo/detalhes/${veiculo.idVeiculo}`} className="p-1 rounded text-blue-600 hover:bg-blue-100 transition-colors" title="Ver Detalhes"><i className="ion-ios-eye text-sm"></i></Link>

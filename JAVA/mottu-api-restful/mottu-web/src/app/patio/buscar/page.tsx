@@ -151,7 +151,7 @@ export default function BuscarPatiosPage() {
 
                   {/* Search Form - padrão input + seletor + botões */}
                   <form onSubmit={handleSearch} className="mb-8 neumorphic-container p-4 lg:p-6">
-                    <div className="flex flex-col gap-3 md:flex-row md:items-center">
+                    <div className="flex flex-col lg:flex-row lg:items-end gap-4">
                       <div className="flex-1">
                         <label className="block text-xs lg:text-sm font-medium text-white mb-1 flex items-center gap-2">
                           <i className="ion-ios-search text-blue-400 text-sm lg:text-base"></i>
@@ -171,7 +171,7 @@ export default function BuscarPatiosPage() {
                             : 'Digite uma observação...'}
                         />
                       </div>
-                      <div className="w-full md:w-52">
+                      <div className="w-full lg:w-52">
                         <label className="block text-xs lg:text-sm font-medium text-white mb-1 flex items-center gap-2">
                           <i className="ion-ios-funnel text-purple-400 text-sm lg:text-base"></i>
                           Filtrar por
@@ -190,17 +190,17 @@ export default function BuscarPatiosPage() {
                           <option value="observacao">Observação</option>
                         </select>
                       </div>
-                      <div className="mt-2 md:mt-6 flex flex-col sm:flex-row justify-center gap-3 sm:gap-4">
+                      <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
                         <button 
                           type="submit" 
                           disabled={!quickQuery.trim()}
-                          className={`group relative text-white font-bold py-3 lg:py-4 px-6 lg:px-8 rounded-xl shadow-xl transform transition-all duration-300 border-2 flex items-center justify-center gap-2 btn-buscar-turquesa ${!quickQuery.trim() ? 'cursor-not-allowed' : 'hover:scale-105'}`}
-                          style={{
-                            opacity: !quickQuery.trim() ? 0.5 : 1
-                          }}
+                          className={`group relative text-white font-bold py-3 lg:py-4 px-6 lg:px-8 rounded-xl shadow-xl transform transition-all duration-300 border-2 flex items-center justify-center gap-2 overflow-hidden
+                          ${!quickQuery.trim() 
+                            ? 'cursor-not-allowed opacity-50 bg-gray-600 border-gray-500' 
+                            : 'hover:scale-105 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 border-emerald-400 hover:border-emerald-300'
+                          }`}
                           title="Buscar pátios"
                         >
-                          <div className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-20 transition-opacity duration-300" style={{backgroundColor: '#2BC49A'}}></div>
                           <div className="relative flex items-center gap-2">
                             <i className="ion-ios-search text-lg"></i>
                             <span className="text-sm lg:text-base font-black">BUSCAR</span>
@@ -280,37 +280,53 @@ export default function BuscarPatiosPage() {
                   {/* Results */}
                   {!isLoading && patios.length > 0 && (
                     viewType === 'cards' ? (
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-8 mb-8 sm:mb-12">
                         {patios.map((patio) => (
-                          <div key={patio.idPatio} className="neumorphic-container text-slate-800 p-5 flex flex-col justify-between transition-all duration-300 hover:shadow-2xl hover:scale-105 transform hover:-translate-y-2 cursor-pointer">
+                          <div key={patio.idPatio} className="neumorphic-card-gradient p-3 sm:p-5 flex flex-col justify-between transition-all duration-300 hover:shadow-2xl hover:scale-105 transform hover:-translate-y-2 cursor-pointer">
                             <div>
-                              <div className="flex items-center mb-3">
-                                <span className="text-xs font-semibold bg-slate-200 text-slate-700 px-2 py-0.5 rounded-full mr-2">
-                                  ID: {patio.idPatio}
-                                </span>
-                                <h2 className="text-xl font-bold text-[var(--color-mottu-dark)] truncate font-montserrat">
-                                  {patio.nomePatio}
-                                </h2>
+                              <div className="flex items-center justify-between mb-2 sm:mb-3">
+                                <div className="flex items-center gap-1 sm:gap-2">
+                                  <span className="text-xs font-semibold bg-[var(--neumorphic-bg)] text-[var(--color-mottu-dark)] px-2 sm:px-3 py-1 rounded-full shadow-inner" style={{fontFamily: 'Montserrat, sans-serif'}}>ID: {patio.idPatio}</span>
+                                  <h2 className="text-lg sm:text-xl font-bold text-[var(--color-mottu-dark)] truncate flex items-center gap-1 sm:gap-2" title={patio.nomePatio} style={{fontFamily: 'Montserrat, sans-serif'}}>
+                                    <i className="ion-ios-home text-blue-500 text-base sm:text-lg"></i>
+                                    {patio.nomePatio}
+                                  </h2>
+                                </div>
                               </div>
                               
-                              <p className="text-sm text-slate-600 mb-2">
-                                Status: <span className={`font-semibold ${patio.status === 'A' ? 'text-green-600' : 'text-red-600'}`}>
-                                  {patio.status === 'A' ? 'Ativo' : 'Inativo'}
-                                </span>
-                              </p>
-                              
-                              <div className="text-sm text-slate-500 mt-2 space-y-1">
-                                <p className="flex items-center gap-1">
-                                  <i className="ion-ios-call"></i> Contatos: <strong>{patio.contatos?.length || 0}</strong>
-                                </p>
-                                <p className="flex items-center gap-1">
-                                  <i className="ion-ios-pin"></i> Endereços: <strong>{patio.enderecos?.length || 0}</strong>
-                                </p>
+                              <div className="space-y-2 sm:space-y-3 text-xs sm:text-sm mb-3 sm:mb-4">
+                                <div className="flex items-center">
+                                  <i className={`ion-ios-checkmark-circle text-sm sm:text-base mr-1 sm:mr-2 ${patio.status === 'A' ? 'text-green-500' : 'text-red-500'}`}></i>
+                                  <span className="font-semibold text-[var(--color-mottu-dark)] w-16 sm:w-20" style={{fontFamily: 'Montserrat, sans-serif'}}>Status:</span>
+                                  <span className={`ml-1 sm:ml-2 px-2 py-0.5 rounded-full text-xs font-semibold ${
+                                    patio.status === 'A' 
+                                      ? 'bg-green-100 text-green-800' 
+                                      : 'bg-red-100 text-red-800'
+                                  }`} style={{fontFamily: 'Montserrat, sans-serif'}}>
+                                    {patio.status === 'A' ? 'Ativo' : 'Inativo'}
+                                  </span>
+                                </div>
+                                
+                                <div className="flex items-center">
+                                  <i className="ion-ios-call text-green-500 text-sm sm:text-base mr-1 sm:mr-2"></i>
+                                  <span className="font-semibold text-[var(--color-mottu-dark)] w-16 sm:w-20" style={{fontFamily: 'Montserrat, sans-serif'}}>Contatos:</span>
+                                  <span className="text-slate-600 ml-1 sm:ml-2" style={{fontFamily: 'Montserrat, sans-serif'}}><strong>{patio.contatos?.length || 0}</strong></span>
+                                </div>
+                                
+                                <div className="flex items-center">
+                                  <i className="ion-ios-pin text-blue-500 text-sm sm:text-base mr-1 sm:mr-2"></i>
+                                  <span className="font-semibold text-[var(--color-mottu-dark)] w-16 sm:w-20" style={{fontFamily: 'Montserrat, sans-serif'}}>Endereços:</span>
+                                  <span className="text-slate-600 ml-1 sm:ml-2" style={{fontFamily: 'Montserrat, sans-serif'}}><strong>{patio.enderecos?.length || 0}</strong></span>
+                                </div>
+                                
+                                {patio.observacao && (
+                                  <div className="flex items-center">
+                                    <i className="ion-ios-document text-orange-500 text-sm sm:text-base mr-1 sm:mr-2"></i>
+                                    <span className="font-semibold text-[var(--color-mottu-dark)] w-16 sm:w-20" style={{fontFamily: 'Montserrat, sans-serif'}}>Obs:</span>
+                                    <span className="text-slate-500 truncate ml-1 sm:ml-2 text-xs sm:text-sm line-clamp-2" style={{fontFamily: 'Montserrat, sans-serif'}}>{patio.observacao}</span>
+                                  </div>
+                                )}
                               </div>
-                              
-                              {patio.observacao && (
-                                <p className="text-sm text-slate-500 mb-3 line-clamp-2">{patio.observacao}</p>
-                              )}
                             </div>
                             
                             <div className="flex justify-end items-center gap-2 border-t border-slate-200 pt-3 mt-4">
@@ -345,28 +361,76 @@ export default function BuscarPatiosPage() {
                           <table className="w-full">
                             <thead className="bg-slate-50">
                               <tr>
-                                <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider font-montserrat">Nome</th>
-                                <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider font-montserrat">Status</th>
-                                <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider font-montserrat">ID</th>
-                                <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider font-montserrat">Contatos</th>
-                                <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider font-montserrat">Endereços</th>
-                                <th className="px-4 py-3 text-center text-xs font-medium text-slate-500 uppercase tracking-wider font-montserrat">Ações</th>
+                                <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider" style={{fontFamily: 'Montserrat, sans-serif'}}>
+                                  <div className="flex items-center gap-1">
+                                    <i className="ion-ios-information-circle text-purple-500 text-xs sm:text-sm"></i>
+                                    <span>ID</span>
+                                  </div>
+                                </th>
+                                <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider" style={{fontFamily: 'Montserrat, sans-serif'}}>
+                                  <div className="flex items-center gap-1">
+                                    <i className="ion-ios-home text-blue-500 text-xs sm:text-sm"></i>
+                                    <span>Pátio</span>
+                                  </div>
+                                </th>
+                                <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider hidden sm:table-cell" style={{fontFamily: 'Montserrat, sans-serif'}}>
+                                  <div className="flex items-center gap-1">
+                                    <i className="ion-ios-checkmark-circle text-emerald-500 text-xs sm:text-sm"></i>
+                                    <span>Status</span>
+                                  </div>
+                                </th>
+                                <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider hidden md:table-cell" style={{fontFamily: 'Montserrat, sans-serif'}}>
+                                  <div className="flex items-center gap-1">
+                                    <i className="ion-ios-call text-green-500 text-xs sm:text-sm"></i>
+                                    <span>Contatos</span>
+                                  </div>
+                                </th>
+                                <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider hidden md:table-cell" style={{fontFamily: 'Montserrat, sans-serif'}}>
+                                  <div className="flex items-center gap-1">
+                                    <i className="ion-ios-pin text-blue-500 text-xs sm:text-sm"></i>
+                                    <span>Endereços</span>
+                                  </div>
+                                </th>
+                                <th className="px-2 sm:px-4 py-2 sm:py-3 text-center text-xs font-medium text-slate-500 uppercase tracking-wider" style={{fontFamily: 'Montserrat, sans-serif'}}>
+                                  <div className="flex items-center justify-center gap-1">
+                                    <i className="ion-ios-settings text-gray-500 text-xs sm:text-sm"></i>
+                                    <span>Ações</span>
+                                  </div>
+                                </th>
                               </tr>
                             </thead>
                             <tbody className="bg-white divide-y divide-slate-200">
                               {patios.map((patio) => (
                                 <tr key={patio.idPatio} className="hover:bg-slate-50 transition-all duration-300 hover:shadow-lg">
-                                  <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-slate-900 font-montserrat">{patio.nomePatio}</td>
-                                  <td className="px-4 py-4 whitespace-nowrap">
-                                    <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                                      patio.status === 'A' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                                    }`}>
-                                      {patio.status === 'A' ? 'Ativo' : 'Inativo'}
-                                    </span>
+                                  <td className="px-2 sm:px-4 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-slate-600" style={{fontFamily: 'Montserrat, sans-serif'}}>{patio.idPatio}</td>
+                                  <td className="px-2 sm:px-4 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm font-medium text-slate-900 truncate max-w-[150px] sm:max-w-none" style={{fontFamily: 'Montserrat, sans-serif'}}>
+                                    <div className="flex items-center gap-1">
+                                      <i className="ion-ios-home text-blue-500 text-xs"></i>
+                                      <span>{patio.nomePatio}</span>
+                                    </div>
                                   </td>
-                                  <td className="px-4 py-4 whitespace-nowrap text-sm text-slate-600 font-montserrat">{patio.idPatio}</td>
-                                  <td className="px-4 py-4 whitespace-nowrap text-sm text-slate-600 font-montserrat">{patio.contatos?.length || 0}</td>
-                                  <td className="px-4 py-4 whitespace-nowrap text-sm text-slate-600 font-montserrat">{patio.enderecos?.length || 0}</td>
+                                  <td className="px-2 sm:px-4 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm hidden sm:table-cell">
+                                    <div className="flex items-center gap-1">
+                                      <i className={`ion-ios-checkmark-circle text-xs ${patio.status === 'A' ? 'text-green-500' : 'text-red-500'}`}></i>
+                                      <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                                        patio.status === 'A' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                                      }`} style={{fontFamily: 'Montserrat, sans-serif'}}>
+                                        {patio.status === 'A' ? 'Ativo' : 'Inativo'}
+                                      </span>
+                                    </div>
+                                  </td>
+                                  <td className="px-2 sm:px-4 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-slate-900 hidden md:table-cell" style={{fontFamily: 'Montserrat, sans-serif'}}>
+                                    <div className="flex items-center gap-1">
+                                      <i className="ion-ios-call text-green-500 text-xs"></i>
+                                      <span>{patio.contatos?.length || 0}</span>
+                                    </div>
+                                  </td>
+                                  <td className="px-2 sm:px-4 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-slate-900 hidden md:table-cell" style={{fontFamily: 'Montserrat, sans-serif'}}>
+                                    <div className="flex items-center gap-1">
+                                      <i className="ion-ios-pin text-blue-500 text-xs"></i>
+                                      <span>{patio.enderecos?.length || 0}</span>
+                                    </div>
+                                  </td>
                                   <td className="px-4 py-4 whitespace-nowrap text-center text-sm font-medium">
                                     <div className="flex justify-center items-center gap-2">
                                       <Link 

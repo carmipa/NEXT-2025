@@ -74,13 +74,21 @@ export default function NotificacoesPage() {
                 params.append('categoria', categoria.toUpperCase());
             }
             
-            const response = await fetch(`/api/notificacoes?${params.toString()}`);
+            // Adicionar paginação
+            params.append('page', '0');
+            params.append('size', '100'); // Buscar mais notificações
+            params.append('sort', 'dataHoraCriacao');
+            params.append('direction', 'desc');
+            
+            console.log('🔄 Carregando notificações do backend...', params.toString());
+            
+            const response = await fetch(`${buildApiUrl('/api/notificacoes')}?${params.toString()}`);
             if (!response.ok) {
                 throw new Error(`Erro ao carregar notificações: ${response.status}`);
             }
             
             const data = await response.json();
-            console.log('Dados recebidos da API:', data);
+            console.log('✅ Dados recebidos da API:', data);
             
             // Processar dados reais da API
             const notificacoesProcessadas: Notificacao[] = (data.content as unknown[] | undefined)?.map((notif: unknown) => {
@@ -98,23 +106,14 @@ export default function NotificacoesPage() {
                 };
             }) || [];
             
+            console.log('📊 Notificações processadas:', notificacoesProcessadas.length);
+            
             setNotificacoes(notificacoesProcessadas);
         } catch (error) {
-            console.error('Erro ao carregar notificações:', error);
-            // Fallback para dados reais do sistema em caso de erro
-            const dadosFallback: Notificacao[] = [
-                {
-                    id: 1,
-                    tipo: 'info',
-                    titulo: 'Sistema de Notificações Ativado',
-                    mensagem: 'O sistema de notificações dinâmicas foi ativado com sucesso!',
-                    dataHora: new Date().toISOString(),
-                    lida: false,
-                    prioridade: 'baixa',
-                    categoria: 'sistema'
-                }
-            ];
-            setNotificacoes(dadosFallback);
+            console.error('❌ Erro ao carregar notificações:', error);
+            // NÃO usar fallback com dados mockados - apenas mostrar vazio
+            setNotificacoes([]);
+            alert('Erro ao carregar notificações. Verifique o console para mais detalhes.');
         } finally {
             setLoading(false);
         }

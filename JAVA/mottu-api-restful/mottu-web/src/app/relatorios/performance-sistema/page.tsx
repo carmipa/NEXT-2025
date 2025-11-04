@@ -13,6 +13,22 @@ function formatBytes(bytes: number): string {
   return `${(bytes / Math.pow(1024, i)).toFixed(2)} ${sizes[i]}`;
 }
 
+function formatBandwidth(mbps: number | null | undefined): string {
+  if (mbps == null) return '—';
+  if (mbps >= 1000) {
+    return `${(mbps / 1000).toFixed(2)} Gbps`;
+  }
+  return `${mbps.toFixed(1)} Mbps`;
+}
+
+function formatSpeed(mhz: number | null | undefined): string {
+  if (mhz == null) return '—';
+  if (mhz >= 1000) {
+    return `${(mhz / 1000).toFixed(2)} GHz`;
+  }
+  return `${mhz.toFixed(0)} MHz`;
+}
+
 export default function PerformanceSistemaPage() {
   const [data, setData] = useState<SystemPerformance | null>(null);
   const [threads, setThreads] = useState<ThreadInfo[]>([]);
@@ -87,7 +103,16 @@ export default function PerformanceSistemaPage() {
         <div className="max-w-7xl mx-auto space-y-6">
           <div className="bg-white/10 backdrop-blur-lg rounded-2xl shadow-2xl p-6 border border-white/20">
             <div className="flex items-center justify-between">
-              <h1 className="text-2xl md:text-3xl font-bold text-white"><i className="ion-ios-speedometer mr-2 text-emerald-400"></i>Relatórios • Performance do Sistema</h1>
+              <div className="flex items-center gap-3">
+                <a 
+                  href="/relatorios" 
+                  className="p-2 text-gray-300 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+                  title="Voltar para Relatórios"
+                >
+                  <i className="ion-ios-arrow-back text-lg lg:text-xl"></i>
+                </a>
+                <h1 className="text-2xl md:text-3xl font-bold text-white"><i className="ion-ios-speedometer mr-2 text-emerald-400"></i>Relatórios • Performance do Sistema</h1>
+              </div>
               <div className="flex items-center gap-3">
                 <div className={`hidden sm:flex items-center gap-2 px-2 py-1 rounded-full border text-xs ${sseActive ? 'bg-green-50 border-green-200 text-green-700' : 'bg-gray-50 border-gray-200 text-gray-600'}`}>
                   <span className={`w-2 h-2 rounded-full ${sseActive ? 'bg-green-500' : 'bg-gray-400'}`}></span>
@@ -118,16 +143,36 @@ export default function PerformanceSistemaPage() {
             </div>
           </div>
 
-          {/* KPIs Avançados */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-            <div className="neumorphic-container hover:scale-105 transition border border-card-yellow-border bg-card-yellow">
-              <div className="text-gray-500 text-xs">Total Movimentações</div>
-              <div className="text-gray-900 text-lg"><i className="ion-ios-pulse text-emerald-400 mr-1"/>{adv ? `${adv.totalMovimentacoes} movimentações` : '—'}</div>
+          {/* KPIs Adicionais - Cache e Largura de Banda */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-4">
+            <div className="neumorphic-container hover:scale-105 transition border border-card-cyan-border bg-card-cyan">
+              <div className="text-gray-500 text-xs flex items-center gap-1"><i className="ion-ios-flash text-cyan-500"></i> Cache do Processador</div>
+              <div className="text-gray-900 text-xl">{data?.processorCacheSizeBytes ? formatBytes(data.processorCacheSizeBytes) : '—'}</div>
             </div>
+            <div className="neumorphic-container hover:scale-105 transition border border-card-rose-border bg-card-rose">
+              <div className="text-gray-500 text-xs flex items-center gap-1"><i className="ion-ios-cloud-upload text-rose-500"></i> Largura de Banda</div>
+              <div className="text-gray-900 text-xl">{formatBandwidth(data?.networkBandwidthMbps ?? adv?.larguraBandaMbps)}</div>
+            </div>
+          </div>
+
+          {/* KPIs de Hardware - RAM e Processador */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             <div className="neumorphic-container hover:scale-105 transition border border-card-blue-border bg-card-blue">
-              <div className="text-gray-500 text-xs">Ocupação Média</div>
-              <div className="text-gray-900 text-lg"><i className="ion-ios-pie text-blue-400 mr-1"/>{adv ? `${adv.ocupacaoMedia} %` : '—'}</div>
+              <div className="text-gray-500 text-xs flex items-center gap-1"><i className="ion-ios-albums text-blue-500"></i> RAM Total</div>
+              <div className="text-gray-900 text-xl">{data?.totalRamBytes ? formatBytes(data.totalRamBytes) : '—'}</div>
             </div>
+            <div className="neumorphic-container hover:scale-105 transition border border-card-purple-border bg-card-purple">
+              <div className="text-gray-500 text-xs flex items-center gap-1"><i className="ion-ios-speedometer text-purple-500"></i> Velocidade RAM</div>
+              <div className="text-gray-900 text-xl">{formatSpeed(data?.ramSpeedMhz)}</div>
+            </div>
+            <div className="neumorphic-container hover:scale-105 transition border border-card-emerald-border bg-card-emerald">
+              <div className="text-gray-500 text-xs flex items-center gap-1"><i className="ion-ios-cog text-emerald-500"></i> Velocidade CPU</div>
+              <div className="text-gray-900 text-xl">{formatSpeed(data?.processorSpeedMhz)}</div>
+            </div>
+          </div>
+
+          {/* KPIs Avançados */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             <div className="neumorphic-container hover:scale-105 transition border border-card-orange-border bg-card-orange">
               <div className="text-gray-500 text-xs">Conexões BD Ativas</div>
               <div className="text-gray-900 text-lg"><i className="ion-ios-link text-orange-400 mr-1"/>{adv ? `${adv.conexoesBD} conexões` : '—'}</div>
@@ -187,17 +232,36 @@ export default function PerformanceSistemaPage() {
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={series}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="t" />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                  <XAxis 
+                    dataKey="t" 
+                    stroke="#9ca3af"
+                    style={{ fontSize: '12px' }}
+                  />
                   {/* Escala log para evidenciar variações pequenas entre grandezas diferentes */}
-                  <YAxis scale="log" domain={[0.1, 'auto']} />
-                  <Tooltip />
-                  <Legend />
-                  <Line type="monotone" dataKey="bd" stroke="#34d399" strokeWidth={2} name="bd" dot={false} isAnimationActive />
-                  <Line type="monotone" dataKey="cpu" stroke="#3b82f6" strokeWidth={2} name="cpu" dot={false} isAnimationActive />
-                  <Line type="monotone" dataKey="disco" stroke="#6366f1" strokeWidth={2} name="disco" dot={false} isAnimationActive />
-                  <Line type="monotone" dataKey="memory" stroke="#ef4444" strokeWidth={2} name="memory" dot={false} isAnimationActive />
-                  <Line type="monotone" dataKey="rede" stroke="#f59e0b" strokeWidth={2} name="rede" dot={false} isAnimationActive />
+                  <YAxis 
+                    scale="log" 
+                    domain={[0.1, 'auto']} 
+                    stroke="#9ca3af"
+                    style={{ fontSize: '12px' }}
+                  />
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: '#1f2937', 
+                      border: '1px solid #374151', 
+                      borderRadius: '8px',
+                      color: '#ffffff'
+                    }}
+                    labelStyle={{ color: '#ffffff', fontWeight: 'bold' }}
+                  />
+                  <Legend 
+                    wrapperStyle={{ fontSize: '12px', color: '#ffffff' }}
+                  />
+                  <Line type="monotone" dataKey="bd" stroke="#34d399" strokeWidth={2} name="BD" dot={false} isAnimationActive />
+                  <Line type="monotone" dataKey="cpu" stroke="#3b82f6" strokeWidth={2} name="CPU (%)" dot={false} isAnimationActive />
+                  <Line type="monotone" dataKey="disco" stroke="#6366f1" strokeWidth={2} name="Disco (MB/s)" dot={false} isAnimationActive />
+                  <Line type="monotone" dataKey="memory" stroke="#ef4444" strokeWidth={2} name="Memória (%)" dot={false} isAnimationActive />
+                  <Line type="monotone" dataKey="rede" stroke="#f59e0b" strokeWidth={2} name="Rede (MB/s)" dot={false} isAnimationActive />
                 </LineChart>
               </ResponsiveContainer>
             </div>
@@ -215,7 +279,6 @@ export default function PerformanceSistemaPage() {
                     // absolutos – deixar de fora PID para não esmagar as outras barras
                     uptimeMin: data ? Math.floor(data.uptimeMs / 60000) : 0,
                     procs: data?.availableProcessors ?? 0,
-                    mov: adv?.totalMovimentacoes ?? 0,
                     conexoes: adv?.conexoesBD ?? 0,
                     latencia: adv?.latenciaBD ?? 0,
                     rede: adv?.throughputRede ?? 0,
@@ -224,21 +287,37 @@ export default function PerformanceSistemaPage() {
                     nonHeap: data ? +(data.nonHeapUsedBytes / (1024*1024)).toFixed(2) : 0,
                     threads: data?.threadCount ?? 0
                 }]}> 
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="name" />
-                  <YAxis />
-                  <Tooltip />
-                  <Legend />
-                  <Bar dataKey="uptimeMin" name="Uptime (min)" fill="#0ea5e9" barSize={18} isAnimationActive />
-                  <Bar dataKey="procs" name="Processadores" fill="#7c3aed" barSize={18} isAnimationActive />
-                  <Bar dataKey="mov" name="Movimentações" fill="#eab308" barSize={18} isAnimationActive />
-                  <Bar dataKey="conexoes" name="Conexões BD" fill="#10b981" barSize={18} isAnimationActive />
-                  <Bar dataKey="latencia" name="Latência ms" fill="#f97316" barSize={18} isAnimationActive />
-                  <Bar dataKey="rede" name="Rede MB/s" fill="#06b6d4" barSize={18} isAnimationActive />
-                  <Bar dataKey="leitura" name="Leitura MB/s" fill="#8b5cf6" barSize={18} isAnimationActive />
-                  <Bar dataKey="escrita" name="Escrita MB/s" fill="#a78bfa" barSize={18} isAnimationActive />
-                  <Bar dataKey="nonHeap" name="Non-Heap MB" fill="#94a3b8" barSize={18} isAnimationActive />
-                  <Bar dataKey="threads" name="Threads" fill="#f59e0b" barSize={18} isAnimationActive />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                  <XAxis 
+                    dataKey="name" 
+                    stroke="#9ca3af"
+                    style={{ fontSize: '12px' }}
+                  />
+                  <YAxis 
+                    stroke="#9ca3af"
+                    style={{ fontSize: '12px' }}
+                  />
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: '#1f2937', 
+                      border: '1px solid #374151', 
+                      borderRadius: '8px',
+                      color: '#ffffff'
+                    }}
+                    labelStyle={{ color: '#ffffff', fontWeight: 'bold' }}
+                  />
+                  <Legend 
+                    wrapperStyle={{ fontSize: '12px', color: '#ffffff' }}
+                  />
+                  <Bar dataKey="uptimeMin" name="Uptime (min)" fill="#0ea5e9" barSize={18} radius={[4, 4, 0, 0]} isAnimationActive />
+                  <Bar dataKey="procs" name="Processadores" fill="#7c3aed" barSize={18} radius={[4, 4, 0, 0]} isAnimationActive />
+                  <Bar dataKey="conexoes" name="Conexões BD" fill="#10b981" barSize={18} radius={[4, 4, 0, 0]} isAnimationActive />
+                  <Bar dataKey="latencia" name="Latência ms" fill="#f97316" barSize={18} radius={[4, 4, 0, 0]} isAnimationActive />
+                  <Bar dataKey="rede" name="Rede MB/s" fill="#06b6d4" barSize={18} radius={[4, 4, 0, 0]} isAnimationActive />
+                  <Bar dataKey="leitura" name="Leitura MB/s" fill="#8b5cf6" barSize={18} radius={[4, 4, 0, 0]} isAnimationActive />
+                  <Bar dataKey="escrita" name="Escrita MB/s" fill="#a78bfa" barSize={18} radius={[4, 4, 0, 0]} isAnimationActive />
+                  <Bar dataKey="nonHeap" name="Non-Heap MB" fill="#94a3b8" barSize={18} radius={[4, 4, 0, 0]} isAnimationActive />
+                  <Bar dataKey="threads" name="Threads" fill="#f59e0b" barSize={18} radius={[4, 4, 0, 0]} isAnimationActive />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -255,24 +334,41 @@ export default function PerformanceSistemaPage() {
                     name: 'Atual',
                     cpuSys: (data?.systemCpuLoad ?? 0) * 100,
                     cpuProc: (data?.processCpuLoad ?? 0) * 100,
-                    ocup: adv?.ocupacaoMedia ?? 0,
                     usoCpu: adv?.usoCPU ?? ((data?.processCpuLoad ?? 0) * 100),
                     usoMem: adv?.usoMemory ?? (data && data.heapMaxBytes > 0 ? (data.heapUsedBytes * 100 / data.heapMaxBytes) : 0),
                     usoDisco: adv?.usoDisco ?? 0,
                     heap: data && data.heapMaxBytes > 0 ? (data.heapUsedBytes * 100 / data.heapMaxBytes) : 0
                 }]}> 
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="name" />
-                  <YAxis domain={[0,100]} />
-                  <Tooltip />
-                  <Legend />
-                  <Bar dataKey="cpuSys" name="CPU Sistema %" fill="#22c55e" barSize={18} isAnimationActive />
-                  <Bar dataKey="cpuProc" name="CPU Processo %" fill="#16a34a" barSize={18} isAnimationActive />
-                  <Bar dataKey="ocup" name="Ocupação %" fill="#2563eb" barSize={18} isAnimationActive />
-                  <Bar dataKey="usoCpu" name="Uso CPU %" fill="#34d399" barSize={18} isAnimationActive />
-                  <Bar dataKey="usoMem" name="Uso Mem %" fill="#3b82f6" barSize={18} isAnimationActive />
-                  <Bar dataKey="usoDisco" name="Uso Disco %" fill="#ef4444" barSize={18} isAnimationActive />
-                  <Bar dataKey="heap" name="Heap %" fill="#60a5fa" barSize={18} isAnimationActive />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                  <XAxis 
+                    dataKey="name" 
+                    stroke="#9ca3af"
+                    style={{ fontSize: '12px' }}
+                  />
+                  <YAxis 
+                    domain={[0,100]} 
+                    stroke="#9ca3af"
+                    style={{ fontSize: '12px' }}
+                  />
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: '#1f2937', 
+                      border: '1px solid #374151', 
+                      borderRadius: '8px',
+                      color: '#ffffff'
+                    }}
+                    labelStyle={{ color: '#ffffff', fontWeight: 'bold' }}
+                    formatter={(value: unknown) => [`${Number(value).toFixed(1)}%`, 'Percentual']}
+                  />
+                  <Legend 
+                    wrapperStyle={{ fontSize: '12px', color: '#ffffff' }}
+                  />
+                  <Bar dataKey="cpuSys" name="CPU Sistema %" fill="#22c55e" barSize={18} radius={[4, 4, 0, 0]} isAnimationActive />
+                  <Bar dataKey="cpuProc" name="CPU Processo %" fill="#16a34a" barSize={18} radius={[4, 4, 0, 0]} isAnimationActive />
+                  <Bar dataKey="usoCpu" name="Uso CPU %" fill="#34d399" barSize={18} radius={[4, 4, 0, 0]} isAnimationActive />
+                  <Bar dataKey="usoMem" name="Uso Mem %" fill="#3b82f6" barSize={18} radius={[4, 4, 0, 0]} isAnimationActive />
+                  <Bar dataKey="usoDisco" name="Uso Disco %" fill="#ef4444" barSize={18} radius={[4, 4, 0, 0]} isAnimationActive />
+                  <Bar dataKey="heap" name="Heap %" fill="#60a5fa" barSize={18} radius={[4, 4, 0, 0]} isAnimationActive />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -287,11 +383,36 @@ export default function PerformanceSistemaPage() {
               <table className="min-w-full text-sm">
                 <thead>
                   <tr className="text-left text-gray-400">
-                    <th className="py-2 pr-4">ID</th>
-                    <th className="py-2 pr-4">Nome</th>
-                    <th className="py-2 pr-4">Estado</th>
-                    <th className="py-2 pr-4">CPU ns</th>
-                    <th className="py-2 pr-4">User ns</th>
+                    <th className="py-2 pr-4">
+                      <div className="flex items-center gap-2">
+                        <i className="ion-ios-key text-gray-500"></i>
+                        ID
+                      </div>
+                    </th>
+                    <th className="py-2 pr-4">
+                      <div className="flex items-center gap-2">
+                        <i className="ion-ios-paper text-blue-500"></i>
+                        Nome
+                      </div>
+                    </th>
+                    <th className="py-2 pr-4">
+                      <div className="flex items-center gap-2">
+                        <i className="ion-ios-pulse text-green-500"></i>
+                        Estado
+                      </div>
+                    </th>
+                    <th className="py-2 pr-4">
+                      <div className="flex items-center gap-2">
+                        <i className="ion-ios-flash text-yellow-500"></i>
+                        CPU ns
+                      </div>
+                    </th>
+                    <th className="py-2 pr-4">
+                      <div className="flex items-center gap-2">
+                        <i className="ion-ios-flame text-orange-500"></i>
+                        User ns
+                      </div>
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
@@ -308,8 +429,18 @@ export default function PerformanceSistemaPage() {
                   })();
                   return (
                     <tr key={t.id} className="text-gray-800 border-t border-white/10 hover:bg-white/10 transition">
-                      <td className="py-2 pr-4">{t.id}</td>
-                      <td className="py-2 pr-4 flex items-center gap-2"><i className="ion-ios-git-commit text-indigo-500"></i>{t.name}</td>
+                      <td className="py-2 pr-4">
+                        <div className="flex items-center gap-2">
+                          <i className="ion-ios-key text-gray-400"></i>
+                          <span>{t.id}</span>
+                        </div>
+                      </td>
+                      <td className="py-2 pr-4">
+                        <div className="flex items-center gap-2">
+                          <i className="ion-ios-git-commit text-indigo-500"></i>
+                          <span className="truncate max-w-xs">{t.name}</span>
+                        </div>
+                      </td>
                       <td className="py-2 pr-4">
                         <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${badge.cls}`}>
                           <i className={`${badge.icon}`}></i>
@@ -318,13 +449,13 @@ export default function PerformanceSistemaPage() {
                       </td>
                       <td className="py-2 pr-4">
                         <span className={`inline-flex items-center gap-1 ${cpuActive ? 'text-emerald-600' : 'text-gray-500'}`}>
-                          {cpuActive && <i className="ion-ios-flash"/>}
+                          <i className={`ion-ios-flash ${cpuActive ? 'text-yellow-500' : 'text-gray-400'}`}></i>
                           {t.cpuTimeNanos ?? '—'}
                         </span>
                       </td>
                       <td className="py-2 pr-4">
                         <span className={`inline-flex items-center gap-1 ${userActive ? 'text-blue-600' : 'text-gray-500'}`}>
-                          {userActive && <i className="ion-ios-flame"/>}
+                          <i className={`ion-ios-flame ${userActive ? 'text-orange-500' : 'text-gray-400'}`}></i>
                           {t.userTimeNanos ?? '—'}
                         </span>
                       </td>
