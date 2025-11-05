@@ -1,0 +1,123 @@
+param(
+  [string]$ContainerName = "oracle-21c-xe",
+  [string]$PdbService = "XEPDB1",
+  [string]$SystemPass = "paulo1",
+  [string]$SchemaUser = "relacaoDireta",
+  [string]$SchemaPass = "paulo1"
+)
+
+$SchemaUpper = $SchemaUser.ToUpper()
+
+function Invoke-OracleSql {
+<#
+.SYNOPSIS
+  Executa um bloco SQL dentro do container via sqlplus.
+.EXAMPLE
+  Invoke-OracleSql -AsSystem -Sql "SELECT * FROM dual;"
+.EXAMPLE
+  Invoke-OracleSql -AsSchema -SqlFile "C:\scripts\001_schema.sql"
+#>
+  param(
+    [switch]$AsSystem,
+    [switch]$AsSchema,
+    [string]$Sql,
+    [string]$SqlFile
+  )
+  if (-not ($AsSystem -xor $AsSchema)) { throw "Use -AsSystem OU -AsSchema." }
+
+  $Conn =
+    if ($AsSystem) { "SYSTEM/$SystemPass@//localhost:1521/$PdbService" }
+    else { "$SchemaUser/$SchemaPass@//localhost:1521/$PdbService" }
+
+  if ($SqlFile) {
+    if (-not (Test-Path $SqlFile)) { throw "Arquivo não encontrado: $SqlFile" }
+    $dest = "/tmp/" + (Split-Path $SqlFile -Leaf)
+    docker cp $SqlFile "$ContainerName:$dest" | Out-Null
+    docker exec -it $ContainerName bash -lc "sqlplus -s $Conn @$dest"
+    return
+  }
+
+  if ($Sql) {
+    docker exec -it $ContainerName bash -lc @"
+sqlplus -s $Conn <<'SQL'
+SET PAGES 100 LINES 200 SERVEROUTPUT ON
+$Sql
+SQL
+"@
+  }
+}
+
+function Reset-Schema {
+<#
+.SYNOPSIS
+  Dropa e recria o schema do zero com grants básicos.
+#>
+  $block = @"
+SET SERVEROUTPUT ON FEEDBACK OFF VERIFY OFF HEADING OFF
+WHENEVER SQLERROR EXIT SQL.SQLCODE
+DECLARE
+  CURSOR c IS SELECT sid, serial# FROM v`$session WHERE username = '$SchemaUpper';
+BEGIN
+  FOR r IN c LOOP
+    BEGIN
+      EXECUTE IMMEDIATE 'ALTER SYSTEM KILL SESSION '''||r.sid||','||r.serial#||''' IMMEDIATE';
+    EXCEPTION WHEN OTHERS THEN NULL; END;
+  END LOOP;
+END;
+/
+BEGIN
+  EXECUTE IMMEDIATE 'DROP USER $SchemaUpper CASCADE';
+EXCEPTION WHEN OTHERS THEN
+  IF SQLCODE = -1918 THEN NULL; ELSE RAISE; END IF;
+END;
+/
+CREATE USER $SchemaUser IDENTIFIED BY $SchemaPass
+  DEFAULT TABLESPACE USERS
+  TEMPORARY TABLESPACE TEMP
+  QUOTA UNLIMITED ON USERS;
+GRANT CREATE SESSION, CREATE TABLE, CREATE VIEW, CREATE PROCEDURE, CREATE TRIGGER, CREATE SEQUENCE TO $SchemaUser;
+GRANT CONNECT, RESOURCE TO $SchemaUser;
+SET HEADING ON FEEDBACK ON
+SELECT username, account_status FROM dba_users WHERE username='$SchemaUpper';
+"@
+  Invoke-OracleSql -AsSystem -Sql $block
+}
+
+function Run-SqlFilesInFolder {
+<#
+.SYNOPSIS
+  Executa todos os .sql de uma pasta em ordem (alfabética).
+.PARAMETER Path
+  Pasta contendo os .sql (ex.: 001_schema.sql, 010_indices.sql, 100_dados.sql)
+#>
+  param([Parameter(Mandatory=$true)][string]$Path)
+
+  if (-not (Test-Path $Path)) { throw "Pasta não encontrada: $Path" }
+
+  $files = Get-ChildItem -Path $Path -Filter *.sql | Sort-Object Name
+  if ($files.Count -eq 0) { throw "Nenhum .sql encontrado em $Path" }
+
+  foreach ($f in $files) {
+    Write-Host ">>> Executando $($f.Name)..." -ForegroundColor Cyan
+    Invoke-OracleSql -AsSchema -SqlFile $f.FullName
+    if ($LASTEXITCODE -ne 0) { throw "Falha ao executar $($f.Name)" }
+  }
+  Write-Host "OK! Todos os scripts executados." -ForegroundColor Green
+}
+
+# Exemplo de uso rápido (comente/descomente conforme precisar):
+
+# 1) Validar conexão
+# Invoke-OracleSql -AsSystem -Sql "SELECT name, open_mode FROM v$database; SELECT name, open_mode FROM v$pdbs;"
+
+# 2) Resetar schema
+# Reset-Schema
+
+# 3) Rodar todos os .sql da pasta em ordem
+# Run-SqlFilesInFolder -Path "C:\projetos\sql"
+
+# 4) Executar um .sql específico como schema
+# Invoke-OracleSql -AsSchema -SqlFile "C:\projetos\sql\001_schema.sql"
+
+# 5) Execução ad-hoc
+# Invoke-OracleSql -AsSchema -Sql "SELECT user FROM dual;"

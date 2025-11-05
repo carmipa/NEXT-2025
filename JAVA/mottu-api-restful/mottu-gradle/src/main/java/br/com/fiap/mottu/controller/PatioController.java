@@ -11,8 +11,8 @@ import br.com.fiap.mottu.dto.box.BoxResponseDto;         //
 import br.com.fiap.mottu.dto.box.BoxRequestDto;          //
 import br.com.fiap.mottu.dto.contato.ContatoResponseDto; //
 import br.com.fiap.mottu.dto.endereco.EnderecoResponseDto; //
-import br.com.fiap.mottu.model.Contato; //
-import br.com.fiap.mottu.model.Endereco; //
+import br.com.fiap.mottu.dto.datatable.DataTableRequest;
+import br.com.fiap.mottu.dto.datatable.DataTableResponse;
 // Filtro
 import br.com.fiap.mottu.filter.PatioFilter; //
 // Serviço e Mappers
@@ -24,6 +24,8 @@ import br.com.fiap.mottu.mapper.BoxMapper;      //
 import br.com.fiap.mottu.mapper.ContatoMapper;  //
 import br.com.fiap.mottu.mapper.EnderecoMapper; //
 import br.com.fiap.mottu.model.Patio; // Entidade Pátio
+import br.com.fiap.mottu.model.Contato; //
+import br.com.fiap.mottu.model.Endereco; //
 // Exceções (tratadas globalmente)
 // import br.com.fiap.mottu.exception.DuplicatedResourceException;
 // import br.com.fiap.mottu.exception.ResourceNotFoundException;
@@ -151,12 +153,31 @@ public class PatioController {
     @Operation(summary = "Deletar pátio", description = "Exclui um pátio.") //
     @ApiResponse(responseCode = "204", description = "Pátio deletado") //
     @ApiResponse(responseCode = "404", description = "Pátio não encontrado") // Tratado globalmente
+    @ApiResponse(responseCode = "409", description = "Pátio em uso (estacionamentos ativos ou veículos associados)") // Tratado globalmente
+    @ApiResponse(responseCode = "403", description = "Operação não permitida (erro ao processar dependências)") // Tratado globalmente
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deletarPatio(@PathVariable Long id) {
         log.info("Deletando pátio ID: {}", id); //
         patioService.deletarPatio(id); //
         log.info("Pátio ID {} deletado.", id); //
         return ResponseEntity.noContent().build(); //
+    }
+
+    @Operation(
+            summary = "Buscar pátios para DataTable",
+            description = "Retorna pátios formatados para DataTable com paginação, ordenação e filtros."
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "Dados formatados para DataTable",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = DataTableResponse.class))
+    )
+    @PostMapping("/datatable")
+    public ResponseEntity<DataTableResponse<PatioResponseDto>> buscarParaDataTable(
+            @RequestBody DataTableRequest request,
+            @Parameter(description = "Filtros adicionais", in = ParameterIn.QUERY) PatioFilter filter) {
+        log.info("📊 Buscando pátios para DataTable - draw: {}", request.getDraw());
+        return ResponseEntity.ok(patioService.buscarParaDataTable(request, filter));
     }
 
     // Endpoint para criar Pátio completo (wizard)

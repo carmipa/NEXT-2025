@@ -1,6 +1,6 @@
 // components/StatCard.tsx
 
-import { ReactNode } from 'react';
+import React, { ReactNode, useEffect, useRef, useState } from 'react';
 
 type StatCardProps = {
     title: string;
@@ -44,11 +44,28 @@ const colorSchemes = {
 
 export const StatCard = ({ title, value, icon, colorScheme = 'emerald' }: StatCardProps) => {
     const colors = colorSchemes[colorScheme];
+    const prevValueRef = useRef(value);
+    const [isUpdating, setIsUpdating] = useState(false);
+
+    useEffect(() => {
+        if (prevValueRef.current !== value) {
+            setIsUpdating(true);
+            const timer = setTimeout(() => setIsUpdating(false), 300);
+            prevValueRef.current = value;
+            return () => clearTimeout(timer);
+        }
+    }, [value]);
 
     return (
-        // Card com gradiente variável baseado no colorScheme
+        // Card com gradiente variável baseado no colorScheme e transição suave
         <div
-            className={`bg-gradient-to-br ${colors.gradient} p-4 rounded-lg shadow-lg flex items-center space-x-4 transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:${colors.shadow} cursor-pointer`}
+            className={`bg-gradient-to-br ${colors.gradient} p-4 rounded-lg shadow-lg flex items-center space-x-4 transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:${colors.shadow} cursor-pointer ${
+                isUpdating ? 'ring-2 ring-offset-2' : ''
+            }`}
+            style={{
+                transition: 'all 0.3s ease-in-out',
+                '--ring-color': isUpdating ? colors.ring : 'transparent',
+            } as React.CSSProperties}
         >
             {/* Container para o anel animado e o valor */}
             <div className="relative w-20 h-20 flex-shrink-0">
@@ -65,9 +82,15 @@ export const StatCard = ({ title, value, icon, colorScheme = 'emerald' }: StatCa
                     }}
                 ></div>
 
-                {/* O conteúdo centralizado (o número) */}
+                {/* O conteúdo centralizado (o número) com transição suave */}
                 <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="text-3xl font-bold text-slate-800">{value}</span>
+                    <span 
+                        className={`text-3xl font-bold text-slate-800 transition-all duration-300 ${
+                            isUpdating ? 'scale-110 text-emerald-600' : 'scale-100'
+                        }`}
+                    >
+                        {value}
+                    </span>
                 </div>
             </div>
 

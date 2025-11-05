@@ -61,6 +61,9 @@ class PatioServiceDeletarPatioTest {
     @Mock
     private EnderecoService enderecoService;
 
+    @Mock
+    private MapGlobalService mapGlobalService;
+
     @InjectMocks
     private PatioService patioService;
 
@@ -131,8 +134,8 @@ class PatioServiceDeletarPatioTest {
     }
 
     @Test
-    @DisplayName("Deve lançar ResourceInUseException quando há boxes")
-    void deveLancarExcecaoQuandoHaBoxes() {
+    @DisplayName("Deve deletar pátio com sucesso mesmo quando há boxes (deletados em cascata)")
+    void deveDeletarPatioComSucessoQuandoHaBoxes() {
         // Arrange
         when(patioRepository.findByIdWithContatoAndEndereco(patioId))
                 .thenReturn(Optional.of(patio));
@@ -142,19 +145,22 @@ class PatioServiceDeletarPatioTest {
                 .thenReturn(0L);
         when(boxRepository.countByPatioIdPatio(patioId))
                 .thenReturn(10L);
+        when(zonaRepository.countByPatioIdPatio(patioId))
+                .thenReturn(0L);
 
-        // Act & Assert
-        ResourceInUseException exception = assertThrows(ResourceInUseException.class, () -> {
+        // Act
+        assertDoesNotThrow(() -> {
             patioService.deletarPatio(patioId);
         });
 
-        assertTrue(exception.getMessage().contains("box"));
-        verify(patioRepository, never()).deleteById(anyLong());
+        // Assert - Pátio deve ser deletado mesmo com boxes (serão deletados em cascata)
+        verify(patioRepository, times(1)).deleteById(patioId);
+        verify(boxRepository, times(1)).countByPatioIdPatio(patioId);
     }
 
     @Test
-    @DisplayName("Deve lançar ResourceInUseException quando há zonas")
-    void deveLancarExcecaoQuandoHaZonas() {
+    @DisplayName("Deve deletar pátio com sucesso mesmo quando há zonas (deletadas em cascata)")
+    void deveDeletarPatioComSucessoQuandoHaZonas() {
         // Arrange
         when(patioRepository.findByIdWithContatoAndEndereco(patioId))
                 .thenReturn(Optional.of(patio));
@@ -167,13 +173,14 @@ class PatioServiceDeletarPatioTest {
         when(zonaRepository.countByPatioIdPatio(patioId))
                 .thenReturn(5L);
 
-        // Act & Assert
-        ResourceInUseException exception = assertThrows(ResourceInUseException.class, () -> {
+        // Act
+        assertDoesNotThrow(() -> {
             patioService.deletarPatio(patioId);
         });
 
-        assertTrue(exception.getMessage().contains("zona"));
-        verify(patioRepository, never()).deleteById(anyLong());
+        // Assert - Pátio deve ser deletado mesmo com zonas (serão deletadas em cascata)
+        verify(patioRepository, times(1)).deleteById(patioId);
+        verify(zonaRepository, times(1)).countByPatioIdPatio(patioId);
     }
 
     @Test

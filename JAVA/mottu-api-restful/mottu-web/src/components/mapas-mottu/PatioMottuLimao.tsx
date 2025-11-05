@@ -1,43 +1,64 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Loader2 } from "lucide-react";
 
-// --- NOVAS DEFINIÇÕES GEOMÉTRICAS PARA A UNIDADE LIMÃO (ROTACIONADA 90 GRAUS) ---
-
-// Lote Rotacionado: de 50x100 para 100x50 (largura x altura)
+// Definições geométricas específicas do Pátio Limão
 const LIMAO_LOT_OUTLINE: [number, number][] = [
     [0, 0], [100, 0], [100, 50], [0, 50], [0, 0] // 100m de largura, 50m de altura
 ];
 
-// Telhados Rotacionados e Reposicionados (galpão principal agora é 96m de largura x 46m de altura)
 const LIMAO_ROOFS: { id: string; poly: [number, number][] }[] = [
     { id: "galpao-principal-limao", poly: [
-            [2, 2], [98, 2], [98, 48], [2, 48], [2, 2] // 96m de largura, 46m de altura (quase todo o lote)
+            [2, 2], [98, 2], [98, 48], [2, 48], [2, 2] // 96m de largura, 46m de altura
         ]},
-    // Estruturas menores (coordenadas XY invertidas e ajustadas para o novo espaço)
     { id: "estrutura-1", poly: [ [70, 44], [80, 44], [80, 48], [70, 48] ]},
     { id: "estrutura-2", poly: [ [58, 44], [68, 44], [68, 48], [58, 48] ]}
 ];
 
-// Ruas Rotacionadas
 const LIMAO_STREETS = [
-    // Av. Pr. Celestino Bourroul (na vertical, lateral direita do lote)
     { name: "Av. Pr. Celestino Bourroul", from: [105, 0], to: [105, 50] },
-    // R. Miguel Magalhães (na vertical, lateral esquerda do lote)
     { name: "R. Miguel Magalhães", from: [-6, 0], to: [-6, 50] }
 ];
 
+// Definição dos tipos de dados
+interface VeiculoInfo {
+    placa: string;
+    modelo: string;
+    fabricante: string;
+    tagBleId: string | null;
+}
+interface BoxComVeiculo {
+    idBox: number;
+    nome: string;
+    status: 'L' | 'O';
+    veiculo: VeiculoInfo | null;
+}
+interface MapaData {
+    rows: number;
+    cols: number;
+    boxes: BoxComVeiculo[];
+}
+interface TooltipState {
+    content: React.ReactNode;
+    x: number;
+    y: number;
+}
+type MappedBox = {
+    layoutId: string;
+    dbId: number | null;
+    nome: string;
+    x: number;
+    y: number;
+    w: number;
+    h: number;
+    status: 'Livre' | 'Ocupado' | 'Indefinido' | 'Armazenamento';
+    veiculo: VeiculoInfo | null;
+};
 
-// --- O RESTANTE DO COMPONENTE É IDÊNTICO AO ANTERIOR ---
-
-interface VeiculoInfo { placa: string; modelo: string; fabricante: string; tagBleId: string | null; }
-interface BoxComVeiculo { idBox: number; nome: string; status: 'L' | 'O'; veiculo: VeiculoInfo | null; }
-interface MapaData { rows: number; cols: number; boxes: BoxComVeiculo[]; }
-interface TooltipState { content: React.ReactNode; x: number; y: number; }
-type MappedBox = { layoutId: string; dbId: number | null; x: number; y: number; w: number; h: number; status: 'Livre' | 'Ocupado' | 'Indefinido' | 'Armazenamento'; veiculo: VeiculoInfo | null; };
-
-function toPath(poly: [number, number][]) { return poly.map(([x, y], i) => `${i === 0 ? "M" : "L"}${x},${y}`).join(" ") + " Z"; }
+// Funções auxiliares
+function toPath(poly: [number, number][]) {
+    return poly.map(([x, y], i) => `${i === 0 ? "M" : "L"}${x},${y}`).join(" ") + " Z";
+}
 function usePanZoom() {
-    // AJUSTE: Aumentei o TX de 300 para 380 para centralizar melhor o mapa mais largo na tela.
     const [k, setK] = useState(7); const [tx, setTx] = useState(380); const [ty, setTy] = useState(150);
     const dragging = useRef(false); const last = useRef({ x: 0, y: 0 });
     const onWheel = (e: React.WheelEvent) => { e.preventDefault(); const delta = e.deltaY > 0 ? -1 : 1; const next = Math.min(40, Math.max(2, k + delta * 0.5)); setK(next); };
@@ -62,32 +83,60 @@ export default function PatioMottuLimao({ highlightBoxId }: { highlightBoxId?: s
     const [error, setError] = useState<string | null>(null);
     const [tooltip, setTooltip] = useState<TooltipState | null>(null);
 
-    const getBoxPositionFromName = (boxName: string) => {
-        const match = boxName.match(/^(BLimao|B|Li|LIMAO)(\d+)$/);
-        if (!match) return { x: 3, y: 3, w: 3, h: 4 };
-        const prefixo = match[1]; const numero = parseInt(match[2], 10);
-        let baseX = 3, baseY = 3, cols = 12, gap = 1, w = 3, h = 4;
-
-        // Novo layout horizontal: Boxes BLimao ocupam o canto superior esquerdo do galpão
-        if (prefixo === 'BLimao' || prefixo === 'B' || prefixo === 'LIMAO') {
-            // AJUSTE CRÍTICO DE POSIÇÃO: Movendo os boxes para a esquerda (baseX = 4)
-            baseX = 4;  // Começa em 4m na largura (X) para deixar a área de circulação à direita
-            baseY = 5;  // Centralizando a grade de 4 linhas na altura de 50m
-            cols = 25;  // 25 colunas x 4 linhas = 100 boxes
-            w = 1.8; h = 3;
-        }
-        else if (prefixo === 'Li') {
-            // Boxes Li (Linha) posicionados perto das estruturas menores (canto superior direito)
-            baseX = 70; baseY = 5; cols = 7; // Mantenho Li para o canto direito, mas mais organizado
-            w = 1.8; h = 3;
-        }
-        else {
-            baseX = 40; baseY = 35; cols = 4;
-        }
-
-        const row = Math.floor((numero - 1) / cols);
-        const col = (numero - 1) % cols;
-        return { x: baseX + col * (w + gap), y: baseY + row * (h + gap), w, h };
+    // Função para organizar boxes em grid dentro do mapa
+    const organizeBoxesInGrid = (boxes: BoxComVeiculo[]): MappedBox[] => {
+        if (boxes.length === 0) return [];
+        
+        // Área disponível dentro do mapa Limão (dentro do LIMAO_LOT_OUTLINE)
+        // Aproximadamente: x de 2 a 98, y de 2 a 48
+        const areaWidth = 96; // 98 - 2
+        const areaHeight = 46; // 48 - 2
+        const startX = 2;
+        const startY = 2;
+        
+        // Tamanho dos boxes aumentado para melhor visualização sem zoom
+        const boxWidth = 3.5;
+        const boxHeight = 3.5;
+        const gap = 0.3; // Gap proporcional ao tamanho maior
+        
+        // Calcular número de colunas que cabem na área (mais colunas = grid mais compacto)
+        const colsPerRow = Math.floor(areaWidth / (boxWidth + gap));
+        // Usar mais colunas para um grid mais compacto lado a lado
+        const totalCols = Math.min(colsPerRow, Math.max(10, Math.ceil(Math.sqrt(boxes.length))));
+        
+        // Ordenar boxes por nome para garantir ordem consistente
+        const sortedBoxes = [...boxes].sort((a, b) => {
+            const aNum = parseInt(a.nome.replace(/\D/g, '')) || 0;
+            const bNum = parseInt(b.nome.replace(/\D/g, '')) || 0;
+            return aNum - bNum;
+        });
+        
+        return sortedBoxes.map((apiBox, index) => {
+            const row = Math.floor(index / totalCols);
+            const col = index % totalCols;
+            
+            // Determinar status do backend: 'L' = Livre, 'O' = Ocupado, 'M' = Manutenção
+            let status: 'Livre' | 'Ocupado' | 'Indefinido' | 'Armazenamento' | 'Manutencao' = 'Indefinido';
+            if (apiBox.status === 'L') {
+                status = 'Livre';
+            } else if (apiBox.status === 'O') {
+                status = 'Ocupado';
+            } else if (apiBox.status === 'M') {
+                status = 'Manutencao';
+            }
+            
+            return {
+                layoutId: `box-${apiBox.idBox}`,
+                dbId: apiBox.idBox,
+                nome: apiBox.nome,
+                x: startX + col * (boxWidth + gap),
+                y: startY + row * (boxHeight + gap),
+                w: boxWidth,
+                h: boxHeight,
+                status: status,
+                veiculo: apiBox.veiculo || null
+            };
+        });
     };
 
     useEffect(() => {
@@ -151,29 +200,8 @@ export default function PatioMottuLimao({ highlightBoxId }: { highlightBoxId?: s
                     return;
                 }
 
-                const mappedBoxes: MappedBox[] = mapaData.boxes.map((apiBox: any) => {
-                    const position = getBoxPositionFromName(apiBox.nome);
-
-                    // Determinar status: 'L' = Livre, 'O' = Ocupado, outros = Indefinido
-                    let status: 'Livre' | 'Ocupado' | 'Indefinido' | 'Armazenamento' = 'Indefinido';
-                    if (apiBox.status === 'L') {
-                        status = 'Livre';
-                    } else if (apiBox.status === 'O') {
-                        status = 'Ocupado';
-                    }
-
-                    return {
-                        layoutId: `box-${apiBox.idBox}`,
-                        dbId: apiBox.idBox,
-                        nome: apiBox.nome,
-                        x: position.x, 
-                        y: position.y,
-                        w: position.w,
-                        h: position.h,
-                        status: status,
-                        veiculo: apiBox.veiculo || null
-                    };
-                });
+                // Organizar boxes em grid dentro do mapa
+                const mappedBoxes = organizeBoxesInGrid(mapaData.boxes);
                 
                 console.log('✅ Boxes mapeados (Limão):', {
                     total: mappedBoxes.length,
@@ -194,39 +222,76 @@ export default function PatioMottuLimao({ highlightBoxId }: { highlightBoxId?: s
         return () => clearInterval(interval);
     }, []);
 
-    const handleViewChange = (option: keyof typeof viewOptions) => { setViewOptions(prev => ({ ...prev, [option]: !prev[option] })); };
+    const handleViewChange = (option: keyof typeof viewOptions) => {
+        setViewOptions(prev => ({ ...prev, [option]: !prev[option] }));
+    };
+
     const handleMouseEnterBox = (e: React.MouseEvent, box: MappedBox) => {
-        if (box.status === 'Ocupado') {
-            setTooltip({
-                x: e.clientX,
-                y: e.clientY,
-                content: (
-                    <div className="text-xs bg-gray-900 text-white p-3 rounded-lg shadow-lg">
-                        <div className="font-bold text-yellow-400 mb-2">📦 {box.nome}</div>
-                        {box.veiculo ? (
-                            <>
-                                <div className="font-bold text-green-400 mb-1">🏍️ Placa: {box.veiculo.placa}</div>
-                                <div className="text-gray-300"><strong>Modelo:</strong> {box.veiculo.modelo}</div>
-                                <div className="text-gray-300"><strong>Fabricante:</strong> {box.veiculo.fabricante}</div>
-                                <div className="text-gray-300"><strong>Tag BLE:</strong> {box.veiculo.tagBleId || 'N/A'}</div>
-                            </>
-                        ) : (
-                            <div className="text-red-400">⚠️ Vaga ocupada sem dados do veículo</div>
-                        )}
-                    </div>
-                )
-            });
+        // Tooltip sempre mostra nome e status
+        const tooltipContent = (
+            <div className="text-xs bg-gray-900 text-white p-3 rounded-lg shadow-lg">
+                <div className="font-bold text-yellow-400 mb-2">📦 {box.nome || `Box ${box.dbId}`}</div>
+                <div className={`font-semibold mb-1 ${
+                    box.status === 'Ocupado' ? 'text-red-400' : 
+                    box.status === 'Manutencao' ? 'text-yellow-400' : 
+                    'text-green-400'
+                }`}>
+                    Status: {box.status}
+                </div>
+                {box.status === 'Ocupado' && box.veiculo && (
+                    <>
+                        <div className="font-bold text-green-400 mb-1">🏍️ Placa: {box.veiculo.placa}</div>
+                        <div className="text-gray-300"><strong>Modelo:</strong> {box.veiculo.modelo}</div>
+                        <div className="text-gray-300"><strong>Fabricante:</strong> {box.veiculo.fabricante}</div>
+                        <div className="text-gray-300"><strong>Tag BLE:</strong> {box.veiculo.tagBleId || 'N/A'}</div>
+                    </>
+                )}
+                {box.status === 'Manutencao' && (
+                    <div className="text-yellow-300 text-xs mt-1">⚠️ Box em manutenção</div>
+                )}
+            </div>
+        );
+        
+        setTooltip({
+            x: e.clientX,
+            y: e.clientY,
+            content: tooltipContent
+        });
+    };
+    
+    const handleMouseLeaveBox = () => { 
+        setTooltip(null); 
+    };
+    
+    const handleMouseMove = (e: React.MouseEvent) => { 
+        onMove(e); 
+        if (tooltip) { 
+            setTooltip(t => t ? { ...t, x: e.clientX, y: e.clientY } : null); 
+        } 
+    };
+
+    const getBoxFillColor = (status: MappedBox['status']) => {
+        switch (status) {
+            case 'Livre': return 'rgba(74, 222, 128, 0.8)'; // Verde
+            case 'Ocupado': return 'rgba(239, 68, 68, 0.8)'; // Vermelho
+            case 'Manutencao': return 'rgba(234, 179, 8, 0.8)'; // Amarelo/Laranja
+            case 'Armazenamento': return 'rgba(59, 130, 246, 0.8)'; // Azul
+            default: return 'rgba(156, 163, 175, 0.8)'; // Cinza
         }
     };
-    const handleMouseLeaveBox = () => { setTooltip(null); };
-    const handleMouseMove = (e: React.MouseEvent) => { onMove(e); if (tooltip) { setTooltip(t => t ? { ...t, x: e.clientX, y: e.clientY } : null); } };
-    const getBoxFillColor = (status: MappedBox['status']) => { switch (status) { case 'Livre': return 'rgba(74, 222, 128, 0.7)'; case 'Ocupado': return 'rgba(239, 68, 68, 0.7)'; case 'Armazenamento': return 'rgba(59, 130, 246, 0.7)'; default: return 'rgba(156, 163, 175, 0.7)'; } };
-    const getBoxStrokeColor = (status: MappedBox['status']) => { switch (status) { case 'Livre': return '#22c55e'; case 'Ocupado': return '#dc2626'; case 'Armazenamento': return '#2563eb'; default: return '#6b7280'; } };
+    
+    const getBoxStrokeColor = (status: MappedBox['status']) => {
+        switch (status) {
+            case 'Livre': return '#22c55e'; // Verde
+            case 'Ocupado': return '#dc2626'; // Vermelho
+            case 'Manutencao': return '#eab308'; // Amarelo
+            case 'Armazenamento': return '#2563eb'; // Azul
+            default: return '#6b7280'; // Cinza
+        }
+    };
 
     return (
         <div className="w-full h-[80vh] bg-neutral-100 rounded-2xl shadow-inner relative select-none overflow-hidden">
-
-            {/* --- CÓDIGO DA INTERFACE --- */}
             <div className="absolute top-3 left-3 z-10 bg-white/90 rounded-xl shadow p-3 text-sm text-gray-700">
                 <div className="font-semibold mb-2">Controles de Visualização</div>
                 <div className="space-y-1 text-xs">
@@ -244,7 +309,15 @@ export default function PatioMottuLimao({ highlightBoxId }: { highlightBoxId?: s
                 </div>
             </div>
 
-            {isLoading && ( <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/30 text-white rounded-2xl"> <div className="flex flex-col items-center gap-2 p-4 bg-black/50 rounded-lg"> <Loader2 className="animate-spin h-8 w-8" /> <span>Carregando status das vagas...</span> </div> </div> )}
+            {isLoading && (
+                <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/30 text-white rounded-2xl">
+                    <div className="flex flex-col items-center gap-2 p-4 bg-black/50 rounded-lg">
+                        <Loader2 className="animate-spin h-8 w-8" />
+                        <span>Carregando status das vagas...</span>
+                    </div>
+                </div>
+            )}
+
             {tooltip && (
                 <div className="fixed z-30 p-2 bg-gray-800 text-white rounded-md shadow-lg pointer-events-none" style={{ top: tooltip.y, left: tooltip.x, transform: 'translate(10px, -25px)' }}>
                     {tooltip.content}
@@ -253,14 +326,21 @@ export default function PatioMottuLimao({ highlightBoxId }: { highlightBoxId?: s
 
             <svg className="w-full h-full cursor-grab" onWheel={onWheel} onMouseDown={onDown} onMouseUp={onUp} onMouseLeave={onUp} onMouseMove={handleMouseMove}>
                 <defs>
-                    <pattern id="grid" width={10} height={10} patternUnits="userSpaceOnUse"><path d="M 10 0 L 0 0 0 10" fill="none" stroke="#ddd" strokeWidth={0.3} /></pattern>
-                    <symbol id="helmet-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M19.33 5.03A9.95 9.95 0 0 0 12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10c0-2.12-.66-4.08-1.77-5.7L19.33 5.03zM12 20c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-2-9h4v2h-4v-2z"/></symbol>
+                    <pattern id="grid-limao" width={10} height={10} patternUnits="userSpaceOnUse">
+                        <path d="M 10 0 L 0 0 0 10" fill="none" stroke="#ddd" strokeWidth={0.3} />
+                    </pattern>
+                    <symbol id="helmet-icon-limao" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M19.33 5.03A9.95 9.95 0 0 0 12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10c0-2.12-.66-4.08-1.77-5.7L19.33 5.03zM12 20c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-2-9h4v2h-4v-2z"/>
+                    </symbol>
                 </defs>
                 <g transform={`translate(${tx},${ty}) scale(${k})`}>
-                    <rect x={-500} y={-500} width={1000} height={1000} fill="url(#grid)" />
-
+                    <rect x={-500} y={-500} width={1000} height={1000} fill="url(#grid-limao)" />
                     <path d={toPath(LIMAO_LOT_OUTLINE)} fill="#e5e7eb" stroke="#111" strokeWidth={0.4 / k} />
-                    {viewOptions.showRoofs && LIMAO_ROOFS.map(r => ( <path key={r.id} d={toPath(r.poly)} fill="#c9cdd3" stroke="#6b7280" strokeWidth={0.35 / k} /> ))}
+                    {viewOptions.showRoofs && LIMAO_ROOFS.map(r => (
+                        <path key={r.id} d={toPath(r.poly)} fill="#c9cdd3" stroke="#6b7280" strokeWidth={0.35 / k} />
+                    ))}
+                    
+                    {/* Boxes em grid dentro do mapa */}
                     {viewOptions.showBoxes && boxes.map(b => {
                         const isHighlighted = highlightBoxId && b.dbId?.toString() === highlightBoxId;
                         return (
@@ -273,48 +353,99 @@ export default function PatioMottuLimao({ highlightBoxId }: { highlightBoxId?: s
                                     fill={getBoxFillColor(b.status)} 
                                     stroke={isHighlighted ? '#f59e0b' : getBoxStrokeColor(b.status)} 
                                     strokeWidth={isHighlighted ? 0.8 / k : 0.2 / k} 
+                                    rx="0.2"
                                     onMouseEnter={(e) => handleMouseEnterBox(e, b)} 
                                     onMouseLeave={handleMouseLeaveBox}
                                     style={{ cursor: 'pointer' }}
                                 />
-                                {/* Label do box com nome/número */}
-                                <text 
-                                    x={b.x + b.w / 2} 
-                                    y={b.y + b.h / 2} 
-                                    fontSize={Math.max(0.8, 1.5 / k)} 
-                                    textAnchor="middle" 
-                                    dominantBaseline="middle"
-                                    fill={b.status === 'Ocupado' ? '#ffffff' : '#1f2937'}
-                                    fontWeight="bold"
-                                    style={{ pointerEvents: 'none', userSelect: 'none' }}
-                                >
-                                    {b.nome || b.dbId}
-                                </text>
-                                {/* Ícone de moto para boxes ocupados */}
+                                {/* Label do box - apenas número extraído do nome (apenas se não estiver ocupado ou em manutenção) */}
+                                {b.status !== 'Ocupado' && b.status !== 'Manutencao' && (
+                                    <text 
+                                        x={b.x + b.w / 2} 
+                                        y={b.y + b.h / 2} 
+                                        fontSize={Math.max(1.0, 1.8 / k)} 
+                                        textAnchor="middle" 
+                                        dominantBaseline="middle"
+                                        fill="#1f2937"
+                                        fontWeight="bold"
+                                        style={{ pointerEvents: 'none', userSelect: 'none' }}
+                                    >
+                                        {(() => {
+                                            // Extrair apenas o número do nome do box (ex: "BLimao001" -> "1", "Li015" -> "15")
+                                            const match = b.nome?.match(/(\d+)/);
+                                            return match ? match[1] : (b.dbId || '');
+                                        })()}
+                                    </text>
+                                )}
+                                {/* Ícone "V" para boxes ocupados */}
                                 {b.status === 'Ocupado' && viewOptions.showMotos && (
-                                    <use 
-                                        href="#helmet-icon" 
-                                        x={b.x + b.w * 0.15} 
-                                        y={b.y + b.h * 0.15} 
-                                        width={b.w * 0.7} 
-                                        height={b.h * 0.7} 
-                                        fill="rgba(255, 255, 255, 0.8)" 
-                                        style={{pointerEvents: 'none'}} 
-                                    />
+                                    <text
+                                        x={b.x + b.w / 2}
+                                        y={b.y + b.h / 2}
+                                        fontSize={Math.max(1.5, 2.5 / k)}
+                                        textAnchor="middle"
+                                        dominantBaseline="middle"
+                                        fill="#ffffff"
+                                        fontWeight="bold"
+                                        style={{ pointerEvents: 'none', userSelect: 'none' }}
+                                    >
+                                        V
+                                    </text>
+                                )}
+                                {/* Ícone "M" para boxes em manutenção */}
+                                {b.status === 'Manutencao' && (
+                                    <text
+                                        x={b.x + b.w / 2}
+                                        y={b.y + b.h / 2}
+                                        fontSize={Math.max(1.5, 2.5 / k)}
+                                        textAnchor="middle"
+                                        dominantBaseline="middle"
+                                        fill="#1f2937"
+                                        fontWeight="bold"
+                                        style={{ pointerEvents: 'none', userSelect: 'none' }}
+                                    >
+                                        M
+                                    </text>
                                 )}
                             </g>
                         );
                     })}
+
+                    {/* Ruas */}
                     {viewOptions.showStreetNames && LIMAO_STREETS.map((s, i) => {
                         const isVertical = s.from[0] === s.to[0];
                         const midX = (s.from[0] + s.to[0]) / 2;
                         const midY = (s.from[1] + s.to[1]) / 2;
-                        // AJUSTE: O texto da rua vertical precisa ser rotacionado para ser legível (agora são as ruas externas laterais)
+                        
                         if (isVertical) {
-                            return ( <g key={i}> <line x1={s.from[0]} y1={s.from[1]} x2={s.to[0]} y2={s.to[1]} stroke="#9ca3af" strokeWidth={4 / k} /> <g transform={`translate(${midX}, ${midY}) rotate(-90)`}> <text x={0} y={-2.5} fontSize={2.5} textAnchor="middle" dominantBaseline="middle" fill="#6b7280" style={{ textShadow: '0 0 3px white' }}>{s.name}</text> </g> </g> );
+                            return (
+                                <g key={i}>
+                                    <line x1={s.from[0]} y1={s.from[1]} x2={s.to[0]} y2={s.to[1]} stroke="#9ca3af" strokeWidth={4 / k} />
+                                    <g transform={`translate(${midX}, ${midY}) rotate(-90)`}>
+                                        <text
+                                            x={0}
+                                            y={-2.5}
+                                            fontSize={2.5}
+                                            textAnchor="middle"
+                                            dominantBaseline="middle"
+                                            fill="#6b7280"
+                                            style={{ textShadow: '0 0 3px white' }}
+                                        >
+                                            {s.name}
+                                        </text>
+                                    </g>
+                                </g>
+                            );
                         }
-                        // Ruas horizontais (não temos, mas deixo a lógica padrão)
-                        return ( <g key={i}> <line x1={s.from[0]} y1={s.from[1]} x2={s.to[0]} y2={s.to[1]} stroke="#9ca3af" strokeWidth={4 / k} /> <text x={midX} y={midY - 1} fontSize={2.5} textAnchor="middle" fill="#6b7280" style={{ textShadow: '0 0 3px white' }}>{s.name}</text> </g> );
+                        
+                        return (
+                            <g key={i}>
+                                <line x1={s.from[0]} y1={s.from[1]} x2={s.to[0]} y2={s.to[1]} stroke="#9ca3af" strokeWidth={4 / k} />
+                                <text x={midX} y={midY - 1} fontSize={2.5} textAnchor="middle" fill="#6b7280" style={{ textShadow: '0 0 3px white' }}>
+                                    {s.name}
+                                </text>
+                            </g>
+                        );
                     })}
                 </g>
             </svg>
@@ -331,6 +462,10 @@ export default function PatioMottuLimao({ highlightBoxId }: { highlightBoxId?: s
                         <div className="text-lg font-bold text-red-600">{boxes.filter(b => b.status === 'Ocupado').length}</div>
                         <div className="text-gray-600">Ocupados</div>
                     </div>
+                    <div className="text-center">
+                        <div className="text-lg font-bold text-yellow-600">{boxes.filter(b => b.status === 'Manutencao').length}</div>
+                        <div className="text-gray-600">Manutenção</div>
+                    </div>
                 </div>
                 <div className="font-semibold mb-1">Legenda</div>
                 <ul className="space-y-1 text-xs">
@@ -339,9 +474,10 @@ export default function PatioMottuLimao({ highlightBoxId }: { highlightBoxId?: s
                     <li className="flex items-center">
                         <svg width="12" height="12" viewBox="0 0 24 24" className="mr-2">
                             <rect width="24" height="24" fill="rgb(239, 68, 68)" rx="2"/>
-                            <use href="#helmet-icon" width="20" height="20" x="2" y="2" fill="white"/>
+                            <use href="#helmet-icon-limao" width="20" height="20" x="2" y="2" fill="white"/>
                         </svg>
                         Vaga Ocupada</li>
+                    <li><span className="inline-block w-3 h-3 align-middle mr-2 rounded-sm bg-yellow-400" /> Vaga em Manutenção</li>
                     <li><span className="inline-block w-3 h-3 align-middle mr-2 rounded-sm bg-blue-500" /> Box de Armazenamento</li>
                 </ul>
             </div>

@@ -1,0 +1,127 @@
+Perfeito. Você já pegou o fluxo de deploy completo.
+
+O mais importante é a sua observação:
+
+O Java é compilado localmente (com a configuração do OpenALPR que fizemos).
+
+O Next.js precisa ter a pasta antiga deletada no servidor para uma atualização limpa.
+
+Aqui está o checklist exato, na ordem correta, para fazer a atualização completa.
+
+PARTE 1: ATUALIZAR O BACKEND (JAVA)
+
+1. 💻 No seu PC (PowerShell): Compile o JAR com a alteração do OpenALPR
+
+Entre na pasta do projeto e rode o build do Gradle.
+
+PowerShell
+
+
+cd G:\FIAP\FIAP-2025\NEXT-2025\JAVA\mottu-api-restful\mottu-gradle; .\gradlew.bat clean bootJar -x test
+
+
+2. ☁️ No seu VPS (Terminal SSH): Pare o serviço Java
+
+Isso libera o arquivo mottu-app.jar para ser substituído.
+
+Bash
+
+
+sudo systemctl stop mottu.service
+
+
+3. 💻 No seu PC (PowerShell): Envie o novo JAR
+
+Este comando sobrescreve (apaga o antigo e coloca o novo) o .jar no VPS.
+
+PowerShell
+
+
+scp "G:\FIAP\FIAP-2025\NEXT-2025\JAVA\mottu-api-restful\mottu-gradle\build\libs\mottu-gradle-0.0.1-SNAPSHOT.jar" root@72.61.219.15:/opt/app/mottu-app.jar
+
+
+4. ☁️ No seu VPS (Terminal SSH): Inicie o serviço Java
+
+Ele vai usar o novo .jar e a configuração do OpenALPR que já está no arquivo mottu.service.
+
+Bash
+
+
+sudo systemctl start mottu.service
+
+
+-----------------------------------------------------------------------------------------------------------
+
+PARTE 2: ATUALIZAR O FRONTEND (NEXT.JS)
+
+5. 💻 No seu PC (Windows Explorer ou PowerShell): Limpe o projeto local
+
+IMPORTANTE: Antes de enviar, vá até a pasta D:\...\mottu-web e APAGUE as pastas node_modules e .next para um upload rápido e limpo.
+
+6. ☁️ No seu VPS (Terminal SSH): Pare o serviço Next e APAGUE a pasta antiga
+
+Este é o passo de "deletar os arquivos antigos" que você mencionou.
+
+Bash
+
+
+sudo systemctl stop mottu-web.service
+
+
+rm -rf /opt/mottu-web
+
+
+7. 💻 No seu PC (PowerShell): Envie a nova pasta limpa
+
+
+Envie a pasta mottu-web (já sem node_modules e .next) para o VPS.
+
+PowerShell
+
+
+scp -r "G:\FIAP\FIAP-2025\NEXT-2025\JAVA\mottu-api-restful\mottu-web" root@72.61.219.15:/opt/
+
+
+8. ☁️ No seu VPS (Terminal SSH): Instale, Builde e Inicie o serviço Next
+
+Este é o processo para colocar o Next.js no ar no servidor.
+
+Bash
+
+# 1. Entre na pasta
+
+
+cd /opt/mottu-web
+
+
+# 2. Instale as dependências (recria a 'node_modules')
+
+
+npm install
+
+
+# 3. Faça o build de produção (recria a '.next')
+
+
+npm run build
+
+
+# 4. Inicie o serviço (ele usa o arquivo 'mottu-web.service' que já existe)
+
+
+sudo systemctl start mottu-web.service
+
+
+
+PARTE 3: VERIFICAÇÃO (Opcional, mas recomendado)
+9. ☁️ No seu VPS (Terminal SSH): Verifique os logs
+
+Se algo der errado, os logs dirão o porquê.
+
+Bash
+
+# Verifique o log do Java (se falhar)
+sudo journalctl -u mottu.service -n 50 --no-pager
+
+# Verifique o log do Next.js (se falhar)
+sudo journalctl -u mottu-web.service -n 50 --no-pager

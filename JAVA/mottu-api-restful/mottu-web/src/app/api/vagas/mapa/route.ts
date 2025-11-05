@@ -73,8 +73,17 @@ export async function GET(request: Request) {
             // Combinar dados
             const boxesComVeiculo = allBoxes.map((box: any) => {
                 const estacionamento = estacionamentosPorBoxId.get(box.idBox);
-                // CRÍTICO: Priorizar TB_ESTACIONAMENTO sobre box.status
-                // Se não há estacionamento ativo em TB_ESTACIONAMENTO, o box está livre
+                // CRÍTICO: Preservar status original do box se for 'M' (Manutenção)
+                // Se o box está em manutenção, manter status 'M' independente de estacionamento
+                if (box.status === 'M') {
+                    return {
+                        idBox: box.idBox,
+                        nome: box.nome,
+                        status: 'M', // Manutenção
+                        veiculo: null // Box em manutenção não tem veículo
+                    };
+                }
+                // Priorizar TB_ESTACIONAMENTO sobre box.status para L/O
                 const estaOcupado = estacionamento !== undefined;
                 const status = estaOcupado ? 'O' : 'L';
 
@@ -186,7 +195,18 @@ export async function GET(request: Request) {
         const boxesComVeiculo = boxes.map((box: any) => {
             const estacionamento = estacionamentosPorBoxId.get(box.idBox);
             
-            // CRÍTICO: Priorizar TB_ESTACIONAMENTO sobre box.status
+            // CRÍTICO: Preservar status original do box se for 'M' (Manutenção)
+            // Se o box está em manutenção, manter status 'M' independente de estacionamento
+            if (box.status === 'M') {
+                return {
+                    idBox: box.idBox,
+                    nome: box.nome,
+                    status: 'M', // Manutenção
+                    veiculo: null // Box em manutenção não tem veículo
+                };
+            }
+            
+            // Priorizar TB_ESTACIONAMENTO sobre box.status para L/O
             // Se não há estacionamento ativo em TB_ESTACIONAMENTO, o box está livre
             // Mesmo que box.status seja 'O' (legado ou inconsistência)
             const estaOcupado = estacionamento !== undefined;
@@ -215,6 +235,7 @@ export async function GET(request: Request) {
             totalBoxes: data.boxes.length,
             boxesOcupados: data.boxes.filter(b => b.status === 'O').length,
             boxesLivres: data.boxes.filter(b => b.status === 'L').length,
+            boxesManutencao: data.boxes.filter(b => b.status === 'M').length,
             estacionamentosAtivos: estacionamentosAtivos.length
         });
 

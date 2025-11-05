@@ -74,49 +74,65 @@ class PatioServiceDeletarPatioIntegrationTest {
     }
 
     @Test
-    @DisplayName("Deve validar que não pode deletar pátio com boxes")
-    void deveValidarBoxes() {
-        // Arrange - Buscar um pátio que tenha boxes (se existir)
+    @DisplayName("Deve deletar pátio com sucesso mesmo quando há boxes (deletados em cascata)")
+    void deveDeletarPatioComSucessoQuandoHaBoxes() {
+        // Arrange - Buscar um pátio que tenha boxes mas sem estacionamentos ativos ou veículos (se existir)
         Patio patio = patioRepository.findAll().stream()
                 .filter(p -> {
                     long estacionamentos = estacionamentoRepository.countByPatioIdPatioAndEstaEstacionadoTrue(p.getIdPatio());
+                    long veiculos = veiculoPatioRepository.countByPatioIdPatio(p.getIdPatio());
                     long boxes = boxRepository.countByPatioIdPatio(p.getIdPatio());
-                    return estacionamentos == 0 && boxes > 0;
+                    return estacionamentos == 0 && veiculos == 0 && boxes > 0;
                 })
                 .findFirst()
                 .orElse(null);
 
         if (patio != null) {
-            // Act & Assert
-            ResourceInUseException exception = assertThrows(ResourceInUseException.class, () -> {
-                patioService.deletarPatio(patio.getIdPatio());
+            Long patioId = patio.getIdPatio();
+            
+            // Act - Deve deletar com sucesso mesmo com boxes
+            assertDoesNotThrow(() -> {
+                patioService.deletarPatio(patioId);
             });
-
-            assertTrue(exception.getMessage().contains("box"));
+            
+            // Assert - Pátio deve ter sido deletado e boxes também (em cascata)
+            assertFalse(patioRepository.findById(patioId).isPresent());
+            
+            // Verifica que os boxes foram deletados em cascata
+            long boxesDepois = boxRepository.countByPatioIdPatio(patioId);
+            assertEquals(0, boxesDepois, "Boxes devem ter sido deletados em cascata");
         }
     }
 
     @Test
-    @DisplayName("Deve validar que não pode deletar pátio com zonas")
-    void deveValidarZonas() {
-        // Arrange - Buscar um pátio que tenha zonas mas sem boxes nem estacionamentos (se existir)
+    @DisplayName("Deve deletar pátio com sucesso mesmo quando há zonas (deletadas em cascata)")
+    void deveDeletarPatioComSucessoQuandoHaZonas() {
+        // Arrange - Buscar um pátio que tenha zonas mas sem outras dependências (se existir)
         Patio patio = patioRepository.findAll().stream()
                 .filter(p -> {
                     long estacionamentos = estacionamentoRepository.countByPatioIdPatioAndEstaEstacionadoTrue(p.getIdPatio());
                     long boxes = boxRepository.countByPatioIdPatio(p.getIdPatio());
                     long zonas = zonaRepository.countByPatioIdPatio(p.getIdPatio());
-                    return estacionamentos == 0 && boxes == 0 && zonas > 0;
+                    long veiculos = veiculoPatioRepository.countByPatioIdPatio(p.getIdPatio());
+                    return estacionamentos == 0 && boxes == 0 && zonas > 0 && veiculos == 0;
                 })
                 .findFirst()
                 .orElse(null);
 
         if (patio != null) {
-            // Act & Assert
-            ResourceInUseException exception = assertThrows(ResourceInUseException.class, () -> {
-                patioService.deletarPatio(patio.getIdPatio());
+            Long patioId = patio.getIdPatio();
+            
+            // Act - Deve deletar com sucesso mesmo com zonas
+            assertDoesNotThrow(() -> {
+                patioService.deletarPatio(patioId);
             });
-
-            assertTrue(exception.getMessage().contains("zona"));
+            
+            // Assert - Pátio deve ter sido deletado e zonas também (em cascata)
+            assertFalse(patioRepository.findById(patioId).isPresent());
+            
+            // Verifica que as zonas foram deletadas em cascata
+            long zonasDepois = zonaRepository.countByPatioIdPatio(patioId);
+            assertEquals(0, zonasDepois, "Zonas devem ter sido deletadas em cascata");
         }
     }
 
@@ -165,6 +181,7 @@ class PatioServiceDeletarPatioIntegrationTest {
         }
     }
 }
+
 
 
 

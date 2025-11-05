@@ -344,7 +344,12 @@ const sections = [
         icon: <i className="ion-ios-code text-4xl text-yellow-400"></i>,
         description: "Ferramentas para desenvolvedores e testes do sistema.",
         links: [
-            
+            { 
+                name: "Swagger UI (API Documentation)", 
+                path: "http://72.61.219.15:8080/swagger-ui/index.html", 
+                icon: <i className="ion-ios-code text-yellow-500"></i>, 
+                detail: "Documentação interativa completa da API REST do sistema. Permite testar endpoints, visualizar schemas, exemplos de requisições e respostas. Acesse para explorar todos os recursos disponíveis da API." 
+            },
         ]
     },
     {
@@ -412,22 +417,30 @@ export default function MapaDoSitePage() {
                                 </legend>
                                 <p className="text-slate-600 text-sm sm:text-base md:text-lg lg:text-xl mb-4 sm:mb-6" style={{fontFamily: 'Montserrat, sans-serif'}}>{section.description}</p>
                                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
-                                    {section.links.map((link, linkIndex) => (
-                                        <div key={`${link.path}-${linkIndex}`} 
-                                             className="group neumorphic-container p-4 sm:p-6 transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-emerald-500/20">
-                                            <Link 
-                                                href={link.path} 
-                                                className="flex items-center gap-2 sm:gap-3 text-base sm:text-lg md:text-xl font-semibold text-slate-800 hover:text-emerald-600 transition-all duration-200"
-                                                style={{fontFamily: 'Montserrat, sans-serif'}}
-                                            >
-                                                {link.icon} 
-                                                <span className="truncate">{link.name}</span>
-                                            </Link>
-                                            <p className="text-slate-600 mt-2 sm:mt-3 text-xs sm:text-sm leading-relaxed" style={{fontFamily: 'Montserrat, sans-serif'}}>
-                                                {link.detail}
-                                            </p>
-                                        </div>
-                                    ))}
+                                    {section.links.map((link, linkIndex) => {
+                                        const isExternal = link.path.startsWith('http://') || link.path.startsWith('https://');
+                                        const LinkComponent = isExternal ? 'a' : Link;
+                                        const linkProps = isExternal 
+                                            ? { href: link.path, target: '_blank', rel: 'noopener noreferrer' }
+                                            : { href: link.path };
+                                        
+                                        return (
+                                            <div key={`${link.path}-${linkIndex}`} 
+                                                 className="group neumorphic-container p-4 sm:p-6 transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-emerald-500/20">
+                                                <LinkComponent 
+                                                    {...linkProps}
+                                                    className="flex items-center gap-2 sm:gap-3 text-base sm:text-lg md:text-xl font-semibold text-slate-800 hover:text-emerald-600 transition-all duration-200"
+                                                    style={{fontFamily: 'Montserrat, sans-serif'}}
+                                                >
+                                                    {link.icon} 
+                                                    <span className="truncate">{link.name}</span>
+                                                </LinkComponent>
+                                                <p className="text-slate-600 mt-2 sm:mt-3 text-xs sm:text-sm leading-relaxed" style={{fontFamily: 'Montserrat, sans-serif'}}>
+                                                    {link.detail}
+                                                </p>
+                                            </div>
+                                        );
+                                    })}
                                 </div>
                             </div>
                         ))}
@@ -486,6 +499,24 @@ export default function MapaDoSitePage() {
                                     <div className="hover:scale-110 transition-transform duration-300">
                                         <div className="text-2xl sm:text-3xl font-bold text-orange-600" style={{fontFamily: 'Montserrat, sans-serif'}}>100%</div>
                                         <div className="text-xs sm:text-sm text-slate-600" style={{fontFamily: 'Montserrat, sans-serif'}}>CRUD Completo</div>
+                                    </div>
+                                </div>
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 text-center mt-4 sm:mt-6">
+                                    <div className="hover:scale-110 transition-transform duration-300">
+                                        <div className="text-2xl sm:text-3xl font-bold text-yellow-600" style={{fontFamily: 'Montserrat, sans-serif'}}>236</div>
+                                        <div className="text-xs sm:text-sm text-slate-600" style={{fontFamily: 'Montserrat, sans-serif'}}>Classes Java</div>
+                                    </div>
+                                    <div className="hover:scale-110 transition-transform duration-300">
+                                        <div className="text-2xl sm:text-3xl font-bold text-red-600" style={{fontFamily: 'Montserrat, sans-serif'}}>237</div>
+                                        <div className="text-xs sm:text-sm text-slate-600" style={{fontFamily: 'Montserrat, sans-serif'}}>Endpoints API</div>
+                                    </div>
+                                    <div className="hover:scale-110 transition-transform duration-300">
+                                        <div className="text-2xl sm:text-3xl font-bold text-cyan-600" style={{fontFamily: 'Montserrat, sans-serif'}}>64</div>
+                                        <div className="text-xs sm:text-sm text-slate-600" style={{fontFamily: 'Montserrat, sans-serif'}}>Páginas Next.js</div>
+                                    </div>
+                                    <div className="hover:scale-110 transition-transform duration-300">
+                                        <div className="text-2xl sm:text-3xl font-bold text-green-600" style={{fontFamily: 'Montserrat, sans-serif'}}>62</div>
+                                        <div className="text-xs sm:text-sm text-slate-600" style={{fontFamily: 'Montserrat, sans-serif'}}>Componentes React</div>
                                     </div>
                                 </div>
                             </div>

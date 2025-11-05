@@ -5,11 +5,15 @@ import br.com.fiap.mottu.dto.box.BoxRequestDto;
 import br.com.fiap.mottu.dto.box.BoxResponseDto;
 import br.com.fiap.mottu.dto.patio.PatioCompletoRequestDto;
 import br.com.fiap.mottu.dto.patio.PatioRequestDto;
+import br.com.fiap.mottu.dto.patio.PatioResponseDto;
+import br.com.fiap.mottu.dto.datatable.DataTableRequest;
+import br.com.fiap.mottu.dto.datatable.DataTableResponse;
 import br.com.fiap.mottu.dto.zona.ZonaRequestDto;
 import br.com.fiap.mottu.dto.zona.ZonaResponseDto;
 import br.com.fiap.mottu.exception.DuplicatedResourceException;
 import br.com.fiap.mottu.exception.ResourceNotFoundException;
 import br.com.fiap.mottu.exception.ResourceInUseException;
+import br.com.fiap.mottu.exception.OperationNotAllowedException;
 import br.com.fiap.mottu.filter.PatioFilter;
 import br.com.fiap.mottu.mapper.PatioMapper;
 import br.com.fiap.mottu.model.*;
@@ -17,6 +21,7 @@ import br.com.fiap.mottu.model.relacionamento.VeiculoPatio;
 import br.com.fiap.mottu.model.relacionamento.VeiculoPatioId;
 import br.com.fiap.mottu.repository.*;
 import br.com.fiap.mottu.repository.relacionamento.VeiculoPatioRepository;
+import br.com.fiap.mottu.repository.relacionamento.VeiculoBoxRepository;
 import br.com.fiap.mottu.specification.PatioSpecification;
 import br.com.fiap.mottu.config.LoggingConfig; // Configuração de logging estruturado
 import br.com.fiap.mottu.service.MapGlobalService; // Para invalidar cache do mapa global
@@ -24,14 +29,19 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.stereotype.Service;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.stereotype.Service;
+import java.util.stream.Collectors;
 
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * Serviço refatorado para gerenciar Pátios e suas associações.
@@ -57,6 +67,12 @@ public class PatioService {
     private final EnderecoService enderecoService;
     private final EstacionamentoRepository estacionamentoRepository;
     private final MapGlobalService mapGlobalService;
+    private final NotificacaoRepository notificacaoRepository;
+    private final LogMovimentacaoRepository logMovimentacaoRepository;
+    private final VeiculoBoxRepository veiculoBoxRepository;
+    
+    @PersistenceContext
+    private EntityManager entityManager;
 
     public PatioService(PatioRepository patioRepository, PatioMapper patioMapper,
                         VeiculoRepository veiculoRepository, ZonaRepository zonaRepository,
@@ -65,7 +81,10 @@ public class PatioService {
                         BoxRepository boxRepository,
                         ContatoService contatoService, EnderecoService enderecoService,
                         EstacionamentoRepository estacionamentoRepository,
-                        MapGlobalService mapGlobalService) {
+                        MapGlobalService mapGlobalService,
+                        NotificacaoRepository notificacaoRepository,
+                        LogMovimentacaoRepository logMovimentacaoRepository,
+                        VeiculoBoxRepository veiculoBoxRepository) {
         this.patioRepository = patioRepository;
         this.patioMapper = patioMapper;
         this.veiculoRepository = veiculoRepository;
@@ -78,6 +97,9 @@ public class PatioService {
         this.enderecoService = enderecoService;
         this.estacionamentoRepository = estacionamentoRepository;
         this.mapGlobalService = mapGlobalService;
+        this.notificacaoRepository = notificacaoRepository;
+        this.logMovimentacaoRepository = logMovimentacaoRepository;
+        this.veiculoBoxRepository = veiculoBoxRepository;
     }
 
     // LISTAR E BUSCAR
@@ -196,17 +218,22 @@ public class PatioService {
     }
 
     @Transactional
-    @CacheEvict(value = {"patioPorId", "patiosList", "veiculosDoPatio", "zonasDoPatio", "contatosDoPatio", "enderecosDoPatio", "boxesDoPatio"}, allEntries = true)
+    @CacheEvict(value = {"patioPorId", "patiosList", "patiosDataTable", "veiculosDoPatio", "zonasDoPatio", "contatosDoPatio", "enderecosDoPatio", "boxesDoPatio"}, allEntries = true)
     public void deletarPatio(Long id) {
         Patio patio = buscarPatioPorId(id);
         
         // Validar se há estacionamentos ativos no pátio
+        // IMPORTANTE: Apenas estacionamentos ativos impedem a exclusão.
+        // Registros históricos (ESTA_ESTACIONADO = 0) serão deletados automaticamente
+        // em cascata pela constraint TB_ESTACIONAMENTO_PATIO_FK (ON DELETE CASCADE)
         long estacionamentosAtivos = estacionamentoRepository.countByPatioIdPatioAndEstaEstacionadoTrue(id);
         if (estacionamentosAtivos > 0) {
             throw new ResourceInUseException(
-                "Pátio", 
-                "estacionamento(s) ativo(s)", 
-                estacionamentosAtivos
+                String.format(
+                    "Não é possível excluir o Pátio '%s' (ID: %d) pois possui %d veículo(s) estacionado(s) no momento. " +
+                    "Por favor, libere todos os veículos estacionados antes de excluir o pátio.",
+                    patio.getNomePatio(), id, estacionamentosAtivos
+                )
             );
         }
         
@@ -214,39 +241,160 @@ public class PatioService {
         long veiculosAssociados = veiculoPatioRepository.countByPatioIdPatio(id);
         if (veiculosAssociados > 0) {
             throw new ResourceInUseException(
-                "Pátio",
-                "veículo(s)",
-                veiculosAssociados
+                String.format(
+                    "Não é possível excluir o Pátio '%s' (ID: %d) pois possui %d veículo(s) associado(s). " +
+                    "Por favor, remova as associações dos veículos antes de excluir o pátio.",
+                    patio.getNomePatio(), id, veiculosAssociados
+                )
             );
         }
         
-        // Validar se há boxes no pátio
+        // Contar boxes e zonas para log informativo (serão deletados em cascata)
         long totalBoxes = boxRepository.countByPatioIdPatio(id);
-        if (totalBoxes > 0) {
-            throw new ResourceInUseException(
-                "Pátio",
-                "box(es)",
-                totalBoxes
-            );
-        }
-        
-        // Validar se há zonas no pátio
         long totalZonas = zonaRepository.countByPatioIdPatio(id);
-        if (totalZonas > 0) {
-            throw new ResourceInUseException(
-                "Pátio",
-                "zona(s)",
-                totalZonas
-            );
+        
+        if (totalBoxes > 0 || totalZonas > 0) {
+            log.info("Deletando pátio ID: {} - Nome: {} ({} box(es) e {} zona(s) serão deletados em cascata)", 
+                id, patio.getNomePatio(), totalBoxes, totalZonas);
+        } else {
+            log.info("Deletando pátio ID: {} - Nome: {}", id, patio.getNomePatio());
         }
         
-        log.info("Deletando pátio ID: {} - Nome: {}", id, patio.getNomePatio());
-        patioRepository.deleteById(id);
-        log.info("Pátio ID {} deletado com sucesso.", id);
+        // CRÍTICO: Deletar manualmente todas as dependências dos Boxes antes de deletar o Pátio
+        // Isso é necessário porque algumas tabelas referenciam TB_BOX sem ON DELETE CASCADE
+        if (totalBoxes > 0) {
+            try {
+                deletarDependenciasDosBoxes(id);
+            } catch (Exception e) {
+                log.error("Erro ao deletar dependências dos boxes do pátio ID {}: {}", id, e.getMessage(), e);
+                throw new OperationNotAllowedException(
+                    String.format(
+                        "Não foi possível excluir o Pátio '%s' (ID: %d) devido a um erro ao processar as dependências dos boxes. " +
+                        "Erro: %s. Por favor, tente novamente ou entre em contato com o suporte.",
+                        patio.getNomePatio(), id, e.getMessage()
+                    )
+                );
+            }
+        }
+        
+        // Tentar deletar o pátio (Boxes e Zonas serão deletados em cascata via JPA)
+        try {
+            patioRepository.deleteById(id);
+            log.info("Pátio ID {} deletado com sucesso ({} box(es) e {} zona(s) foram deletados em cascata).", 
+                id, totalBoxes, totalZonas);
+        } catch (org.springframework.dao.DataIntegrityViolationException e) {
+            log.error("Erro de integridade ao deletar pátio ID {}: {}", id, e.getMessage(), e);
+            throw new OperationNotAllowedException(
+                String.format(
+                    "Não foi possível excluir o Pátio '%s' (ID: %d) devido a restrições de integridade no banco de dados. " +
+                    "O pátio pode possuir dependências que não puderam ser removidas automaticamente. " +
+                    "Por favor, verifique manualmente as dependências ou entre em contato com o suporte.",
+                    patio.getNomePatio(), id
+                )
+            );
+        }
         
         // Invalidar cache do mapa global quando um pátio é deletado
         mapGlobalService.invalidarCache();
         log.info("🗑️ Cache do mapa global invalidado após exclusão do pátio {}", id);
+    }
+    
+    /**
+     * Deleta manualmente todas as dependências dos Boxes de um pátio.
+     * Isso é necessário porque algumas tabelas referenciam TB_BOX sem ON DELETE CASCADE:
+     * - TB_NOTIFICACAO (FK sem CASCADE)
+     * - TB_LOG_MOVIMENTACAO (FK sem CASCADE)
+     * - TB_VEICULOBOX (FK sem CASCADE)
+     * - TB_ZONABOX (FK sem CASCADE)
+     * 
+     * @throws RuntimeException se houver erro ao deletar dependências
+     */
+    private void deletarDependenciasDosBoxes(Long patioId) {
+        log.info("Iniciando exclusão de dependências dos boxes do pátio ID: {}", patioId);
+        
+        // Buscar todos os boxes do pátio
+        List<Box> boxes = boxRepository.findByPatioIdPatio(patioId);
+        
+        if (boxes.isEmpty()) {
+            log.info("Nenhum box encontrado para o pátio ID: {}", patioId);
+            return;
+        }
+        
+        int totalNotificacoes = 0;
+        int totalLogsMovimentacao = 0;
+        int totalVeiculoBox = 0;
+        int totalZonaBox = 0;
+        List<String> erros = new java.util.ArrayList<>();
+        
+        for (Box box : boxes) {
+            Long boxId = box.getIdBox();
+            
+            // 1. Deletar notificações relacionadas ao box
+            try {
+                int notificacoesDeletadas = entityManager.createNativeQuery(
+                    "DELETE FROM RELACAODIRETA.TB_NOTIFICACAO WHERE TB_BOX_ID_BOX = :boxId"
+                )
+                .setParameter("boxId", boxId)
+                .executeUpdate();
+                totalNotificacoes += notificacoesDeletadas;
+            } catch (Exception e) {
+                String erro = String.format("Erro ao deletar notificações do box %d: %s", boxId, e.getMessage());
+                log.warn(erro);
+                erros.add(erro);
+            }
+            
+            // 2. Deletar logs de movimentação relacionados ao box
+            try {
+                int logsDeletados = entityManager.createNativeQuery(
+                    "DELETE FROM RELACAODIRETA.TB_LOG_MOVIMENTACAO WHERE TB_BOX_ID_BOX = :boxId"
+                )
+                .setParameter("boxId", boxId)
+                .executeUpdate();
+                totalLogsMovimentacao += logsDeletados;
+            } catch (Exception e) {
+                String erro = String.format("Erro ao deletar logs de movimentação do box %d: %s", boxId, e.getMessage());
+                log.warn(erro);
+                erros.add(erro);
+            }
+            
+            // 3. Deletar VeiculoBox relacionados ao box (tabela legada)
+            try {
+                List<br.com.fiap.mottu.model.relacionamento.VeiculoBox> veiculoBoxes = veiculoBoxRepository.findByBoxId(boxId);
+                if (!veiculoBoxes.isEmpty()) {
+                    veiculoBoxRepository.deleteAll(veiculoBoxes);
+                    totalVeiculoBox += veiculoBoxes.size();
+                }
+            } catch (Exception e) {
+                String erro = String.format("Erro ao deletar VeiculoBox do box %d: %s", boxId, e.getMessage());
+                log.warn(erro);
+                erros.add(erro);
+            }
+            
+            // 4. Deletar ZonaBox relacionados ao box (se a tabela existir)
+            try {
+                int zonaBoxDeletados = entityManager.createNativeQuery(
+                    "DELETE FROM RELACAODIRETA.TB_ZONABOX WHERE ID_BOX = :boxId"
+                )
+                .setParameter("boxId", boxId)
+                .executeUpdate();
+                totalZonaBox += zonaBoxDeletados;
+            } catch (Exception e) {
+                // Tabela pode não existir em todos os ambientes, apenas log (não é erro crítico)
+                log.debug("Tabela TB_ZONABOX não encontrada ou erro ao deletar do box {}: {}", boxId, e.getMessage());
+            }
+        }
+        
+        log.info("Dependências dos boxes deletadas: {} notificações, {} logs de movimentação, {} VeiculoBox, {} ZonaBox", 
+            totalNotificacoes, totalLogsMovimentacao, totalVeiculoBox, totalZonaBox);
+        
+        // Se houver erros críticos (não relacionados a TB_ZONABOX), lançar exceção
+        if (!erros.isEmpty()) {
+            String mensagemErro = String.format(
+                "Erros ao deletar dependências dos boxes do pátio ID %d: %s",
+                patioId, String.join("; ", erros)
+            );
+            throw new RuntimeException(mensagemErro);
+        }
     }
 
     // --- MÉTODOS DE ASSOCIAÇÃO (Veículo) ---
@@ -519,5 +667,118 @@ public class PatioService {
             box.setPatio(patio);
             boxRepository.save(box);
         }
+    }
+
+    // ================== DATATABLE SUPPORT ==================
+
+    /**
+     * Busca pátios para DataTable com paginação, ordenação e filtros
+     */
+    @Transactional(readOnly = true)
+    @Cacheable(value = "patiosDataTable", key = "#request.draw + '-' + #request.start + '-' + #request.length + '-' + (#filter != null ? #filter.toString() : 'null')")
+    public DataTableResponse<PatioResponseDto> buscarParaDataTable(DataTableRequest request, PatioFilter filter) {
+        long startTime = System.currentTimeMillis();
+        log.info("📊 Buscando pátios para DataTable - draw: {}, start: {}, length: {}", 
+                request.getDraw(), request.getStart(), request.getLength());
+
+        try {
+            // Converte DataTableRequest para Pageable
+            int page = request.getStart() / request.getLength();
+            Sort sort = criarSortParaDataTable(request);
+            Pageable pageable = PageRequest.of(page, request.getLength(), sort);
+
+            // Aplica filtro de busca global se fornecido
+            if (request.getSearchValue() != null && !request.getSearchValue().isBlank()) {
+                filter = aplicarBuscaGlobal(filter, request.getSearchValue());
+            }
+
+            // Busca com filtros e paginação
+            // Se filter for null, cria um filtro vazio (todos os campos null)
+            PatioFilter filtroFinal = filter != null ? filter : criarFiltroVazio();
+            Specification<Patio> spec = PatioSpecification.withFilters(filtroFinal);
+            Page<Patio> pageResult = patioRepository.findAll(spec, pageable);
+
+            // Converte para DTOs
+            List<PatioResponseDto> data = pageResult.getContent().stream()
+                    .map(patioMapper::toResponseDto)
+                    .collect(Collectors.toList());
+
+            long processingTime = System.currentTimeMillis() - startTime;
+
+            return DataTableResponse.<PatioResponseDto>builder()
+                    .draw(request.getDraw())
+                    .recordsTotal(pageResult.getTotalElements())
+                    .recordsFiltered(pageResult.getTotalElements())
+                    .data(data)
+                    .processingTime(processingTime)
+                    .build();
+
+        } catch (Exception e) {
+            log.error("❌ Erro ao buscar pátios para DataTable", e);
+            return DataTableResponse.error(request.getDraw(), 
+                    "Erro ao buscar pátios: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Cria Sort baseado nos parâmetros do DataTable
+     */
+    private Sort criarSortParaDataTable(DataTableRequest request) {
+        if (request.getOrderColumn() == null || request.getOrderDirection() == null) {
+            return Sort.by(Sort.Direction.ASC, "nomePatio");
+        }
+
+        String campo = obterCampoPorIndice(request.getOrderColumn());
+        Sort.Direction direction = "desc".equalsIgnoreCase(request.getOrderDirection()) 
+                ? Sort.Direction.DESC 
+                : Sort.Direction.ASC;
+
+        return Sort.by(direction, campo);
+    }
+
+    /**
+     * Mapeia índice da coluna do DataTable para campo da entidade
+     */
+    private String obterCampoPorIndice(Integer indice) {
+        return switch (indice) {
+            case 0 -> "idPatio";
+            case 1 -> "nomePatio";
+            case 2 -> "status";
+            case 3 -> "dataCadastro";
+            case 4 -> "contato.email";
+            case 5 -> "endereco.cidade";
+            default -> "nomePatio";
+        };
+    }
+
+    /**
+     * Aplica busca global nos campos principais
+     */
+    private PatioFilter aplicarBuscaGlobal(PatioFilter filter, String searchValue) {
+        // A busca global pode ser aplicada em nomePatio, cidade ou email
+        // Por enquanto, vamos buscar por nomePatio
+        if (filter == null) {
+            return new PatioFilter(searchValue, null, null, null, null, null, null, null, null);
+        }
+        // Cria novo filtro com busca global aplicada, mantendo filtros existentes
+        return new PatioFilter(
+            searchValue, // nomePatio
+            filter.dataCadastroInicio(),
+            filter.dataCadastroFim(),
+            filter.observacao(),
+            filter.veiculoPlaca(),
+            filter.enderecoCidade(),
+            filter.contatoEmail(),
+            filter.zonaNome(),
+            filter.boxNome()
+        );
+    }
+
+    /**
+     * Cria um filtro vazio (todos os campos null)
+     * Útil para quando não há filtros específicos e precisa-se de um PatioFilter válido
+     */
+    private PatioFilter criarFiltroVazio() {
+        return new PatioFilter(null, null, null, null, null, null, null, null, null);
     }
 }

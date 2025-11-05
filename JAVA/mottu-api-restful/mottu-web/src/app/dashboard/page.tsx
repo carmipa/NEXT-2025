@@ -36,6 +36,7 @@ function formatISODate(d: string) {
 
 export default function DashboardPage() {
     const [isLoading, setIsLoading] = useState(true);
+    const [isInitialLoad, setIsInitialLoad] = useState(true); // Flag para carregamento inicial
     const [error, setError] = useState<string | null>(null);
     const [stats, setStats] = useState<Stats>({ totalPatios: 0, totalBoxes: 0, boxesOcupados: 0, totalVeiculos: 0, totalClientes: 0 });
     const [veiculosEstacionados, setVeiculosEstacionados] = useState<VeiculoLocalizacaoResponseDto[]>([]);
@@ -51,9 +52,12 @@ export default function DashboardPage() {
     const [pollingMs, setPollingMs] = useState<number>(5000);
     const [isLogScale, setIsLogScale] = useState<boolean>(false);
 
-    const fetchData = useCallback(async () => {
-            console.log("🔄 Iniciando carregamento do dashboard...");
-            setIsLoading(true);
+    const fetchData = useCallback(async (isRealtimeUpdate = false) => {
+            console.log("🔄 Iniciando carregamento do dashboard...", isRealtimeUpdate ? "(atualização em tempo real)" : "(carregamento inicial)");
+            // Só mostra loading na primeira carga, não durante atualizações em tempo real
+            if (!isRealtimeUpdate) {
+                setIsLoading(true);
+            }
             setError(null);
             try {
                 const today = new Date();
@@ -128,6 +132,7 @@ export default function DashboardPage() {
                 setError("Não foi possível carregar os dados do dashboard. Verifique a conexão com a API.");
             } finally {
                 setIsLoading(false);
+                setIsInitialLoad(false); // Marca que o carregamento inicial foi concluído
             }
         }, [rangeDias]);
 
@@ -185,10 +190,18 @@ export default function DashboardPage() {
         const estacionamentosInterval = setInterval(fetchEstacionamentos, 3000); // A cada 3s
 
         // 2) Polling de resumo/serie/contagens (mantemos separados do SSE)
+        // Usar throttle para evitar atualizações muito frequentes
+        let lastUpdate = Date.now();
+        const intervalMs = Math.max(5000, pollingMs);
         const id = setInterval(() => {
-            console.log("⏱️ Polling dashboard (resumo/serie/contagens)...");
-            fetchData();
-        }, Math.max(5000, pollingMs));
+            const now = Date.now();
+            // Throttle: só atualiza se passou pelo menos pollingMs desde a última atualização
+            if (now - lastUpdate >= intervalMs) {
+                console.log("⏱️ Polling dashboard (resumo/serie/contagens)...");
+                fetchData(true); // Passa true para indicar que é atualização em tempo real
+                lastUpdate = now;
+            }
+        }, intervalMs);
 
         return () => {
             clearInterval(id);
@@ -247,7 +260,8 @@ export default function DashboardPage() {
 
     console.log("🔍 Estado do dashboard:", { isLoading, error, stats, resumo, serie });
 
-    if (isLoading) {
+    // Mostrar loading apenas no carregamento inicial
+    if (isLoading && isInitialLoad) {
         console.log("⏳ Mostrando tela de loading...");
         return (
             <div className="flex justify-center items-center min-h-screen relative z-10">
@@ -272,8 +286,15 @@ export default function DashboardPage() {
 
     return (
         <>
-        <div className="min-h-screen text-white p-4 md:p-8 pb-64 relative z-10">
+        <div className="min-h-screen text-white p-4 md:p-8 pb-64 relative z-10 transition-opacity duration-300">
                 <div className="container mx-auto space-y-8 mb-12">
+                    {/* Indicador discreto de atualização em tempo real */}
+                    {enableRealtime && !isInitialLoad && (
+                        <div className="fixed top-4 right-4 z-50 flex items-center gap-2 bg-emerald-600/90 text-white px-3 py-1 rounded-full text-xs shadow-lg animate-pulse">
+                            <div className="w-2 h-2 bg-emerald-300 rounded-full animate-ping"></div>
+                            <span>Tempo Real</span>
+                        </div>
+                    )}
                     <h1 className="text-3xl font-bold text-white" style={{fontFamily: 'Montserrat, sans-serif'}}>Dashboard Gerencial</h1>
 
                     {/* Cards Estatísticos com Responsividade Melhorada */}
@@ -283,36 +304,42 @@ export default function DashboardPage() {
                             value={stats.totalPatios} 
                             icon={<i className="ion-ios-home text-blue-500 text-xl"></i>} 
                             colorScheme="blue"
+                            key={`patios-${stats.totalPatios}`}
                         />
                         <StatCard 
                             title="Vagas Totais" 
                             value={stats.totalBoxes} 
                             icon={<i className="ion-ios-grid text-emerald-600 text-xl"></i>}
                             colorScheme="emerald"
+                            key={`vagas-${stats.totalBoxes}`}
                         />
                         <StatCard 
                             title="Total de Box" 
                             value={stats.totalBoxes} 
                             icon={<i className="ion-ios-square text-indigo-500 text-xl"></i>}
                             colorScheme="indigo"
+                            key={`boxes-${stats.totalBoxes}`}
                         />
                         <StatCard 
                             title="Vagas Ocupadas" 
                             value={stats.boxesOcupados} 
                             icon={<i className="ion-ios-car text-orange-500 text-xl"></i>}
                             colorScheme="orange"
+                            key={`ocupados-${stats.boxesOcupados}`}
                         />
                         <StatCard 
                             title="Motos Cadastradas" 
                             value={stats.totalVeiculos} 
                             icon={<i className="ion-ios-bicycle text-purple-500 text-xl"></i>}
                             colorScheme="purple"
+                            key={`veiculos-${stats.totalVeiculos}`}
                         />
                         <StatCard 
                             title="Clientes Cadastrados" 
                             value={stats.totalClientes} 
                             icon={<i className="ion-ios-people text-cyan-500 text-xl"></i>}
                             colorScheme="cyan"
+                            key={`clientes-${stats.totalClientes}`}
                         />
                     </div>
 

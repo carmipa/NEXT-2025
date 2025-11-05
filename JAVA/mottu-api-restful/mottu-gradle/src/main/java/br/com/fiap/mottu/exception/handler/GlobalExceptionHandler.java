@@ -136,15 +136,38 @@ public class GlobalExceptionHandler {
         body.put("error", "Violação de Integridade de Dados");
         
         String message = ex.getMessage();
-        if (message.contains("duplicate") || message.contains("UNIQUE")) {
-            body.put("message", "Já existe um registro com estes dados. Verifique se não há duplicação.");
-        } else if (message.contains("foreign key") || message.contains("FK")) {
-            body.put("message", "Não é possível excluir/alterar este registro pois está sendo referenciado por outros dados.");
+        String path = request.getDescription(false);
+        
+        // Verificar se é uma tentativa de exclusão (DELETE)
+        boolean isDeleteOperation = path != null && path.contains("DELETE");
+        
+        if (message != null) {
+            if (message.contains("duplicate") || message.contains("UNIQUE")) {
+                body.put("message", "Já existe um registro com estes dados. Verifique se não há duplicação.");
+                body.put("errorType", "DUPLICATE_KEY_ERROR");
+            } else if (message.contains("foreign key") || message.contains("FK") || message.contains("restrição de integridade")) {
+                // Mensagem específica para exclusão de pátio
+                if (isDeleteOperation && (message.contains("TB_BOX") || message.contains("TB_PATIO") || message.contains("FKT2792U9BUPWALT19XUKKBESXM"))) {
+                    body.put("error", "Não é possível excluir o Pátio");
+                    body.put("message", "Não é possível excluir este Pátio pois ele possui dependências que não puderam ser removidas automaticamente. " +
+                            "O pátio pode ter boxes com notificações, logs de movimentação ou outras dependências ativas. " +
+                            "Por favor, verifique manualmente ou entre em contato com o suporte.");
+                    body.put("errorType", "PATIO_DELETE_CONSTRAINT_ERROR");
+                    body.put("suggestion", "Verifique se há notificações, logs ou outras dependências relacionadas aos boxes do pátio.");
+                } else {
+                    body.put("message", "Não é possível excluir/alterar este registro pois está sendo referenciado por outros dados.");
+                    body.put("errorType", "FOREIGN_KEY_CONSTRAINT_ERROR");
+                }
+            } else {
+                body.put("message", "Violação de integridade de dados: " + message);
+                body.put("errorType", "DATA_INTEGRITY_ERROR");
+            }
         } else {
-            body.put("message", "Violação de integridade de dados: " + message);
+            body.put("message", "Não é possível excluir/alterar este registro pois está sendo referenciado por outros dados.");
+            body.put("errorType", "DATA_INTEGRITY_ERROR");
         }
         
-        body.put("path", request.getDescription(false));
+        body.put("path", path);
         return new ResponseEntity<>(body, HttpStatus.CONFLICT);
     }
 

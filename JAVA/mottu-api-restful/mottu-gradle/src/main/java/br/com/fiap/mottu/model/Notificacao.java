@@ -56,6 +56,19 @@ public class Notificacao {
     @Column(name = "URL_REDIRECIONAMENTO", length = 500)
     private String urlRedirecionamento; // URL para redirecionar quando clicar na notificação
     
+    // Relacionamentos opcionais
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "TB_PATIO_ID_PATIO")
+    private Patio patio;
+    
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "TB_BOX_ID_BOX")
+    private Box box;
+    
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "TB_VEICULO_ID_VEICULO")
+    private Veiculo veiculo;
+    
     public enum TipoNotificacao {
         INFO, WARNING, ERROR, SUCCESS
     }
