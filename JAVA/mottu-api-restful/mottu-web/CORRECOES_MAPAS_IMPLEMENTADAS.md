@@ -124,3 +124,4 @@ Os seguintes componentes agora recebem dados mais precisos:
 
 
 
+

@@ -622,3 +622,4 @@ const estacionamento = await EstacionamentoService.estacionar(recognizedPlate, b
 
 
 
+
