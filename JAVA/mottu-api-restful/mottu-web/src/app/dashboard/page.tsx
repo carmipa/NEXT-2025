@@ -56,7 +56,7 @@ export default function DashboardPage() {
             console.log("🔄 Iniciando carregamento do dashboard...", isRealtimeUpdate ? "(atualização em tempo real)" : "(carregamento inicial)");
             // Só mostra loading na primeira carga, não durante atualizações em tempo real
             if (!isRealtimeUpdate) {
-                setIsLoading(true);
+            setIsLoading(true);
             }
             setError(null);
             try {
@@ -197,7 +197,7 @@ export default function DashboardPage() {
             const now = Date.now();
             // Throttle: só atualiza se passou pelo menos pollingMs desde a última atualização
             if (now - lastUpdate >= intervalMs) {
-                console.log("⏱️ Polling dashboard (resumo/serie/contagens)...");
+            console.log("⏱️ Polling dashboard (resumo/serie/contagens)...");
                 fetchData(true); // Passa true para indicar que é atualização em tempo real
                 lastUpdate = now;
             }

@@ -13,6 +13,7 @@ import br.com.fiap.mottu.dto.zona.ZonaResponseDto;
 import br.com.fiap.mottu.exception.DuplicatedResourceException;
 import br.com.fiap.mottu.exception.ResourceNotFoundException;
 import br.com.fiap.mottu.exception.ResourceInUseException;
+import br.com.fiap.mottu.exception.InvalidInputException;
 import br.com.fiap.mottu.exception.OperationNotAllowedException;
 import br.com.fiap.mottu.filter.PatioFilter;
 import br.com.fiap.mottu.mapper.PatioMapper;
@@ -42,6 +43,7 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import java.util.List;
 import java.util.Set;
+import java.util.Optional;
 
 /**
  * Serviço refatorado para gerenciar Pátios e suas associações.
@@ -215,6 +217,31 @@ public class PatioService {
         log.info("🗑️ Cache do mapa global invalidado após atualização do pátio {}", patioAtualizado.getIdPatio());
         
         return patioAtualizado;
+    }
+
+    @Transactional
+    @CacheEvict(value = {"patioPorId", "patiosList"}, allEntries = true)
+    public Patio atualizarStatusPatio(Long id, String novoStatus) {
+        log.info("Atualizando status do pátio ID {} para: {}", id, novoStatus);
+        
+        // Validar se o pátio existe
+        if (!patioRepository.existsById(id)) {
+            throw new ResourceNotFoundException("Pátio", id);
+        }
+        
+        // Atualizar apenas o status usando query direta (sem carregar coleções)
+        int linhasAtualizadas = patioRepository.updateStatus(id, novoStatus);
+        
+        if (linhasAtualizadas == 0) {
+            throw new ResourceNotFoundException("Pátio", id);
+        }
+        
+        // Invalidar cache do mapa global
+        mapGlobalService.invalidarCache();
+        log.info("✅ Status do pátio ID {} atualizado para: {} (Cache invalidado)", id, novoStatus);
+        
+        // Buscar o pátio atualizado para retornar
+        return buscarPatioPorId(id);
     }
 
     @Transactional
@@ -629,16 +656,48 @@ public class PatioService {
         Patio patio = findAndValidatePatio(patioId, patioStatus);
         Box box = boxRepository.findById(boxId)
                 .orElseThrow(() -> new ResourceNotFoundException("Box", boxId));
+        
         if (!box.getPatio().getIdPatio().equals(patioId)) {
             throw new ResourceNotFoundException("Box " + boxId + " não pertence ao pátio " + patioId);
         }
 
-        box.setNome(dto.getNome());
-        box.setStatus(dto.getStatus());
+        // Validação de nome
+        String novoNome = dto.getNome();
+        if (novoNome == null || novoNome.isBlank()) {
+            throw new InvalidInputException("O nome do box não pode ser vazio.");
+        }
+        
+        // Verifica se existe outro box com o mesmo nome no mesmo pátio
+        if (!novoNome.equalsIgnoreCase(box.getNome())) {
+            Optional<Box> boxExistenteComMesmoNome = boxRepository.findByPatioIdAndNome(patioId, novoNome);
+            if (boxExistenteComMesmoNome.isPresent() && !boxExistenteComMesmoNome.get().getIdBox().equals(boxId)) {
+                throw new DuplicatedResourceException(
+                    String.format("Box com nome '%s' já existe no pátio '%s'. Por favor, escolha um nome diferente.", novoNome, patio.getNomePatio())
+                );
+            }
+        }
+
+        // Validação de datas
+        if (dto.getDataEntrada() != null && dto.getDataSaida() != null) {
+            if (dto.getDataSaida().isBefore(dto.getDataEntrada())) {
+                throw new InvalidInputException("A data de saída não pode ser anterior à data de entrada.");
+            }
+        }
+
+        // Validação de status
+        String novoStatus = dto.getStatus();
+        if (novoStatus != null && !novoStatus.equals("L") && !novoStatus.equals("O") && !novoStatus.equals("M")) {
+            throw new InvalidInputException(String.format("Status inválido: '%s'. Os valores permitidos são: L (Livre), O (Ocupado), M (Manutenção).", novoStatus));
+        }
+
+        box.setNome(novoNome);
+        box.setStatus(dto.getStatus() != null ? dto.getStatus() : box.getStatus());
         box.setDataEntrada(dto.getDataEntrada());
         box.setDataSaida(dto.getDataSaida());
         box.setObservacao(dto.getObservacao());
+        
         Box boxAtualizado = boxRepository.save(box);
+        log.info("Box ID: {} atualizado no pátio ID: {}", boxId, patioId);
 
         return new BoxResponseDto(boxAtualizado.getIdBox(), boxAtualizado.getNome(), boxAtualizado.getStatus(), boxAtualizado.getDataEntrada(), boxAtualizado.getDataSaida(), boxAtualizado.getObservacao(), patioId, patioStatus, new BoxResponseDto.PatioInfo(patio.getIdPatio(), patio.getNomePatio()));
     }
@@ -648,9 +707,30 @@ public class PatioService {
         findAndValidatePatio(patioId, patioStatus);
         Box box = boxRepository.findById(boxId)
                 .orElseThrow(() -> new ResourceNotFoundException("Box", boxId));
+        
         if (!box.getPatio().getIdPatio().equals(patioId)) {
             throw new ResourceNotFoundException("Box " + boxId + " não pertence ao pátio " + patioId);
         }
+        
+        // Verifica se o box está ocupado
+        if (box.isOcupado()) {
+            throw new ResourceInUseException(
+                String.format("Box '%s' (ID: %d)", box.getNome(), box.getIdBox()),
+                "Não é possível excluir um box que está ocupado. Libere o box antes de excluí-lo."
+            );
+        }
+        
+        // Verifica se há veículos associados ao box
+        long quantidadeVeiculos = veiculoBoxRepository.countByBoxIdBox(boxId);
+        if (quantidadeVeiculos > 0) {
+            throw new ResourceInUseException(
+                String.format("Box '%s' (ID: %d)", box.getNome(), box.getIdBox()),
+                "veículos",
+                quantidadeVeiculos
+            );
+        }
+        
+        log.info("Excluindo box ID: {} do pátio ID: {}", boxId, patioId);
         boxRepository.delete(box);
     }
 

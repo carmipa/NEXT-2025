@@ -112,8 +112,8 @@ export default function PatioMottuGuarulhos({ highlightBoxId }: { highlightBoxId
             } else if (apiBox.status === 'M') {
                 status = 'Manutencao';
             }
-            
-            return {
+        
+        return { 
                 layoutId: `box-${apiBox.idBox}`,
                 dbId: apiBox.idBox,
                 nome: apiBox.nome,
@@ -123,7 +123,7 @@ export default function PatioMottuGuarulhos({ highlightBoxId }: { highlightBoxId
                 h: boxHeight,
                 status: status,
                 veiculo: apiBox.veiculo || null
-            };
+        };
         });
     };
 
@@ -185,23 +185,23 @@ export default function PatioMottuGuarulhos({ highlightBoxId }: { highlightBoxId
                 });
                 
                 if (isMounted) {
-                    setBoxes(mappedBoxes);
+                setBoxes(mappedBoxes);
                 }
             } catch (err: any) {
                 console.error("Falha ao buscar dados do mapa:", err);
                 if (isMounted) {
-                    setError("Não foi possível carregar o status das vagas.");
+                setError("Não foi possível carregar o status das vagas.");
                 }
             } finally {
                 if (isMounted) {
-                    setIsLoading(false);
+                setIsLoading(false);
                 }
             }
         };
 
         // Carregamento inicial
         loadBoxData();
-
+        
         // Configurar SSE para atualizações em tempo real
         const setupSSE = () => {
             try {
@@ -305,7 +305,7 @@ export default function PatioMottuGuarulhos({ highlightBoxId }: { highlightBoxId
     const handleMouseEnterBox = (e: React.MouseEvent, box: MappedBox) => {
         // Tooltip sempre mostra nome e status
         const tooltipContent = (
-            <div className="text-xs bg-gray-900 text-white p-3 rounded-lg shadow-lg">
+                    <div className="text-xs bg-gray-900 text-white p-3 rounded-lg shadow-lg"> 
                 <div className="font-bold text-yellow-400 mb-2">📦 {box.nome || `Box ${box.dbId}`}</div>
                 <div className={`font-semibold mb-1 ${
                     box.status === 'Ocupado' ? 'text-red-400' : 
@@ -316,23 +316,23 @@ export default function PatioMottuGuarulhos({ highlightBoxId }: { highlightBoxId
                 </div>
                 {box.status === 'Ocupado' && box.veiculo && (
                     <>
-                        <div className="font-bold text-green-400 mb-1">🏍️ Placa: {box.veiculo.placa}</div>
-                        <div className="text-gray-300"><strong>Modelo:</strong> {box.veiculo.modelo}</div>
-                        <div className="text-gray-300"><strong>Fabricante:</strong> {box.veiculo.fabricante}</div>
-                        <div className="text-gray-300"><strong>Tag BLE:</strong> {box.veiculo.tagBleId || 'N/A'}</div>
+                        <div className="font-bold text-green-400 mb-1">🏍️ Placa: {box.veiculo.placa}</div> 
+                        <div className="text-gray-300"><strong>Modelo:</strong> {box.veiculo.modelo}</div> 
+                        <div className="text-gray-300"><strong>Fabricante:</strong> {box.veiculo.fabricante}</div> 
+                        <div className="text-gray-300"><strong>Tag BLE:</strong> {box.veiculo.tagBleId || 'N/A'}</div> 
                     </>
                 )}
                 {box.status === 'Manutencao' && (
                     <div className="text-yellow-300 text-xs mt-1">⚠️ Box em manutenção</div>
                 )}
-            </div>
+                    </div> 
         );
         
         setTooltip({
             x: e.clientX,
             y: e.clientY,
             content: tooltipContent
-        });
+            });
     };
     
     const handleMouseLeaveBox = () => { 
@@ -436,22 +436,22 @@ export default function PatioMottuGuarulhos({ highlightBoxId }: { highlightBoxId
                                 />
                                 {/* Label do box - apenas número extraído do nome (apenas se não estiver ocupado) */}
                                 {b.status !== 'Ocupado' && b.status !== 'Manutencao' && (
-                                    <text 
-                                        x={b.x + b.w / 2} 
-                                        y={b.y + b.h / 2} 
+                                <text 
+                                    x={b.x + b.w / 2} 
+                                    y={b.y + b.h / 2} 
                                         fontSize={Math.max(1.0, 1.8 / k)} 
-                                        textAnchor="middle" 
-                                        dominantBaseline="middle"
+                                    textAnchor="middle" 
+                                    dominantBaseline="middle"
                                         fill="#1f2937"
-                                        fontWeight="bold"
-                                        style={{ pointerEvents: 'none', userSelect: 'none' }}
-                                    >
+                                    fontWeight="bold"
+                                    style={{ pointerEvents: 'none', userSelect: 'none' }}
+                                >
                                         {(() => {
                                             // Extrair apenas o número do nome do box (ex: "Gru001" -> "1", "Gru015" -> "15")
                                             const match = b.nome?.match(/(\d+)/);
                                             return match ? match[1] : (b.dbId || '');
                                         })()}
-                                    </text>
+                                </text>
                                 )}
                                 {/* Ícone "V" para boxes ocupados */}
                                 {b.status === 'Ocupado' && viewOptions.showMotos && (

@@ -299,10 +299,17 @@ function ZonaContent() {
                   <div className="flex justify-end items-center gap-2 border-t border-slate-200 pt-3 mt-4">
                     <Link 
                       href={`/zona/detalhes/${item.idZona}`}
-                      className="p-1.5 lg:p-2 rounded-full text-blue-600 hover:bg-blue-100" 
+                      className="p-1.5 lg:p-2 rounded-full text-blue-600 hover:bg-blue-100 hover:scale-110 transition-all duration-300 transform hover:-translate-y-1" 
                       title="Ver Detalhes"
                     >
                       <MdVisibility size={18} className="lg:w-6 lg:h-6"/>
+                    </Link>
+                    <Link 
+                      href={`/zona/editar/${item.idZona}`}
+                      className="p-1.5 lg:p-2 rounded-full text-yellow-500 hover:bg-yellow-100 hover:scale-110 transition-all duration-300 transform hover:-translate-y-1" 
+                      title="Editar Zona"
+                    >
+                      <i className="ion-ios-create text-sm lg:text-lg"></i>
                     </Link>
                   </div>
                 </div>
@@ -386,10 +393,17 @@ function ZonaContent() {
                           <div className="flex justify-center items-center gap-2">
                             <Link 
                               href={`/zona/detalhes/${item.idZona}`}
-                              className="p-1 lg:p-1.5 rounded-full text-blue-600 hover:bg-blue-100" 
+                              className="p-1 lg:p-1.5 rounded-full text-blue-600 hover:bg-blue-100 hover:scale-110 transition-all duration-300 transform hover:-translate-y-1" 
                               title="Ver Detalhes"
                             >
                               <MdVisibility size={16} className="lg:w-5 lg:h-5"/>
+                            </Link>
+                            <Link 
+                              href={`/zona/editar/${item.idZona}`}
+                              className="p-1 lg:p-1.5 rounded-full text-yellow-500 hover:bg-yellow-100 hover:scale-110 transition-all duration-300 transform hover:-translate-y-1" 
+                              title="Editar Zona"
+                            >
+                              <i className="ion-ios-create text-xs lg:text-sm"></i>
                             </Link>
                           </div>
                         </td>

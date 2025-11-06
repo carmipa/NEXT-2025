@@ -168,6 +168,8 @@ export default function MapaGlobal({ onPatioSelect, patioSelecionado }: MapaGlob
                     console.log('🔄 Atualizando marcadores no mapa...');
                     (markersLayerRef.current as any).clearLayers();
 
+                    const bounds: any[] = []; // Array para guardar os bounds de todos os marcadores
+
                     patios.forEach(patio => {
                         if (patio.lat && patio.lng) {
                             const corMarcador = patio.percentualOcupacao > 70 ? '#ef4444' : '#1E40AF';
@@ -181,12 +183,35 @@ export default function MapaGlobal({ onPatioSelect, patioSelecionado }: MapaGlob
                                 })
                             });
 
+                            // Tooltip que aparece ao passar o mouse
+                            marker.bindTooltip(patio.nome, {
+                                permanent: false,
+                                direction: 'top',
+                                offset: [0, -10],
+                                className: 'custom-tooltip',
+                                opacity: 0.95
+                            });
+
+                            // Popup detalhado ao clicar
                             marker.bindPopup(`<b>${patio.nome}</b><br>${patio.vagasLivres} vagas livres`);
                             marker.on('click', () => onPatioSelect(patio.id));
                             
                             (markersLayerRef.current as any).addLayer(marker);
+                            
+                            // Adicionar coordenadas ao bounds
+                            bounds.push([patio.lat, patio.lng]);
                         }
                     });
+
+                    // Ajustar o mapa para mostrar TODOS os marcadores
+                    if (bounds.length > 0) {
+                        const latLngBounds = L.latLngBounds(bounds);
+                        (mapInstanceRef.current as any).fitBounds(latLngBounds, {
+                            padding: [50, 50], // Margem de 50px em todos os lados
+                            maxZoom: 15 // Zoom máximo para não ficar muito próximo quando houver poucos pátios
+                        });
+                        console.log(`📍 Mapa ajustado para mostrar ${bounds.length} pátios em todo o Brasil!`);
+                    }
 
                     console.log(`✅ ${patios.length} marcadores atualizados.`);
                 } catch (error) {
@@ -262,6 +287,29 @@ export default function MapaGlobal({ onPatioSelect, patioSelecionado }: MapaGlob
             
             <Overlay />
             <div ref={mapRef} className="w-full h-full bg-gray-200" />
+            
+            {/* Estilos customizados para o tooltip */}
+            <style jsx global>{`
+                .custom-tooltip {
+                    background-color: rgba(30, 64, 175, 0.95) !important;
+                    border: 2px solid white !important;
+                    border-radius: 8px !important;
+                    padding: 8px 12px !important;
+                    font-weight: 600 !important;
+                    font-size: 14px !important;
+                    color: white !important;
+                    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+                    font-family: 'Montserrat', sans-serif !important;
+                }
+                
+                .custom-tooltip::before {
+                    border-top-color: rgba(30, 64, 175, 0.95) !important;
+                }
+                
+                .leaflet-tooltip-top::before {
+                    border-top-color: rgba(30, 64, 175, 0.95) !important;
+                }
+            `}</style>
         </div>
     );
 }

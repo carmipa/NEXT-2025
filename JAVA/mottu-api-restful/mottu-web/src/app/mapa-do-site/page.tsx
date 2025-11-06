@@ -71,6 +71,12 @@ const sections = [
                 path: "/radar/buscar", 
                 icon: <i className="ion-ios-cloud-upload text-cyan-500"></i>, 
                 detail: "Interface para upload de imagens via dispositivos móveis. Acesse através do sistema de upload." 
+            },
+            { 
+                name: "Download App Mobile", 
+                path: "/radar/app-download", 
+                icon: <i className="ion-logo-android text-green-500"></i>, 
+                detail: "Página para download do aplicativo móvel Android com instruções de instalação e recursos." 
             }
         ]
     },
@@ -94,13 +100,13 @@ const sections = [
             { 
                 name: "Movimentação", 
                 path: "/relatorios/movimentacao", 
-                icon: <i className="ion-ios-trending text-orange-500"></i>, 
+                icon: <i className="ion-ios-pulse text-orange-500"></i>, 
                 detail: "Análise de movimentação de veículos, padrões de uso do pátio, estatísticas de entrada/saída e paginação moderna." 
             },
             { 
                 name: "Heatmap de Ocupação", 
                 path: "/relatorios/heatmap", 
-                icon: <i className="ion-ios-thermometer text-red-500"></i>, 
+                icon: <i className="ion-ios-flame text-red-500"></i>, 
                 detail: "Visualização térmica da ocupação por pátio com cores indicativas de densidade e design responsivo." 
             },
             { 
@@ -112,7 +118,7 @@ const sections = [
             { 
                 name: "Dashboard IA", 
                 path: "/relatorios/dashboard-ia", 
-                icon: <i className="ion-ios-brain text-cyan-500"></i>, 
+                icon: <i className="ion-ios-bulb text-cyan-500"></i>, 
                 detail: "Inteligência artificial para previsões e otimização com algoritmos avançados e design responsivo." 
             },
             { 
@@ -120,6 +126,24 @@ const sections = [
                 path: "/relatorios/avancados", 
                 icon: <i className="ion-ios-settings text-indigo-500"></i>, 
                 detail: "Métricas de sistema, performance, manutenção e analytics avançados em tempo real com paginação moderna." 
+            },
+            { 
+                name: "Performance do Sistema", 
+                path: "/relatorios/performance-sistema", 
+                icon: <i className="ion-ios-speedometer text-blue-500"></i>, 
+                detail: "Monitoramento de performance, tempo de resposta, uso de recursos e otimização do sistema em tempo real." 
+            },
+            { 
+                name: "Analytics Avançado", 
+                path: "/relatorios/analytics", 
+                icon: <i className="ion-ios-stats text-purple-500"></i>, 
+                detail: "Análise detalhada de dados com métricas avançadas, tendências e insights estratégicos para gestão." 
+            },
+            { 
+                name: "Manutenção", 
+                path: "/relatorios/manutencao", 
+                icon: <i className="ion-ios-build text-orange-500"></i>, 
+                detail: "Gestão de manutenções programadas, histórico de serviços e monitoramento de veículos em manutenção." 
             },
             { 
                 name: "Notificações do Sistema", 
@@ -163,61 +187,49 @@ const sections = [
                 name: "Mapa de Vagas Principal", 
                 path: "/mapa-box", 
                 icon: <i className="ion-ios-grid text-emerald-500"></i>, 
-                detail: "Hub principal para visualização avançada de vagas com 5 modos de visualização: Pátio, Mapa, Grade, Abas e Global." 
+                detail: "Hub principal para visualização avançada de vagas com 5 modos de visualização: Pátio, Mapa, Grade, Abas e Mapa Global com tooltip de nome de pátio." 
             },
             { 
                 name: "Visualização por Pátio", 
                 path: "/mapa-box", 
                 icon: <i className="ion-ios-home text-blue-500"></i>, 
-                detail: "Visualização organizada por pátio com estatísticas, filtros por status e design responsivo. Acesse através do mapa-box." 
+                detail: "Visualização organizada por pátio com cards detalhados, estatísticas de ocupação, filtros por status e design responsivo." 
             },
             { 
                 name: "Visualização em Mapa", 
                 path: "/mapa-box", 
-                icon: <i className="ion-ios-map text-purple-500"></i>, 
-                detail: "Mapa interativo com coordenadas reais, localização por GPS e visualização espacial das vagas. Acesse através do mapa-box." 
+                icon: <i className="ion-ios-pin text-purple-500"></i>, 
+                detail: "Mapa interativo com coordenadas reais, geocodificação automática e marcadores por pátio selecionado." 
             },
             { 
                 name: "Visualização em Grade", 
                 path: "/mapa-box", 
-                icon: <i className="ion-ios-grid text-orange-500"></i>, 
-                detail: "Grade visual das vagas com cores por status, hover effects e seleção interativa. Acesse através do mapa-box." 
+                icon: <i className="ion-ios-apps text-orange-500"></i>, 
+                detail: "Grade visual das vagas com cores por status (Livre/Ocupado/Manutenção), hover effects e seleção interativa." 
             },
             { 
                 name: "Visualização em Abas", 
                 path: "/mapa-box", 
-                icon: <i className="ion-ios-list text-cyan-500"></i>, 
-                detail: "Lista tabular com paginação moderna, filtros avançados e ações em massa. Acesse através do mapa-box." 
+                icon: <i className="ion-ios-list-box text-cyan-500"></i>, 
+                detail: "Lista tabular completa com paginação moderna, pesquisa, filtros por pátio e visualização de cards ou lista." 
             },
             { 
                 name: "Mapa Global", 
                 path: "/mapa-box", 
                 icon: <i className="ion-ios-globe text-green-500"></i>, 
-                detail: "Visualização global de todos os pátios com coordenadas geográficas e estatísticas consolidadas. Acesse através do mapa-box." 
+                detail: "Visualização global de todos os pátios com coordenadas geográficas, geocodificação via Nominatim, marcadores interativos e tooltip com nome do pátio ao passar o mouse." 
             },
             { 
                 name: "Estatísticas de Vagas", 
                 path: "/mapa-box", 
-                icon: <i className="ion-ios-analytics text-indigo-500"></i>, 
-                detail: "Dashboard de estatísticas com gráficos de ocupação, evolução temporal e métricas de performance. Acesse através do mapa-box." 
+                icon: <i className="ion-ios-stats text-indigo-500"></i>, 
+                detail: "Dashboard de estatísticas com gráficos de ocupação, totais por status, veículos em manutenção e métricas consolidadas." 
             },
             { 
                 name: "Filtros Avançados", 
                 path: "/mapa-box", 
                 icon: <i className="ion-ios-funnel text-yellow-500"></i>, 
-                detail: "Sistema de filtros por pátio, status, zona e período com interface intuitiva e resultados em tempo real. Acesse através do mapa-box." 
-            },
-            { 
-                name: "Teste de API", 
-                path: "/mapa-box", 
-                icon: <i className="ion-ios-flask text-red-500"></i>, 
-                detail: "Ferramenta de teste de endpoints da API com validação de dados e monitoramento de performance. Acesse através do mapa-box." 
-            },
-            { 
-                name: "Debug e Navegação", 
-                path: "/mapa-box", 
-                icon: <i className="ion-ios-bug text-gray-500"></i>, 
-                detail: "Ferramentas de debug para desenvolvedores com logs detalhados e navegação entre visualizações. Acesse através do mapa-box." 
+                detail: "Sistema de filtros por pátio com pesquisa em tempo real, seleção de visualização e atualização automática de dados." 
             }
         ]
     },
@@ -244,7 +256,8 @@ const sections = [
             { name: "Buscar Motos", path: "/veiculo/buscar", icon: <i className="ion-ios-search text-orange-500"></i>, detail: "Busca por placa, modelo, fabricante ou tag BLE com interface neumórfica e design responsivo." },
             { name: "Alterar Moto", path: "/veiculo/listar", icon: <i className="ion-ios-create text-yellow-500"></i>, detail: "Edição de dados de motos existentes com interface responsiva. Acesse através da lista de veículos." },
             { name: "Detalhes da Moto", path: "/veiculo/listar", icon: <i className="ion-ios-eye text-purple-500"></i>, detail: "Visualização detalhada de informações da moto com design responsivo. Acesse através da lista de veículos." },
-            { name: "Deletar Moto", path: "/veiculo/listar", icon: <i className="ion-ios-trash text-red-500"></i>, detail: "Remoção de motos do sistema. Acesse através da lista de veículos." }
+            { name: "Deletar Moto", path: "/veiculo/listar", icon: <i className="ion-ios-trash text-red-500"></i>, detail: "Remoção de motos do sistema. Acesse através da lista de veículos." },
+            { name: "Status de Veículos", path: "/veiculo/status", icon: <i className="ion-ios-information-circle text-blue-500"></i>, detail: "Visualização do status de todos os veículos com filtros por situação (estacionado, em manutenção, disponível) e paginação moderna." }
         ]
     },
     {
@@ -280,8 +293,9 @@ const sections = [
         description: "Unidades finais de alocação com status em tempo real (Livre/Ocupado). Gerenciadas através do pátio pai.",
         links: [
             { name: "Listar Boxes", path: "/box/listar", icon: <i className="ion-ios-list text-blue-500"></i>, detail: "Visualização de todas as vagas do sistema com paginação moderna e design responsivo." },
-            { name: "Cadastrar Box", path: "/box/cadastrar", icon: <i className="ion-ios-add text-green-500"></i>, detail: "Cadastro manual responsivo de vagas individuais com validação em tempo real." },
-            { name: "Gerar em Lote", path: "/box/gerar", icon: <i className="ion-ios-add text-emerald-500"></i>, detail: "Geração automática de múltiplas vagas por zona com interface responsiva." },
+            { name: "Cadastrar Box", path: "/box/cadastrar", icon: <i className="ion-ios-add-circle text-green-500"></i>, detail: "Cadastro manual responsivo de vagas individuais com validação em tempo real." },
+            { name: "Gerar em Lote", path: "/box/gerar", icon: <i className="ion-ios-apps text-emerald-500"></i>, detail: "Geração automática de múltiplas vagas por zona com interface responsiva." },
+            { name: "Editar em Lote", path: "/box/alterar", icon: <i className="ion-ios-list-box text-indigo-500"></i>, detail: "Edição em lote de boxes por pátio com validações avançadas, criação, atualização e deleção em massa." },
             { name: "Buscar Boxes", path: "/box/buscar", icon: <i className="ion-ios-search text-orange-500"></i>, detail: "Busca por código, status ou pátio com design responsivo e paginação moderna." },
             { name: "Alterar Box", path: "/box/listar", icon: <i className="ion-ios-create text-yellow-500"></i>, detail: "Edição de dados de boxes existentes com interface responsiva. Acesse através da lista de boxes." },
             { name: "Detalhes do Box", path: "/box/listar", icon: <i className="ion-ios-eye text-purple-500"></i>, detail: "Visualização detalhada de informações do box com design responsivo. Acesse através da lista de boxes." },
@@ -362,6 +376,12 @@ const sections = [
                 path: "/contato", 
                 icon: <i className="ion-ios-mail text-pink-500"></i>, 
                 detail: "Formulário de contato inteligente com 8 provedores de email (Gmail, Outlook, Yahoo, iCloud, Zoho, Proton, Locaweb, UOL Host). Inclui mapa interativo do FIAP, informações da equipe e repositórios do projeto com efeitos hover." 
+            },
+            { 
+                name: "QR Code NEXT", 
+                path: "/ajuda/qrcode", 
+                icon: <i className="ion-ios-qr-scanner text-cyan-500"></i>, 
+                detail: "Acesse rapidamente a aplicação NEXT na VPS através de QR Code. Página interativa com instruções de uso e acesso direto ao servidor (http://72.61.219.15:3000)." 
             },
         ]
     },
@@ -605,40 +625,56 @@ export default function MapaDoSitePage() {
                                     <i className="ion-ios-mail text-pink-500 text-2xl"></i>
                                     Sistema de Email Inteligente
                                 </h4>
-                                <div className="grid md:grid-cols-4 gap-3 text-center mb-6">
-                                    <div className="neumorphic-container p-3 transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-red-500/20 hover:-translate-y-1 cursor-pointer group">
-                                        <i className="ion-logo-google text-red-600 text-xl mb-2 transition-all duration-300 group-hover:scale-110"></i>
-                                        <h5 className="font-semibold text-slate-800 mb-1 text-xs transition-colors duration-300 group-hover:text-red-600" style={{fontFamily: 'Montserrat, sans-serif'}}>Gmail</h5>
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 text-center mb-6">
+                                    <div className="neumorphic-container p-4 sm:p-5 transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-red-500/20 hover:-translate-y-1 cursor-pointer group">
+                                        <div className="flex flex-col items-center">
+                                            <div className="text-red-600 text-4xl sm:text-5xl mb-3 font-bold transition-all duration-300 group-hover:scale-125">G</div>
+                                            <h5 className="font-bold text-slate-800 text-sm sm:text-base transition-colors duration-300 group-hover:text-red-600" style={{fontFamily: 'Montserrat, sans-serif'}}>Gmail</h5>
+                                        </div>
                                     </div>
-                                    <div className="neumorphic-container p-3 transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-blue-500/20 hover:-translate-y-1 cursor-pointer group">
-                                        <i className="ion-logo-microsoft text-blue-600 text-xl mb-2 transition-all duration-300 group-hover:scale-110"></i>
-                                        <h5 className="font-semibold text-slate-800 mb-1 text-xs transition-colors duration-300 group-hover:text-blue-600" style={{fontFamily: 'Montserrat, sans-serif'}}>Outlook</h5>
+                                    <div className="neumorphic-container p-4 sm:p-5 transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-blue-500/20 hover:-translate-y-1 cursor-pointer group">
+                                        <div className="flex flex-col items-center">
+                                            <i className="ion-ios-mail text-blue-600 text-3xl sm:text-4xl mb-3 transition-all duration-300 group-hover:scale-125 block"></i>
+                                            <h5 className="font-bold text-slate-800 text-sm sm:text-base transition-colors duration-300 group-hover:text-blue-600" style={{fontFamily: 'Montserrat, sans-serif'}}>Outlook</h5>
+                                        </div>
                                     </div>
-                                    <div className="neumorphic-container p-3 transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-purple-500/20 hover:-translate-y-1 cursor-pointer group">
-                                        <i className="ion-logo-yahoo text-purple-600 text-xl mb-2 transition-all duration-300 group-hover:scale-110"></i>
-                                        <h5 className="font-semibold text-slate-800 mb-1 text-xs transition-colors duration-300 group-hover:text-purple-600" style={{fontFamily: 'Montserrat, sans-serif'}}>Yahoo</h5>
+                                    <div className="neumorphic-container p-4 sm:p-5 transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-purple-500/20 hover:-translate-y-1 cursor-pointer group">
+                                        <div className="flex flex-col items-center">
+                                            <div className="text-purple-600 text-4xl sm:text-5xl mb-3 font-bold transition-all duration-300 group-hover:scale-125">Y!</div>
+                                            <h5 className="font-bold text-slate-800 text-sm sm:text-base transition-colors duration-300 group-hover:text-purple-600" style={{fontFamily: 'Montserrat, sans-serif'}}>Yahoo</h5>
+                                        </div>
                                     </div>
-                                    <div className="neumorphic-container p-3 transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-gray-500/20 hover:-translate-y-1 cursor-pointer group">
-                                        <i className="ion-logo-apple text-gray-600 text-xl mb-2 transition-all duration-300 group-hover:scale-110"></i>
-                                        <h5 className="font-semibold text-slate-800 mb-1 text-xs transition-colors duration-300 group-hover:text-gray-600" style={{fontFamily: 'Montserrat, sans-serif'}}>iCloud</h5>
+                                    <div className="neumorphic-container p-4 sm:p-5 transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-gray-500/20 hover:-translate-y-1 cursor-pointer group">
+                                        <div className="flex flex-col items-center">
+                                            <i className="ion-logo-apple text-gray-700 text-3xl sm:text-4xl mb-3 transition-all duration-300 group-hover:scale-125 block"></i>
+                                            <h5 className="font-bold text-slate-800 text-sm sm:text-base transition-colors duration-300 group-hover:text-gray-700" style={{fontFamily: 'Montserrat, sans-serif'}}>iCloud</h5>
+                                        </div>
                                     </div>
                                 </div>
-                                <div className="grid md:grid-cols-4 gap-3 text-center mb-4">
-                                    <div className="neumorphic-container p-3 transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-orange-500/20 hover:-translate-y-1 cursor-pointer group">
-                                        <i className="ion-ios-mail text-orange-600 text-xl mb-2 transition-all duration-300 group-hover:scale-110"></i>
-                                        <h5 className="font-semibold text-slate-800 mb-1 text-xs transition-colors duration-300 group-hover:text-orange-600" style={{fontFamily: 'Montserrat, sans-serif'}}>Zoho</h5>
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 text-center mb-4">
+                                    <div className="neumorphic-container p-4 sm:p-5 transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-orange-500/20 hover:-translate-y-1 cursor-pointer group">
+                                        <div className="flex flex-col items-center">
+                                            <i className="ion-ios-mail text-orange-600 text-3xl sm:text-4xl mb-3 transition-all duration-300 group-hover:scale-125 block"></i>
+                                            <h5 className="font-bold text-slate-800 text-sm sm:text-base transition-colors duration-300 group-hover:text-orange-600" style={{fontFamily: 'Montserrat, sans-serif'}}>Zoho</h5>
+                                        </div>
                                     </div>
-                                    <div className="neumorphic-container p-3 transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-indigo-500/20 hover:-translate-y-1 cursor-pointer group">
-                                        <i className="ion-ios-shield text-indigo-600 text-xl mb-2 transition-all duration-300 group-hover:scale-110"></i>
-                                        <h5 className="font-semibold text-slate-800 mb-1 text-xs transition-colors duration-300 group-hover:text-indigo-600" style={{fontFamily: 'Montserrat, sans-serif'}}>Proton</h5>
+                                    <div className="neumorphic-container p-4 sm:p-5 transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-indigo-500/20 hover:-translate-y-1 cursor-pointer group">
+                                        <div className="flex flex-col items-center">
+                                            <div className="text-indigo-600 text-4xl sm:text-5xl mb-3 font-bold transition-all duration-300 group-hover:scale-125">P</div>
+                                            <h5 className="font-bold text-slate-800 text-sm sm:text-base transition-colors duration-300 group-hover:text-indigo-600" style={{fontFamily: 'Montserrat, sans-serif'}}>Proton</h5>
+                                        </div>
                                     </div>
-                                    <div className="neumorphic-container p-3 transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-green-500/20 hover:-translate-y-1 cursor-pointer group">
-                                        <i className="ion-ios-business text-green-600 text-xl mb-2 transition-all duration-300 group-hover:scale-110"></i>
-                                        <h5 className="font-semibold text-slate-800 mb-1 text-xs transition-colors duration-300 group-hover:text-green-600" style={{fontFamily: 'Montserrat, sans-serif'}}>Locaweb</h5>
+                                    <div className="neumorphic-container p-4 sm:p-5 transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-green-500/20 hover:-translate-y-1 cursor-pointer group">
+                                        <div className="flex flex-col items-center">
+                                            <i className="ion-ios-business text-green-600 text-3xl sm:text-4xl mb-3 transition-all duration-300 group-hover:scale-125 block"></i>
+                                            <h5 className="font-bold text-slate-800 text-sm sm:text-base transition-colors duration-300 group-hover:text-green-600" style={{fontFamily: 'Montserrat, sans-serif'}}>Locaweb</h5>
+                                        </div>
                                     </div>
-                                    <div className="neumorphic-container p-3 transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-yellow-500/20 hover:-translate-y-1 cursor-pointer group">
-                                        <i className="ion-ios-globe text-yellow-600 text-xl mb-2 transition-all duration-300 group-hover:scale-110"></i>
-                                        <h5 className="font-semibold text-slate-800 mb-1 text-xs transition-colors duration-300 group-hover:text-yellow-600" style={{fontFamily: 'Montserrat, sans-serif'}}>UOL Host</h5>
+                                    <div className="neumorphic-container p-4 sm:p-5 transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-yellow-500/20 hover:-translate-y-1 cursor-pointer group">
+                                        <div className="flex flex-col items-center">
+                                            <i className="ion-ios-globe text-yellow-600 text-3xl sm:text-4xl mb-3 transition-all duration-300 group-hover:scale-125 block"></i>
+                                            <h5 className="font-bold text-slate-800 text-sm sm:text-base transition-colors duration-300 group-hover:text-yellow-600" style={{fontFamily: 'Montserrat, sans-serif'}}>UOL Host</h5>
+                                        </div>
                                     </div>
                                 </div>
                                 <div className="text-center">

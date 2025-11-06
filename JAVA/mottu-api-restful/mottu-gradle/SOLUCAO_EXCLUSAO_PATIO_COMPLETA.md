@@ -144,3 +144,14 @@ Agora é possível excluir um Pátio que possui:
 **Data:** 2025-11-05  
 **Testado:** Aguardando testes em ambiente real
 
+
+
+
+
+
+
+
+
+
+
+

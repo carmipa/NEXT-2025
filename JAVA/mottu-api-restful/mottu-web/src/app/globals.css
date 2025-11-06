@@ -137,10 +137,14 @@ i[class*="ion-ios-"] {
    (removido conforme instruções do arquivo analisado) */
 
 /* Base */
-* { box-sizing: border-box; }
+* { 
+    box-sizing: border-box;
+}
 html, body { 
     height: 100%; 
     overflow-x: hidden;
+    margin: 0 !important;
+    padding: 0 !important;
 }
 
 /* Badges tecnológicas no rodapé: mantém proporção e evita warnings de imagem */

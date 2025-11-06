@@ -56,6 +56,7 @@ const navItems: Array<{
                 items: [
                     { href: "/gerenciamento-patio/box", label: "Listar", icon: "ion-ios-list" },
                     { href: "/box/buscar", label: "Buscar", icon: "ion-ios-search" },
+                    { href: "/box/alterar", label: "Editar em Lote", icon: "ion-ios-create" },
                 ]
             }
         ]
@@ -138,6 +139,7 @@ const navItems: Array<{
         subItems: [
             { href: "/mapa-do-site", label: "Mapa do Site", icon: "ion-ios-compass" },
             { href: "http://72.61.219.15:8080/swagger-ui/index.html", label: "Swagger (API)", icon: "ion-ios-code" },
+            { href: "/ajuda/qrcode", label: "QR Code NEXT", icon: "ion-ios-qr-scanner" },
         ]
     },
     { href: "/ajuda/feedback", label: "Feedback", icon: "ion-ios-chatbubbles", basePath: "/ajuda/feedback" },

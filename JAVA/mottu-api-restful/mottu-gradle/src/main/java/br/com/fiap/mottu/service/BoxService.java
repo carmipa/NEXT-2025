@@ -1,6 +1,26 @@
 package br.com.fiap.mottu.service;
 
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import br.com.fiap.mottu.dto.box.BoxRequestDto;
+import br.com.fiap.mottu.exception.DuplicatedResourceException;
+import br.com.fiap.mottu.exception.InvalidInputException;
+import br.com.fiap.mottu.exception.OperationNotAllowedException;
+import br.com.fiap.mottu.exception.ResourceInUseException;
+import br.com.fiap.mottu.exception.ResourceNotFoundException;
 import br.com.fiap.mottu.filter.BoxFilter;
 import br.com.fiap.mottu.mapper.BoxMapper;
 import br.com.fiap.mottu.model.Box;
@@ -12,23 +32,7 @@ import br.com.fiap.mottu.repository.BoxRepository;
 import br.com.fiap.mottu.repository.PatioRepository;
 import br.com.fiap.mottu.repository.VeiculoRepository;
 import br.com.fiap.mottu.repository.relacionamento.VeiculoBoxRepository;
-import br.com.fiap.mottu.exception.DuplicatedResourceException;
-import br.com.fiap.mottu.exception.ResourceNotFoundException;
 import br.com.fiap.mottu.specification.BoxSpecification;
-import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.CachePut;
-import org.springframework.cache.annotation.Cacheable;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
-import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 
 @Service
@@ -115,7 +119,8 @@ public class BoxService {
 
         // Verifica se já existe box com mesmo nome no mesmo pátio
         if (boxRepository.existsByNomeIgnoreCaseAndPatioIdPatio(nome, patioId)) {
-            throw new DuplicatedResourceException("Box", "nome", nome);
+            String mensagem = String.format("Box com nome '%s' já existe no pátio '%s'. Por favor, remova o box existente ou escolha um nome diferente.", nome, patio.getNomePatio());
+            throw new DuplicatedResourceException(mensagem);
         }
 
         // Mapeia a entidade Box
@@ -133,13 +138,31 @@ public class BoxService {
     public Box atualizarBox(Long id, BoxRequestDto dto) {
         Box boxExistente = buscarBoxPorId(id);
 
+        // Validação de nome
         String novoNome = dto.getNome();
-        if (novoNome != null && !novoNome.isBlank() && !novoNome.equalsIgnoreCase(boxExistente.getNome())) {
+        if (novoNome == null || novoNome.isBlank()) {
+            throw new InvalidInputException("O nome do box não pode ser vazio.");
+        }
+        
+        if (!novoNome.equalsIgnoreCase(boxExistente.getNome())) {
             // Verifica se existe outro box com o mesmo nome no mesmo pátio
             Optional<Box> boxExistenteComMesmoNome = boxRepository.findByPatioIdAndNome(boxExistente.getPatio().getIdPatio(), novoNome);
             if (boxExistenteComMesmoNome.isPresent() && !boxExistenteComMesmoNome.get().getIdBox().equals(id)) {
                 throw new DuplicatedResourceException("Box", "nome", novoNome);
             }
+        }
+
+        // Validação de datas
+        if (dto.getDataEntrada() != null && dto.getDataSaida() != null) {
+            if (dto.getDataSaida().isBefore(dto.getDataEntrada())) {
+                throw new InvalidInputException("A data de saída não pode ser anterior à data de entrada.");
+            }
+        }
+
+        // Validação de status
+        String novoStatus = dto.getStatus();
+        if (novoStatus != null && !novoStatus.equals("L") && !novoStatus.equals("O") && !novoStatus.equals("M")) {
+            throw new InvalidInputException(String.format("Status inválido: '%s'. Os valores permitidos são: L (Livre), O (Ocupado), M (Manutenção).", novoStatus));
         }
 
         // Atualiza os dados básicos do box
@@ -159,6 +182,38 @@ public class BoxService {
     @CacheEvict(value = {"boxPorId", "boxesList", "boxesDoPatio", "boxesDisponiveis", "boxesOcupados", "veiculosDoBox"}, allEntries = true)
     public void deletarBox(Long id) {
         Box box = buscarBoxPorId(id);
+        
+        // Verifica se é o último box do pátio
+        long totalBoxesDoPatio = boxRepository.countByPatioIdPatio(box.getPatio().getIdPatio());
+        if (totalBoxesDoPatio <= 1) {
+            throw new OperationNotAllowedException(
+                String.format(
+                    "Não é possível excluir o box '%s' (ID: %d) pois ele é o único box do pátio '%s'. " +
+                    "Um pátio deve ter pelo menos um box. Para remover este box, você deve primeiro adicionar outros boxes ao pátio.",
+                    box.getNome(), box.getIdBox(), box.getPatio().getNomePatio()
+                )
+            );
+        }
+        
+        // Verifica se o box está ocupado
+        if (box.isOcupado()) {
+            throw new ResourceInUseException(
+                String.format("Box '%s' (ID: %d)", box.getNome(), box.getIdBox()),
+                "Não é possível excluir um box que está ocupado. Libere o box antes de excluí-lo."
+            );
+        }
+        
+        // Verifica se há veículos associados ao box
+        long quantidadeVeiculos = veiculoBoxRepository.countByBoxIdBox(id);
+        if (quantidadeVeiculos > 0) {
+            throw new ResourceInUseException(
+                String.format("Box '%s' (ID: %d)", box.getNome(), box.getIdBox()),
+                "veículos",
+                quantidadeVeiculos
+            );
+        }
+        
+        log.info("Deletando box ID: {}, Nome: {}", box.getIdBox(), box.getNome());
         boxRepository.delete(box);
     }
 
@@ -207,7 +262,9 @@ public class BoxService {
     @Transactional
     @CacheEvict(value = {"boxPorId", "veiculosDoBox"}, key = "#boxId", allEntries = true)
     public void desassociarBoxVeiculo(Long boxId, Long veiculoId) {
-        Box box = buscarBoxPorId(boxId);
+        // Valida se o box existe
+        buscarBoxPorId(boxId);
+        
         VeiculoBoxId idAssociacao = new VeiculoBoxId(veiculoId, boxId);
         if (!veiculoBoxRepository.existsById(idAssociacao)) {
             throw new ResourceNotFoundException("Associação Box-Veículo", "IDs", idAssociacao.toString());

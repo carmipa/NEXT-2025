@@ -93,7 +93,7 @@ export default function PatioMottuLimao({ highlightBoxId }: { highlightBoxId?: s
         const areaHeight = 46; // 48 - 2
         const startX = 2;
         const startY = 2;
-        
+
         // Tamanho dos boxes aumentado para melhor visualização sem zoom
         const boxWidth = 3.5;
         const boxHeight = 3.5;
@@ -229,7 +229,7 @@ export default function PatioMottuLimao({ highlightBoxId }: { highlightBoxId?: s
     const handleMouseEnterBox = (e: React.MouseEvent, box: MappedBox) => {
         // Tooltip sempre mostra nome e status
         const tooltipContent = (
-            <div className="text-xs bg-gray-900 text-white p-3 rounded-lg shadow-lg">
+                    <div className="text-xs bg-gray-900 text-white p-3 rounded-lg shadow-lg">
                 <div className="font-bold text-yellow-400 mb-2">📦 {box.nome || `Box ${box.dbId}`}</div>
                 <div className={`font-semibold mb-1 ${
                     box.status === 'Ocupado' ? 'text-red-400' : 
@@ -239,24 +239,24 @@ export default function PatioMottuLimao({ highlightBoxId }: { highlightBoxId?: s
                     Status: {box.status}
                 </div>
                 {box.status === 'Ocupado' && box.veiculo && (
-                    <>
-                        <div className="font-bold text-green-400 mb-1">🏍️ Placa: {box.veiculo.placa}</div>
-                        <div className="text-gray-300"><strong>Modelo:</strong> {box.veiculo.modelo}</div>
-                        <div className="text-gray-300"><strong>Fabricante:</strong> {box.veiculo.fabricante}</div>
-                        <div className="text-gray-300"><strong>Tag BLE:</strong> {box.veiculo.tagBleId || 'N/A'}</div>
-                    </>
+                            <>
+                                <div className="font-bold text-green-400 mb-1">🏍️ Placa: {box.veiculo.placa}</div>
+                                <div className="text-gray-300"><strong>Modelo:</strong> {box.veiculo.modelo}</div>
+                                <div className="text-gray-300"><strong>Fabricante:</strong> {box.veiculo.fabricante}</div>
+                                <div className="text-gray-300"><strong>Tag BLE:</strong> {box.veiculo.tagBleId || 'N/A'}</div>
+                            </>
                 )}
                 {box.status === 'Manutencao' && (
                     <div className="text-yellow-300 text-xs mt-1">⚠️ Box em manutenção</div>
-                )}
-            </div>
+                        )}
+                    </div>
         );
         
         setTooltip({
             x: e.clientX,
             y: e.clientY,
             content: tooltipContent
-        });
+            });
     };
     
     const handleMouseLeaveBox = () => { 
@@ -360,22 +360,22 @@ export default function PatioMottuLimao({ highlightBoxId }: { highlightBoxId?: s
                                 />
                                 {/* Label do box - apenas número extraído do nome (apenas se não estiver ocupado ou em manutenção) */}
                                 {b.status !== 'Ocupado' && b.status !== 'Manutencao' && (
-                                    <text 
-                                        x={b.x + b.w / 2} 
-                                        y={b.y + b.h / 2} 
+                                <text 
+                                    x={b.x + b.w / 2} 
+                                    y={b.y + b.h / 2} 
                                         fontSize={Math.max(1.0, 1.8 / k)} 
-                                        textAnchor="middle" 
-                                        dominantBaseline="middle"
+                                    textAnchor="middle" 
+                                    dominantBaseline="middle"
                                         fill="#1f2937"
-                                        fontWeight="bold"
-                                        style={{ pointerEvents: 'none', userSelect: 'none' }}
-                                    >
+                                    fontWeight="bold"
+                                    style={{ pointerEvents: 'none', userSelect: 'none' }}
+                                >
                                         {(() => {
                                             // Extrair apenas o número do nome do box (ex: "BLimao001" -> "1", "Li015" -> "15")
                                             const match = b.nome?.match(/(\d+)/);
                                             return match ? match[1] : (b.dbId || '');
                                         })()}
-                                    </text>
+                                </text>
                                 )}
                                 {/* Ícone "V" para boxes ocupados */}
                                 {b.status === 'Ocupado' && viewOptions.showMotos && (

@@ -27,6 +27,7 @@ import br.com.fiap.mottu.model.Patio; // Entidade Pátio
 import br.com.fiap.mottu.model.Contato; //
 import br.com.fiap.mottu.model.Endereco; //
 // Exceções (tratadas globalmente)
+import br.com.fiap.mottu.exception.InvalidInputException;
 // import br.com.fiap.mottu.exception.DuplicatedResourceException;
 // import br.com.fiap.mottu.exception.ResourceNotFoundException;
 
@@ -147,6 +148,51 @@ public class PatioController {
         log.info("Atualizando pátio ID {}: {}", id, patioRequestDto); //
         PatioResponseDto patioAtualizado = patioMapper.toResponseDto(patioService.atualizarPatio(id, patioRequestDto)); //
         log.info("Pátio ID {} atualizado.", id); //
+        return ResponseEntity.ok(patioAtualizado);
+    }
+
+    @Operation(
+        summary = "Atualizar status do pátio",
+        description = "Atualiza apenas o status de um pátio sem alterar seus relacionamentos. " +
+                      "Status válidos: 'A' (Ativo) ou 'I' (Inativo). " +
+                      "Este endpoint é ideal para ativar/desativar um pátio rapidamente sem precisar enviar todos os dados."
+    )
+    @ApiResponse(
+        responseCode = "200",
+        description = "Status do pátio atualizado com sucesso",
+        content = @Content(
+            mediaType = "application/json",
+            schema = @Schema(implementation = PatioResponseDto.class)
+        )
+    )
+    @ApiResponse(
+        responseCode = "404",
+        description = "Pátio não encontrado"
+    )
+    @ApiResponse(
+        responseCode = "400",
+        description = "Status inválido. Use 'A' (Ativo) ou 'I' (Inativo)"
+    )
+    @PatchMapping("/{id}/status")
+    public ResponseEntity<PatioResponseDto> atualizarStatusPatio(
+            @PathVariable(value = "id") Long id, 
+            @RequestParam(value = "status") String status) {
+        log.info("Atualizando status do pátio ID {} para: {}", id, status);
+        
+        // Validar status
+        if (!status.equals("A") && !status.equals("I")) {
+            throw new InvalidInputException(
+                "status", 
+                status, 
+                "Status inválido. Use 'A' (Ativo) ou 'I' (Inativo)."
+            );
+        }
+        
+        PatioResponseDto patioAtualizado = patioMapper.toResponseDto(
+            patioService.atualizarStatusPatio(id, status)
+        );
+        
+        log.info("Status do pátio ID {} atualizado para: {}", id, status);
         return ResponseEntity.ok(patioAtualizado);
     }
 

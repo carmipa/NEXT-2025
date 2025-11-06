@@ -7,6 +7,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -43,6 +44,11 @@ public interface PatioRepository extends JpaRepository<Patio, Long>, JpaSpecific
 
     @Query("SELECT p FROM Patio p LEFT JOIN FETCH p.contato LEFT JOIN FETCH p.endereco WHERE p.idPatio = :idPatio")
     Optional<Patio> findByIdWithContatoAndEndereco(@Param("idPatio") Long idPatio);
+    
+    // Atualizar apenas o status do pátio sem tocar nos relacionamentos
+    @Modifying
+    @Query("UPDATE Patio p SET p.status = :status WHERE p.idPatio = :idPatio")
+    int updateStatus(@Param("idPatio") Long idPatio, @Param("status") String status);
     
     // Método para obter ocupação atual dos pátios
     @Query(value = """

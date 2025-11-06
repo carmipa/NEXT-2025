@@ -266,9 +266,21 @@ export const PatioService = {
         id: number,
         payload: PatioRequestDto
     ): Promise<PatioResponseDto> => {
-        const { data } = await api.put<PatioResponseDto>(
+        const { data} = await api.put<PatioResponseDto>(
             `/patios/${id}`,
             payload
+        );
+        return data;
+    },
+
+    updateStatus: async (
+        id: number,
+        status: 'A' | 'I'
+    ): Promise<PatioResponseDto> => {
+        const { data } = await api.patch<PatioResponseDto>(
+            `/patios/${id}/status`,
+            null,
+            { params: { status } }
         );
         return data;
     },

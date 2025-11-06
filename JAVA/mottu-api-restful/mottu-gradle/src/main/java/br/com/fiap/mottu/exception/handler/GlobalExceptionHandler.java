@@ -48,7 +48,19 @@ public class GlobalExceptionHandler {
         body.put("timestamp", LocalDateTime.now());
         body.put("status", HttpStatus.CONFLICT.value());
         body.put("error", "Conflito de Dados");
-        body.put("message", ex.getMessage());
+        
+        String message = ex.getMessage();
+        
+        // Melhorar mensagem específica para boxes duplicados
+        if (message != null && (message.contains("Box") || message.contains("box"))) {
+            body.put("message", message);
+            body.put("errorType", "DUPLICATED_BOX");
+            body.put("suggestion", "Verifique se há boxes antigos com os mesmos nomes. Você pode precisar removê-los antes de criar novos boxes com os mesmos nomes.");
+        } else {
+            body.put("message", message);
+            body.put("errorType", "DUPLICATED_RESOURCE");
+        }
+        
         body.put("path", request.getDescription(false));
         return new ResponseEntity<>(body, HttpStatus.CONFLICT);
     }
@@ -142,8 +154,8 @@ public class GlobalExceptionHandler {
         boolean isDeleteOperation = path != null && path.contains("DELETE");
         
         if (message != null) {
-            if (message.contains("duplicate") || message.contains("UNIQUE")) {
-                body.put("message", "Já existe um registro com estes dados. Verifique se não há duplicação.");
+        if (message.contains("duplicate") || message.contains("UNIQUE")) {
+            body.put("message", "Já existe um registro com estes dados. Verifique se não há duplicação.");
                 body.put("errorType", "DUPLICATE_KEY_ERROR");
             } else if (message.contains("foreign key") || message.contains("FK") || message.contains("restrição de integridade")) {
                 // Mensagem específica para exclusão de pátio

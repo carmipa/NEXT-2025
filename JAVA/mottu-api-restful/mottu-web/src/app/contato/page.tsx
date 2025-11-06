@@ -137,31 +137,20 @@ export default function ContactsPage() {
             {/* Novo Formulário e Mapa */}
             <ContactMapSection />
 
-            {/* --- Repositórios do Projeto --- */}
+            {/* --- Repositório do Projeto --- */}
             <div className="mt-8 sm:mt-10 lg:mt-12 rounded-xl bg-black/20 p-4 sm:p-6 border border-white/10 text-center transition-all duration-300 hover:border-purple-500/50 hover:shadow-lg hover:shadow-purple-500/20">
                 <h2 className="text-lg sm:text-xl md:text-2xl font-bold mb-3 sm:mb-4 text-white flex items-center justify-center gap-2 sm:gap-3">
                     <i className="ion-logo-github text-purple-400 text-xl sm:text-2xl md:text-3xl"></i> 
-                    <span className="font-montserrat">Repositórios do Projeto</span>
+                    <span className="font-montserrat">Repositório do Projeto</span>
                 </h2>
-                <div className="space-y-2 sm:space-y-3 max-w-2xl mx-auto">
-                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-1 sm:gap-2 text-left group font-montserrat text-xs sm:text-sm">
-                        <div className="flex items-center gap-2">
-                            <i className="ion-ios-git-branch text-cyan-400 text-sm sm:text-base"></i>
-                            <span className="font-semibold">Repositório Principal:</span>
-                        </div>
-                        <a href="https://github.com/carmipa/challenge_2025_2_semestre_mottu_parte_1" target="_blank" rel="noopener noreferrer" className="text-sky-300 hover:underline truncate hover:text-cyan-400 transition-colors duration-200 text-xs sm:text-sm">
-                            https://github.com/carmipa/challenge_2025_2_semestre_mottu_parte_1
-                        </a>
+                <div className="flex flex-col sm:flex-row items-center justify-center gap-2 text-center group font-montserrat text-xs sm:text-sm">
+                    <div className="flex items-center gap-2">
+                        <i className="ion-ios-git-branch text-cyan-400 text-base sm:text-lg"></i>
+                        <span className="font-semibold">Repositório Principal:</span>
                     </div>
-                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-1 sm:gap-2 text-left group font-montserrat text-xs sm:text-sm">
-                        <div className="flex items-center gap-2">
-                            <i className="ion-ios-book text-green-400 text-sm sm:text-base"></i>
-                            <span className="font-semibold">Repositório da Matéria:</span>
-                        </div>
-                        <a href="https://github.com/carmipa/challenge_2025_2_semestre_mottu_parte_1/tree/main/Java_Advanced/next" target="_blank" rel="noopener noreferrer" className="text-sky-300 hover:underline truncate hover:text-green-400 transition-colors duration-200 text-xs sm:text-sm">
-                            .../Java_Advanced
-                        </a>
-                    </div>
+                    <a href="https://github.com/carmipa/NEXT-2025" target="_blank" rel="noopener noreferrer" className="text-sky-300 hover:underline hover:text-cyan-400 transition-colors duration-200 text-sm sm:text-base font-semibold">
+                        github.com/carmipa/NEXT-2025
+                    </a>
                 </div>
             </div>
 

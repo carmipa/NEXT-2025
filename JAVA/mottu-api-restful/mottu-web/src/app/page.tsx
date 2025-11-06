@@ -44,15 +44,26 @@ export default function HomePage() {
                         </p>
                     </div>
 
-                    <div className="flex flex-col sm:flex-row justify-center gap-2 pcar-actions mt-4">
-                        <Link href="/dashboard">
-                            <button className="font-poppins w-full sm:w-auto px-6 py-2 text-sm font-semibold text-[var(--color-mottu-text)] bg-[var(--color-mottu-default)] rounded-full shadow-lg hover:bg-[var(--color-mottu-light)] hover:scale-105 focus:outline-none focus:ring-2 focus:ring-[var(--color-mottu-light)] focus:ring-offset-2 focus:ring-offset-black transition-all duration-300 ease-in-out transform-gpu">
-                                Começar Agora
-                            </button>
-                        </Link>
-                        <Link href="/contato">
-                            <button className="font-poppins w-full sm:w-auto px-6 py-2 text-sm font-semibold text-[var(--color-mottu-text)] bg-[var(--color-mottu-default)] rounded-full shadow-lg hover:bg-[var(--color-mottu-light)] hover:scale-105 focus:outline-none focus:ring-2 focus:ring-[var(--color-mottu-light)] focus:ring-offset-2 focus:ring-offset-black transition-all duration-300 ease-in-out transform-gpu">
-                                Fale Conosco
+                    <div className="flex flex-col items-center gap-3 pcar-actions mt-4">
+                        {/* Primeira linha - Botões principais */}
+                        <div className="flex flex-col sm:flex-row justify-center gap-2 w-full">
+                            <Link href="/dashboard">
+                                <button className="font-poppins w-full sm:w-auto px-6 py-2 text-sm font-semibold text-[var(--color-mottu-text)] bg-[var(--color-mottu-default)] rounded-full shadow-lg hover:bg-[var(--color-mottu-light)] hover:scale-105 focus:outline-none focus:ring-2 focus:ring-[var(--color-mottu-light)] focus:ring-offset-2 focus:ring-offset-black transition-all duration-300 ease-in-out transform-gpu">
+                                    Começar Agora
+                                </button>
+                            </Link>
+                            <Link href="/contato">
+                                <button className="font-poppins w-full sm:w-auto px-6 py-2 text-sm font-semibold text-[var(--color-mottu-text)] bg-[var(--color-mottu-default)] rounded-full shadow-lg hover:bg-[var(--color-mottu-light)] hover:scale-105 focus:outline-none focus:ring-2 focus:ring-[var(--color-mottu-light)] focus:ring-offset-2 focus:ring-offset-black transition-all duration-300 ease-in-out transform-gpu">
+                                    Fale Conosco
+                                </button>
+                            </Link>
+                        </div>
+
+                        {/* Segunda linha - Botão App Rastreamento */}
+                        <Link href="/radar/app-download">
+                            <button className="font-poppins w-full sm:w-auto px-6 py-2 text-sm font-semibold text-[var(--color-mottu-text)] bg-[var(--color-mottu-default)] rounded-full shadow-lg hover:bg-[var(--color-mottu-light)] hover:scale-105 focus:outline-none focus:ring-2 focus:ring-[var(--color-mottu-light)] focus:ring-offset-2 focus:ring-offset-black transition-all duration-300 ease-in-out transform-gpu flex items-center gap-2 justify-center">
+                                <i className="ion-logo-android text-lg"></i>
+                                <span>App Rastreamento</span>
                             </button>
                         </Link>
                     </div>

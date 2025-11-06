@@ -4,7 +4,10 @@ package br.com.fiap.mottu.exception;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.ResponseStatus;
 
-// Anotação para que o Spring mude o status HTTP automaticamente
+/**
+ * Exceção lançada quando um recurso solicitado não é encontrado.
+ * Retorna HTTP 404 (Not Found).
+ */
 @ResponseStatus(HttpStatus.NOT_FOUND)
 public class ResourceNotFoundException extends RuntimeException {
 

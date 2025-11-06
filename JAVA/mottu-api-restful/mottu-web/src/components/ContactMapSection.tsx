@@ -43,7 +43,10 @@ export default function ContactMapSection() {
       <form className="pcw-form" onSubmit={handleSubmit}>
         <div className="pcw-heading">Envie uma Mensagem</div>
 
-        <label className="pcw-label" htmlFor="pcwName">Seu Nome</label>
+        <label className="pcw-label flex items-center gap-2" htmlFor="pcwName">
+          <i className="ion-ios-person text-blue-400"></i>
+          <span>Seu Nome</span>
+        </label>
         <input 
           className="pcw-input" 
           id="pcwName" 
@@ -55,7 +58,10 @@ export default function ContactMapSection() {
           required 
         />
 
-        <label className="pcw-label" htmlFor="pcwEmail">Seu E-mail</label>
+        <label className="pcw-label flex items-center gap-2" htmlFor="pcwEmail">
+          <i className="ion-ios-mail text-green-400"></i>
+          <span>Seu E-mail</span>
+        </label>
         <input 
           className="pcw-input" 
           id="pcwEmail" 
@@ -67,7 +73,10 @@ export default function ContactMapSection() {
           required 
         />
 
-        <label className="pcw-label" htmlFor="pcwMessage">Mensagem</label>
+        <label className="pcw-label flex items-center gap-2" htmlFor="pcwMessage">
+          <i className="ion-ios-chatbubbles text-purple-400"></i>
+          <span>Mensagem</span>
+        </label>
         <textarea 
           className="pcw-textarea" 
           id="pcwMessage" 

@@ -124,3 +124,14 @@ useEffect(() => {
 **Status**: ✅ Implementado e Testado  
 **Data**: 2025-11-05
 
+
+
+
+
+
+
+
+
+
+
+

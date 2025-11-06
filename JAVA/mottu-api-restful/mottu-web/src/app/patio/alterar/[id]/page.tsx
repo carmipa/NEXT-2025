@@ -237,60 +237,139 @@ export default function AlterarPatioPage() {
                 enderecoId: enderecoId
             });
 
-            // 2. Remover todas as zonas existentes (isso também remove os boxes associados)
-            // Buscar zonas existentes do pátio
-            const zonasExistentes = await ZonaService.listarPorPatio(id!, patioOriginal!.status);
-            if (zonasExistentes && zonasExistentes.content && zonasExistentes.content.length > 0) {
-                for (const zona of zonasExistentes.content) {
+            // 2. Gerenciar zonas: comparar existentes com as do wizard
+            const zonasExistentesResponse = await ZonaService.listarPorPatio(id!, patioOriginal!.status);
+            const zonasExistentes = zonasExistentesResponse.content || [];
+            
+            // Criar mapa de zonas existentes por nome (case-insensitive)
+            const zonasExistentesMap = new Map<string, ZonaResponseDto>();
+            zonasExistentes.forEach(z => zonasExistentesMap.set(z.nome.toLowerCase(), z));
+            
+            // Criar mapa de zonas do wizard por nome
+            const zonasWizardMap = new Map<string, ZonaResponseDto>();
+            wizardData.zonas.forEach(z => zonasWizardMap.set(z.nome.toLowerCase(), z));
+            
+            // Deletar zonas que foram removidas do wizard
+            for (const zonaExistente of zonasExistentes) {
+                if (!zonasWizardMap.has(zonaExistente.nome.toLowerCase())) {
                     try {
-                        await ZonaService.deletePorPatio(id!, patioOriginal!.status, zona.idZona);
+                        await ZonaService.deletePorPatio(id!, patioOriginal!.status, zonaExistente.idZona);
+                        console.log(`Zona "${zonaExistente.nome}" removida`);
                     } catch (err) {
-                        console.warn(`Erro ao remover zona ${zona.idZona}:`, err);
+                        console.warn(`Erro ao remover zona ${zonaExistente.idZona}:`, err);
                     }
                 }
             }
-
-            // 3. Criar novas zonas se existirem
-            if (wizardData.zonas.length > 0) {
-                console.log('Criando zonas:', wizardData.zonas);
-                for (const zona of wizardData.zonas) {
+            
+            // Criar ou atualizar zonas do wizard
+            for (const zona of wizardData.zonas) {
+                const zonaExistente = zonasExistentesMap.get(zona.nome.toLowerCase());
+                
+                if (zonaExistente) {
+                    // Zona já existe, atualizar apenas se os dados mudaram
                     try {
                         const zonaPayload = {
                             nome: zona.nome,
-                            status: zona.status || 'A', // Usar status existente ou padrão: Ativa
+                            status: zona.status || zonaExistente.status || 'A',
                             observacao: zona.observacao || '',
                             patioId: id!,
                             patioStatus: patioOriginal!.status
                         };
-                        console.log('Payload da zona:', zonaPayload);
+                        await ZonaService.updatePorPatio(id!, patioOriginal!.status, zonaExistente.idZona, zonaPayload);
+                        console.log(`Zona "${zona.nome}" atualizada`);
+                    } catch (err) {
+                        console.error(`Erro ao atualizar zona ${zona.nome}:`, err);
+                        throw err;
+                    }
+                } else {
+                    // Zona não existe, criar nova
+                    try {
+                        const zonaPayload = {
+                            nome: zona.nome,
+                            status: zona.status || 'A',
+                            observacao: zona.observacao || '',
+                            patioId: id!,
+                            patioStatus: patioOriginal!.status
+                        };
                         await ZonaService.create(zonaPayload);
+                        console.log(`Zona "${zona.nome}" criada`);
                     } catch (err) {
                         console.error(`Erro ao criar zona ${zona.nome}:`, err);
-                        throw err; // Re-throw para parar o processo se houver erro
+                        throw err;
                     }
                 }
             }
 
-            // 4. Criar novos boxes se existirem
-            if (wizardData.boxes.length > 0) {
-                console.log('Criando boxes:', wizardData.boxes);
-                for (const box of wizardData.boxes) {
+            // 3. Gerenciar boxes: comparar existentes com os do wizard
+            const boxesExistentesResponse = await BoxService.listarPorPatio(id!, patioOriginal!.status);
+            const boxesExistentes = boxesExistentesResponse.content || [];
+            
+            // Criar mapa de boxes existentes por nome (case-insensitive)
+            const boxesExistentesMap = new Map<string, BoxResponseDto>();
+            boxesExistentes.forEach(b => boxesExistentesMap.set(b.nome.toLowerCase(), b));
+            
+            // Criar mapa de boxes do wizard por nome
+            const boxesWizardMap = new Map<string, BoxResponseDto>();
+            wizardData.boxes.forEach(b => boxesWizardMap.set(b.nome.toLowerCase(), b));
+            
+            // Deletar boxes que foram removidos do wizard
+            for (const boxExistente of boxesExistentes) {
+                if (!boxesWizardMap.has(boxExistente.nome.toLowerCase())) {
+                    try {
+                        await BoxService.delete(boxExistente.idBox);
+                        console.log(`Box "${boxExistente.nome}" removido`);
+                    } catch (err) {
+                        console.warn(`Erro ao remover box ${boxExistente.idBox}:`, err);
+                    }
+                }
+            }
+            
+            // Criar ou atualizar boxes do wizard
+            for (const box of wizardData.boxes) {
+                const boxExistente = boxesExistentesMap.get(box.nome.toLowerCase());
+                
+                if (boxExistente) {
+                    // Box já existe, atualizar apenas se os dados mudaram
+                    try {
+                        const boxPayload = {
+                            nome: box.nome,
+                            status: box.status || boxExistente.status || 'L',
+                            dataEntrada: box.dataEntrada || boxExistente.dataEntrada || new Date().toISOString(),
+                            dataSaida: box.dataSaida || boxExistente.dataSaida || new Date().toISOString(),
+                            observacao: box.observacao || boxExistente.observacao || '',
+                            patioId: id!,
+                            patioStatus: patioOriginal!.status
+                        };
+                        await BoxService.update(boxExistente.idBox, boxPayload);
+                        console.log(`Box "${box.nome}" atualizado`);
+                    } catch (err: any) {
+                        console.error(`Erro ao atualizar box ${box.nome}:`, err);
+                        throw err;
+                    }
+                } else {
+                    // Box não existe, criar novo
                     try {
                         const boxPayload = {
                             nome: box.nome,
                             status: box.status || 'L',
-                            dataEntrada: box.dataEntrada || new Date().toISOString(), // Data atual se não especificada
-                            dataSaida: box.dataSaida || new Date().toISOString(), // Data atual se não especificada
+                            dataEntrada: box.dataEntrada || new Date().toISOString(),
+                            dataSaida: box.dataSaida || new Date().toISOString(),
                             observacao: box.observacao || '',
-                            zonaNome: 'Padrão', // Zona padrão se não especificada
                             patioId: id!,
                             patioStatus: patioOriginal!.status
                         };
-                        console.log('Payload do box:', boxPayload);
                         await BoxService.create(boxPayload);
-                    } catch (err) {
+                        console.log(`Box "${box.nome}" criado`);
+                    } catch (err: any) {
                         console.error(`Erro ao criar box ${box.nome}:`, err);
-                        throw err; // Re-throw para parar o processo se houver erro
+                        
+                        // Tratamento específico para box duplicado
+                        if (err.response?.status === 409 || err.name === 'DuplicatedResourceException') {
+                            const errorMessage = err.response?.data?.message || err.message || `Box com nome '${box.nome}' já existe`;
+                            throw new Error(`Falha ao criar box "${box.nome}": ${errorMessage}. Este box já existe no sistema. Por favor, remova os boxes existentes ou escolha nomes diferentes.`);
+                        }
+                        
+                        throw err;
                     }
                 }
             }
@@ -330,7 +409,38 @@ export default function AlterarPatioPage() {
                 boxes: []
             });
         } catch (err: any) {
-            setError(err.response?.data?.message || "Erro ao alterar pátio.");
+            // Melhorar tratamento de erro com mensagens mais específicas
+            let errorMessage = "Erro ao alterar pátio.";
+            
+            if (err.response?.status === 409) {
+                // Conflito - recurso duplicado
+                const apiMessage = err.response?.data?.message || err.message;
+                const suggestion = err.response?.data?.suggestion;
+                
+                if (apiMessage.includes('Box') || apiMessage.includes('box') || err.response?.data?.errorType === 'DUPLICATED_BOX') {
+                    if (suggestion) {
+                        errorMessage = `${apiMessage}\n\n💡 ${suggestion}`;
+                    } else {
+                        errorMessage = `${apiMessage}\n\n💡 Verifique se há boxes antigos com os mesmos nomes. Você pode precisar removê-los antes de criar novos boxes com os mesmos nomes.`;
+                    }
+                } else {
+                    errorMessage = apiMessage || "Já existe um recurso com essas informações. Verifique os dados e tente novamente.";
+                }
+            } else if (err.response?.status === 400) {
+                // Dados inválidos
+                errorMessage = err.response?.data?.message || "Dados inválidos fornecidos. Verifique as informações e tente novamente.";
+            } else if (err.response?.status === 404) {
+                // Recurso não encontrado
+                errorMessage = err.response?.data?.message || "Recurso não encontrado. Verifique se o pátio ainda existe.";
+            } else if (err.message) {
+                // Mensagem de erro customizada
+                errorMessage = err.message;
+            } else if (err.response?.data?.message) {
+                errorMessage = err.response.data.message;
+            }
+            
+            setError(errorMessage);
+            console.error("Erro detalhado ao alterar pátio:", err);
         } finally {
             setIsLoading(false);
         }
@@ -384,9 +494,9 @@ export default function AlterarPatioPage() {
                             <div className="flex flex-col sm:flex-row gap-4 justify-center">
                                 <Link 
                                     href="/gerenciamento-patio"
-                                    className="neumorphic-button-primary px-6 py-3 transition-colors font-medium"
+                                    className="neumorphic-button-green flex items-center justify-center gap-2 px-6 py-3 font-semibold transition-all duration-300 hover:scale-105 hover:shadow-lg text-white"
                                 >
-                                    <i className="ion-ios-arrow-back mr-2"></i>
+                                    <i className="ion-ios-arrow-back"></i>
                                     Voltar ao Gerenciamento
                                 </Link>
                                 <button
@@ -396,9 +506,9 @@ export default function AlterarPatioPage() {
                                         setError(null);
                                         setSuccess(null);
                                     }}
-                                    className="neumorphic-button px-6 py-3 transition-colors font-medium"
+                                    className="neumorphic-button flex items-center justify-center gap-2 px-6 py-3 font-semibold transition-all duration-300 hover:scale-105 hover:shadow-lg"
                                 >
-                                    <i className="ion-ios-settings mr-2"></i>
+                                    <i className="ion-ios-settings"></i>
                                     Alterar Outro Pátio
                                 </button>
                             </div>

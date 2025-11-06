@@ -26,6 +26,7 @@ export default function PatioPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [viewType, setViewType] = useState<'cards' | 'table'>('cards');
+  const [mostrarInativos, setMostrarInativos] = useState(true);
   
   // Estados para paginação
   const [currentPage, setCurrentPage] = useState(1);
@@ -45,6 +46,42 @@ export default function PatioPage() {
       setError('Erro ao carregar pátios: ' + (err.message || 'Erro desconhecido'));
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleToggleStatus = async (patio: PatioResponseDto) => {
+    const novoStatus = patio.status === 'A' ? 'I' : 'A';
+    const statusTexto = novoStatus === 'A' ? 'ATIVAR' : 'DESATIVAR';
+    const statusAtual = patio.status === 'A' ? 'ATIVO' : 'INATIVO';
+    
+    const confirmacao = window.confirm(
+      `🔄 Tem certeza que deseja ${statusTexto} o pátio "${patio.nomePatio}"?\n\n` +
+      `Status atual: ${statusAtual}\n` +
+      `Novo status: ${novoStatus === 'A' ? 'ATIVO' : 'INATIVO'}\n\n` +
+      `Clique em OK para confirmar.`
+    );
+    
+    if (!confirmacao) return;
+    
+    try {
+      // Atualizar apenas o status usando o novo endpoint
+      await PatioService.updateStatus(patio.idPatio, novoStatus);
+      
+      // Atualizar a lista local
+      setPatios(patios.map(p => 
+        p.idPatio === patio.idPatio 
+          ? { ...p, status: novoStatus } 
+          : p
+      ));
+      
+      setError(null);
+      
+      // Mostrar mensagem de sucesso
+      alert(`✅ Pátio "${patio.nomePatio}" ${statusTexto === 'ATIVAR' ? 'ativado' : 'desativado'} com sucesso!`);
+    } catch (err: any) {
+      const errorMessage = err.response?.data?.message || err.message || `Erro ao ${statusTexto.toLowerCase()} pátio.`;
+      setError(errorMessage);
+      alert(`❌ Erro: ${errorMessage}`);
     }
   };
 
@@ -82,9 +119,13 @@ export default function PatioPage() {
   const getFilteredData = () => {
     return patios.filter((item: PatioResponseDto) => {
       const searchFields = [item.nomePatio, item.observacao];
-      return searchFields.some(field => 
+      const passesSearch = searchFields.some(field => 
         field && field.toLowerCase().includes(searchTerm.toLowerCase())
       );
+      
+      const passesStatus = mostrarInativos || item.status === 'A';
+      
+      return passesSearch && passesStatus;
     });
   };
 
@@ -168,19 +209,55 @@ export default function PatioPage() {
             </div>
           )}
 
-          {/* Search */}
+          {/* Search and Filters */}
           <div className="mb-6 sm:mb-8 neumorphic-container">
-            <div className="relative">
-              <Search className="absolute left-3 sm:left-4 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4 sm:w-5 sm:h-5 z-10" />
-              <input
-                type="text"
-                placeholder=""
-                title="Buscar pátios"
-                aria-label="Buscar pátios"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="neumorphic-input pl-10 sm:pl-14 pr-3 sm:pr-4 text-sm sm:text-base"
-              />
+            <div className="flex flex-col gap-4">
+              {/* Search */}
+              <div className="relative">
+                <Search className="absolute left-3 sm:left-4 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4 sm:w-5 sm:h-5 z-10" />
+                <input
+                  type="text"
+                  placeholder=""
+                  title="Buscar pátios"
+                  aria-label="Buscar pátios"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="neumorphic-input pl-10 sm:pl-14 pr-3 sm:pr-4 text-sm sm:text-base"
+                />
+              </div>
+              
+              {/* Filtro de Status */}
+              <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg border border-blue-200">
+                <div className="flex items-center gap-2">
+                  <i className="ion-ios-eye text-blue-600 text-xl"></i>
+                  <span className="text-sm font-semibold text-slate-700">Exibir pátios inativos</span>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={mostrarInativos}
+                    onChange={(e) => setMostrarInativos(e.target.checked)}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-gray-300 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                </label>
+              </div>
+              
+              {/* Contador de Pátios */}
+              <div className="flex items-center gap-4 text-xs text-slate-600">
+                <div className="flex items-center gap-1">
+                  <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                  <span>{patios.filter(p => p.status === 'A').length} Ativos</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-2 h-2 rounded-full bg-red-500"></div>
+                  <span>{patios.filter(p => p.status === 'I').length} Inativos</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+                  <span>{getFilteredData().length} Exibidos</span>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -234,17 +311,31 @@ export default function PatioPage() {
           {viewType === 'cards' ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-8 mb-8 sm:mb-12">
               {getPaginatedData().map((item: PatioResponseDto) => (
-                <div key={item.idPatio} className="neumorphic-card-gradient p-3 sm:p-5 flex flex-col justify-between transition-all duration-300 hover:shadow-2xl hover:scale-105 transform hover:-translate-y-2 cursor-pointer">
+                <div 
+                  key={item.idPatio} 
+                  className={`neumorphic-card-gradient p-3 sm:p-5 flex flex-col justify-between transition-all duration-300 hover:shadow-2xl hover:scale-105 transform hover:-translate-y-2 cursor-pointer ${
+                    item.status === 'I' ? 'opacity-75 border-2 border-red-300' : ''
+                  }`}
+                >
                   <div>
                     <div className="flex items-center justify-between mb-2 sm:mb-3">
-                      <div className="flex items-center gap-1 sm:gap-2">
+                      <div className="flex items-center gap-1 sm:gap-2 flex-1">
                         <span className="text-xs font-semibold bg-[var(--neumorphic-bg)] text-[var(--color-mottu-dark)] px-2 sm:px-3 py-1 rounded-full shadow-inner" style={{fontFamily: 'Montserrat, sans-serif'}}>ID: {item.idPatio}</span>
-                        <h2 className="text-lg sm:text-xl font-bold text-[var(--color-mottu-dark)] truncate flex items-center gap-1 sm:gap-2" title={item.nomePatio} style={{fontFamily: 'Montserrat, sans-serif'}}>
-                          <i className="ion-ios-home text-blue-500 text-base sm:text-lg"></i>
-                          {item.nomePatio}
-                        </h2>
                       </div>
+                      {/* Badge de Status */}
+                      <span className={`px-2 sm:px-3 py-1 rounded-full text-xs font-bold shadow-lg ${
+                        item.status === 'A' 
+                          ? 'bg-green-500 text-white' 
+                          : 'bg-red-500 text-white animate-pulse'
+                      }`} style={{fontFamily: 'Montserrat, sans-serif'}}>
+                        {item.status === 'A' ? '✓ ATIVO' : '✕ INATIVO'}
+                      </span>
                     </div>
+                    
+                    <h2 className="text-lg sm:text-xl font-bold text-[var(--color-mottu-dark)] truncate flex items-center gap-1 sm:gap-2 mb-3" title={item.nomePatio} style={{fontFamily: 'Montserrat, sans-serif'}}>
+                      <i className="ion-ios-home text-blue-500 text-base sm:text-lg"></i>
+                      {item.nomePatio}
+                    </h2>
                     
                     <div className="space-y-2 sm:space-y-3 text-xs sm:text-sm mb-3 sm:mb-4">
                       <div className="flex items-center">
@@ -290,6 +381,21 @@ export default function PatioPage() {
                     >
                       <i className="ion-ios-create text-sm sm:text-lg text-yellow-500"></i>
                     </Link>
+                    <button 
+                      onClick={() => handleToggleStatus(item)} 
+                      className={`p-1.5 sm:p-2 rounded-full hover:scale-110 transition-all duration-300 transform hover:-translate-y-1 ${
+                        item.status === 'A' 
+                          ? 'text-orange-500 hover:bg-orange-100' 
+                          : 'text-green-500 hover:bg-green-100'
+                      }`}
+                      title={item.status === 'A' ? 'Desativar Pátio' : 'Ativar Pátio'}
+                    >
+                      <i className={`text-sm sm:text-lg ${
+                        item.status === 'A' 
+                          ? 'ion-ios-power text-orange-500' 
+                          : 'ion-ios-power text-green-500'
+                      }`}></i>
+                    </button>
                     <button 
                       onClick={() => handleDelete(item.idPatio)} 
                       className="p-1.5 sm:p-2 rounded-full text-red-500 hover:bg-red-100 hover:scale-110 transition-all duration-300 transform hover:-translate-y-1" 
@@ -339,6 +445,12 @@ export default function PatioPage() {
                           <span>Endereços</span>
                         </div>
                       </th>
+                      <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider" style={{fontFamily: 'Montserrat, sans-serif'}}>
+                        <div className="flex items-center gap-1">
+                          <i className="ion-ios-checkmark-circle text-emerald-500 text-xs sm:text-sm"></i>
+                          <span>Status</span>
+                        </div>
+                      </th>
                       <th className="px-2 sm:px-4 py-2 sm:py-3 text-center text-xs font-medium text-slate-500 uppercase tracking-wider" style={{fontFamily: 'Montserrat, sans-serif'}}>
                         <div className="flex items-center justify-center gap-1">
                           <i className="ion-ios-settings text-gray-500 text-xs sm:text-sm"></i>
@@ -349,7 +461,7 @@ export default function PatioPage() {
                   </thead>
                   <tbody className="bg-white divide-y divide-slate-200">
                     {getPaginatedData().map((item: PatioResponseDto) => (
-                      <tr key={item.idPatio} className="hover:bg-slate-50 transition-all duration-300 hover:shadow-lg">
+                      <tr key={item.idPatio} className={`hover:bg-slate-50 transition-all duration-300 hover:shadow-lg ${item.status === 'I' ? 'bg-red-50' : ''}`}>
                         <td className="px-2 sm:px-4 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-slate-600" style={{fontFamily: 'Montserrat, sans-serif'}}>{item.idPatio}</td>
                         <td className="px-2 sm:px-4 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm font-medium text-slate-900 truncate max-w-[150px] sm:max-w-none" style={{fontFamily: 'Montserrat, sans-serif'}}>
                           <div className="flex items-center gap-1">
@@ -375,6 +487,15 @@ export default function PatioPage() {
                             <span>{item.endereco ? 1 : 0}</span>
                           </div>
                         </td>
+                        <td className="px-2 sm:px-4 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm">
+                          <span className={`inline-flex items-center gap-1 px-2 sm:px-3 py-1 rounded-full text-xs font-bold shadow-md ${
+                            item.status === 'A' 
+                              ? 'bg-green-500 text-white' 
+                              : 'bg-red-500 text-white'
+                          }`} style={{fontFamily: 'Montserrat, sans-serif'}}>
+                            {item.status === 'A' ? '✓ ATIVO' : '✕ INATIVO'}
+                          </span>
+                        </td>
                         <td className="px-2 sm:px-4 py-3 sm:py-4 whitespace-nowrap text-center text-xs sm:text-sm font-medium">
                           <div className="flex justify-center items-center gap-1 sm:gap-2">
                             <Link 
@@ -391,6 +512,21 @@ export default function PatioPage() {
                             >
                               <i className="ion-ios-create text-sm sm:text-lg"></i>
                             </Link>
+                            <button 
+                              onClick={() => handleToggleStatus(item)} 
+                              className={`p-1 rounded-full hover:scale-110 transition-all duration-300 transform hover:-translate-y-1 ${
+                                item.status === 'A' 
+                                  ? 'text-orange-500 hover:bg-orange-100' 
+                                  : 'text-green-500 hover:bg-green-100'
+                              }`}
+                              title={item.status === 'A' ? 'Desativar Pátio' : 'Ativar Pátio'}
+                            >
+                              <i className={`text-sm sm:text-lg ${
+                                item.status === 'A' 
+                                  ? 'ion-ios-power text-orange-500' 
+                                  : 'ion-ios-power text-green-500'
+                              }`}></i>
+                            </button>
                             <button 
                               onClick={() => handleDelete(item.idPatio)} 
                               className="p-1 rounded-full text-red-500 hover:bg-red-100 hover:scale-110 transition-all duration-300 transform hover:-translate-y-1" 

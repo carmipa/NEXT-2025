@@ -715,7 +715,7 @@ export default function MapaBoxPage() {
             
             <div className="relative z-20 container mx-auto px-4 py-8">
                 <div className="space-y-6">
-                    {/* Cabeçalho */}
+                    {/* Cabeçalho - Título e Status */}
                     <div className="neumorphic-container">
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                             <div>
@@ -734,65 +734,6 @@ export default function MapaBoxPage() {
                                     <span>Tempo Real</span>
                                 </div>
 
-                                {/* Botões de Visualização */}
-                                <div className="flex bg-gray-100 rounded-lg p-1">
-                                    <button
-                                        onClick={() => setVisualizacao('patio')}
-                                        className={`px-3 py-2 rounded-md text-sm font-medium transition-all duration-200 flex items-center gap-2 ${
-                                            visualizacao === 'patio'
-                                                ? 'bg-white text-blue-600 shadow-sm'
-                                                : 'text-gray-600 hover:text-gray-800'
-                                        }`}
-                                    >
-                                        <Layout size={16} />
-                                        <span>Pátio</span>
-                                    </button>
-                                    <button
-                                        onClick={() => setVisualizacao('mapa')}
-                                        className={`px-3 py-2 rounded-md text-sm font-medium transition-all duration-200 flex items-center gap-2 ${
-                                            visualizacao === 'mapa'
-                                                ? 'bg-white text-blue-600 shadow-sm'
-                                                : 'text-gray-600 hover:text-gray-800'
-                                        }`}
-                                    >
-                                        <MapPin size={16} />
-                                        <span>Mapa</span>
-                                    </button>
-                                    <button
-                                        onClick={() => setVisualizacao('grade')}
-                                        className={`px-3 py-2 rounded-md text-sm font-medium transition-all duration-200 flex items-center gap-2 ${
-                                            visualizacao === 'grade'
-                                                ? 'bg-white text-blue-600 shadow-sm'
-                                                : 'text-gray-600 hover:text-gray-800'
-                                        }`}
-                                    >
-                                        <Grid3X3 size={16} />
-                                        <span>Grade</span>
-                                    </button>
-                                    <button
-                                        onClick={() => setVisualizacao('abas')}
-                                        className={`px-3 py-2 rounded-md text-sm font-medium transition-all duration-200 flex items-center gap-2 ${
-                                            visualizacao === 'abas'
-                                                ? 'bg-white text-blue-600 shadow-sm'
-                                                : 'text-gray-600 hover:text-gray-800'
-                                        }`}
-                                    >
-                                        <Layout size={16} />
-                                        <span>Gráficos</span>
-                                    </button>
-                                    <button
-                                        onClick={() => setVisualizacao('global')}
-                                        className={`px-3 py-2 rounded-md text-sm font-medium transition-all duration-200 flex items-center gap-2 ${
-                                            visualizacao === 'global'
-                                                ? 'bg-white text-blue-600 shadow-sm'
-                                                : 'text-gray-600 hover:text-gray-800'
-                                        }`}
-                                    >
-                                        <Globe size={16} />
-                                        <span>Vista Global</span>
-                                    </button>
-                                </div>
-
                                 {/* Botão de Atualizar */}
                                 <button
                                     onClick={() => fetchVagas(true)}
@@ -802,6 +743,69 @@ export default function MapaBoxPage() {
                                 >
                                     <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
                                     <span>Atualizar</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Container de Abas - Centralizado e Responsivo */}
+                    <div className="neumorphic-container">
+                        <div className="flex justify-center">
+                            <div className="flex flex-wrap justify-center gap-1 bg-gray-100 rounded-lg p-1 max-w-full">
+                                <button
+                                    onClick={() => setVisualizacao('patio')}
+                                    className={`px-3 py-2 rounded-md text-sm font-medium transition-all duration-200 flex items-center gap-2 ${
+                                        visualizacao === 'patio'
+                                            ? 'bg-white text-blue-600 shadow-sm'
+                                            : 'text-gray-600 hover:text-gray-800'
+                                    }`}
+                                >
+                                    <Layout size={16} />
+                                    <span>Pátio</span>
+                                </button>
+                                <button
+                                    onClick={() => setVisualizacao('mapa')}
+                                    className={`px-3 py-2 rounded-md text-sm font-medium transition-all duration-200 flex items-center gap-2 ${
+                                        visualizacao === 'mapa'
+                                            ? 'bg-white text-blue-600 shadow-sm'
+                                            : 'text-gray-600 hover:text-gray-800'
+                                    }`}
+                                >
+                                    <MapPin size={16} />
+                                    <span>Mapa</span>
+                                </button>
+                                <button
+                                    onClick={() => setVisualizacao('grade')}
+                                    className={`px-3 py-2 rounded-md text-sm font-medium transition-all duration-200 flex items-center gap-2 ${
+                                        visualizacao === 'grade'
+                                            ? 'bg-white text-blue-600 shadow-sm'
+                                            : 'text-gray-600 hover:text-gray-800'
+                                    }`}
+                                >
+                                    <Grid3X3 size={16} />
+                                    <span>Grade</span>
+                                </button>
+                                <button
+                                    onClick={() => setVisualizacao('abas')}
+                                    className={`px-3 py-2 rounded-md text-sm font-medium transition-all duration-200 flex items-center gap-2 ${
+                                        visualizacao === 'abas'
+                                            ? 'bg-white text-blue-600 shadow-sm'
+                                            : 'text-gray-600 hover:text-gray-800'
+                                    }`}
+                                >
+                                    <Layout size={16} />
+                                    <span>Gráficos</span>
+                                </button>
+                                <button
+                                    onClick={() => setVisualizacao('global')}
+                                    className={`px-3 py-2 rounded-md text-sm font-medium transition-all duration-200 flex items-center gap-2 ${
+                                        visualizacao === 'global'
+                                            ? 'bg-white text-blue-600 shadow-sm'
+                                            : 'text-gray-600 hover:text-gray-800'
+                                    }`}
+                                >
+                                    <Globe size={16} />
+                                    <span>Vista Global</span>
                                 </button>
                             </div>
                         </div>

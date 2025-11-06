@@ -567,3 +567,14 @@ ORDER BY PERCENTUAL_OCUPACAO DESC;
 
 **Fim da Análise**
 
+
+
+
+
+
+
+
+
+
+
+

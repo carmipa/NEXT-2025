@@ -354,7 +354,10 @@ export default function FeedbackPage() {
                         </h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                             <div>
-                                <label className="block text-xs sm:text-sm font-medium text-white mb-2">Nome *</label>
+                                <label className="block text-xs sm:text-sm font-medium text-white mb-2 flex items-center gap-2">
+                                    <i className="ion-ios-person text-blue-400 text-base sm:text-lg"></i>
+                                    <span>Nome *</span>
+                                </label>
                                 <input
                                     type="text"
                                     name="nome"
@@ -366,7 +369,10 @@ export default function FeedbackPage() {
                                 />
                             </div>
                             <div>
-                                <label className="block text-xs sm:text-sm font-medium text-white mb-2">Email *</label>
+                                <label className="block text-xs sm:text-sm font-medium text-white mb-2 flex items-center gap-2">
+                                    <i className="ion-ios-mail text-green-400 text-base sm:text-lg"></i>
+                                    <span>Email *</span>
+                                </label>
                                 <input
                                     type="email"
                                     name="email"

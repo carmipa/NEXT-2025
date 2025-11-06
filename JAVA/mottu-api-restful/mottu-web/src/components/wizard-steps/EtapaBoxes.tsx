@@ -21,6 +21,7 @@ const EtapaBoxes: React.FC<EtapaBoxesProps> = ({ wizardData, setWizardData }) =>
     const [quantidadeLote, setQuantidadeLote] = useState<number>(50);
     const [nomeManual, setNomeManual] = useState<string>('');
     const [statusManual, setStatusManual] = useState<'L' | 'O'>('L');
+    const [quantidadeManual, setQuantidadeManual] = useState<number>(1);
 
     const handleGerarEmLote = () => {
         if (!prefixoLote.trim()) {
@@ -52,15 +53,55 @@ const EtapaBoxes: React.FC<EtapaBoxesProps> = ({ wizardData, setWizardData }) =>
             alert('Por favor, informe o nome do box.');
             return;
         }
-        if (wizardData.boxes.some(box => box.nome.toLowerCase() === nomeManual.trim().toLowerCase())) {
-            alert('Um box com este nome já existe.');
+        
+        if (quantidadeManual <= 0 || quantidadeManual > 1000) {
+            alert('A quantidade deve ser entre 1 e 1000.');
             return;
         }
+        
+        const nomesExistentes = new Set(wizardData.boxes.map(box => box.nome.toLowerCase()));
+        const novosBoxes = [];
+        
+        if (quantidadeManual === 1) {
+            // Se quantidade = 1, cria um único box com o nome exato informado
+            if (nomesExistentes.has(nomeManual.trim().toLowerCase())) {
+                alert('Um box com este nome já existe.');
+                return;
+            }
+            novosBoxes.push({ 
+                nome: nomeManual.trim(), 
+                status: statusManual, 
+                zonaNome: 'Padrão', 
+                observacao: '' 
+            });
+        } else {
+            // Se quantidade > 1, cria múltiplos boxes numerados sequencialmente
+            for (let i = 1; i <= quantidadeManual; i++) {
+                const nomeBox = `${nomeManual.trim()}${i.toString().padStart(3, '0')}`;
+                if (nomesExistentes.has(nomeBox.toLowerCase())) continue;
+                novosBoxes.push({ 
+                    nome: nomeBox, 
+                    status: statusManual, 
+                    zonaNome: 'Padrão', 
+                    observacao: '' 
+                });
+                nomesExistentes.add(nomeBox.toLowerCase());
+            }
+        }
+        
+        if (novosBoxes.length === 0) {
+            alert('Nenhum box novo foi criado. Verifique se os nomes já existem.');
+            return;
+        }
+        
         setWizardData(prev => ({
             ...prev,
-            boxes: [...prev.boxes, { nome: nomeManual.trim(), status: statusManual, zonaNome: 'Padrão', observacao: '' }]
+            boxes: [...prev.boxes, ...novosBoxes]
         }));
+        
+        alert(`${novosBoxes.length} box(es) adicionado(s) com sucesso!`);
         setNomeManual('');
+        setQuantidadeManual(1);
     };
 
     const handleRemoveBox = (nomeBoxParaRemover: string) => {
@@ -70,17 +111,30 @@ const EtapaBoxes: React.FC<EtapaBoxesProps> = ({ wizardData, setWizardData }) =>
         }));
     };
 
-    const handleRemoveAllBoxes = () => {
+    const handleRemoveAllBoxes = (e?: React.MouseEvent) => {
+        e?.preventDefault();
+        e?.stopPropagation();
+        
         if (wizardData.boxes.length === 0) {
             alert('Não há boxes para remover.');
             return;
         }
         
-        if (confirm(`Tem certeza que deseja remover TODOS os ${wizardData.boxes.length} boxes? Esta ação não pode ser desfeita.`)) {
+        const totalBoxes = wizardData.boxes.length; // Capturar o valor ANTES de limpar
+        
+        const confirmacao = window.confirm(
+            `⚠️ ATENÇÃO: Tem certeza que deseja remover TODOS os ${totalBoxes} boxes?\n\n` +
+            `Esta ação vai limpar toda a lista. Você pode adicionar novos boxes depois.\n\n` +
+            `Clique em OK para confirmar ou Cancelar para manter os boxes.`
+        );
+        
+        if (confirmacao) {
             setWizardData(prev => ({
                 ...prev,
                 boxes: []
             }));
+            alert(`✅ Todos os ${totalBoxes} boxes foram removidos da lista.\n\n` +
+                  `⚠️ IMPORTANTE: Clique em "Salvar Alterações" no final da página para confirmar as mudanças no servidor.`);
         }
     };
 
@@ -169,7 +223,7 @@ const EtapaBoxes: React.FC<EtapaBoxesProps> = ({ wizardData, setWizardData }) =>
                                     {/* Conteúdo da Adição Manual */}
                                     <div>
                                         <label htmlFor="nomeManual" className="block text-sm font-medium text-slate-700 mb-1 flex items-center gap-2">
-                                            <i className="ion-ios-create text-purple-500"></i> Nome do Box
+                                            <i className="ion-ios-create text-purple-500"></i> Nome do Box {quantidadeManual > 1 && <span className="text-xs text-purple-600">(será numerado sequencialmente)</span>}
                                         </label>
                                         <input 
                                             type="text" 
@@ -177,12 +231,38 @@ const EtapaBoxes: React.FC<EtapaBoxesProps> = ({ wizardData, setWizardData }) =>
                                             value={nomeManual} 
                                             onChange={e => setNomeManual(e.target.value)} 
                                             maxLength={50}
-                                            placeholder="Ex: G-01 (Garagem)" 
+                                            placeholder={quantidadeManual > 1 ? "Ex: curitiba (gerará curitiba001, curitiba002...)" : "Ex: G-01"} 
                                             className="neumorphic-input h-10" 
                                         />
                                         <p className="mt-1 text-xs text-slate-500">
                                             {nomeManual.length}/50 caracteres
                                         </p>
+                                    </div>
+                                    <div>
+                                        <label htmlFor="quantidadeManual" className="block text-sm font-medium text-slate-700 mb-1 flex items-center gap-2">
+                                            <i className="ion-ios-calculator text-green-500"></i> Quantidade
+                                        </label>
+                                        <input 
+                                            type="number" 
+                                            id="quantidadeManual" 
+                                            value={quantidadeManual} 
+                                            onChange={e => setQuantidadeManual(parseInt(e.target.value, 10) || 1)} 
+                                            min="1" 
+                                            max="1000" 
+                                            className="neumorphic-input h-10" 
+                                        />
+                                        <div className="flex gap-2 flex-wrap mt-2">
+                                            {[1, 10, 50, 100].map(q => (
+                                                <button 
+                                                    key={q} 
+                                                    type="button" 
+                                                    onClick={() => setQuantidadeManual(q)} 
+                                                    className={`px-3 py-1 text-xs font-semibold rounded-full transition-all duration-300 hover:scale-110 ${quantidadeManual === q ? 'bg-purple-500 text-white shadow-lg' : 'bg-purple-100 text-purple-700 hover:bg-purple-200'}`}
+                                                >
+                                                    {q}
+                                                </button>
+                                            ))}
+                                        </div>
                                     </div>
                                     <div>
                                         <label htmlFor="statusManual" className="block text-sm font-medium text-slate-700 mb-1 flex items-center gap-2">
@@ -194,7 +274,7 @@ const EtapaBoxes: React.FC<EtapaBoxesProps> = ({ wizardData, setWizardData }) =>
                                         </select>
                                     </div>
                                     <button type="button" onClick={handleAddManual} className="w-full flex items-center justify-center gap-2 px-4 py-3 font-semibold text-white bg-gradient-to-r from-purple-500 to-purple-600 rounded-lg shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-1 active:translate-y-0">
-                                        <PlusCircle size={18} className="text-white" /> Adicionar Box
+                                        <PlusCircle size={18} className="text-white" /> {quantidadeManual === 1 ? 'Adicionar Box' : `Adicionar ${quantidadeManual} Boxes`}
                                     </button>
                                 </div>
                             </Tab.Panel>
@@ -209,6 +289,7 @@ const EtapaBoxes: React.FC<EtapaBoxesProps> = ({ wizardData, setWizardData }) =>
                             </h3>
                             {wizardData.boxes.length > 0 && (
                                 <button
+                                    type="button"
                                     onClick={handleRemoveAllBoxes}
                                     className="px-3 py-2 bg-red-100 hover:bg-red-200 text-red-700 text-sm rounded-lg transition-all duration-300 flex items-center gap-2 hover:scale-105 shadow-md"
                                     title="Remover todos os boxes"

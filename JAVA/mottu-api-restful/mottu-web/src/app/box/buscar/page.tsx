@@ -339,10 +339,17 @@ export default function BuscarBoxesPage() {
                             <div className="flex justify-end items-center gap-1 sm:gap-2 border-t border-slate-200 pt-2 sm:pt-3 mt-3 sm:mt-4">
                               <Link 
                                 href={`/box/detalhes/${box.idBox}`}
-                                className="p-1.5 sm:p-2 rounded-full text-blue-600 hover:bg-blue-100 transition-all duration-300 transform hover:-translate-y-1" 
+                                className="p-1.5 sm:p-2 rounded-full text-blue-600 hover:bg-blue-100 hover:scale-110 transition-all duration-300 transform hover:-translate-y-1" 
                                 title="Ver Detalhes"
                               >
                                 <i className="ion-ios-eye text-sm sm:text-lg"></i>
+                              </Link>
+                              <Link 
+                                href={`/box/editar/${box.idBox}`}
+                                className="p-1.5 sm:p-2 rounded-full text-yellow-500 hover:bg-yellow-100 hover:scale-110 transition-all duration-300 transform hover:-translate-y-1" 
+                                title="Editar Box"
+                              >
+                                <i className="ion-ios-create text-sm sm:text-lg"></i>
                               </Link>
                             </div>
                           </div>
@@ -416,10 +423,17 @@ export default function BuscarBoxesPage() {
                                     <div className="flex justify-center items-center gap-1 sm:gap-2">
                                       <Link 
                                         href={`/box/detalhes/${box.idBox}`} 
-                                        className="p-1 rounded-full text-blue-600 hover:bg-blue-100 transition-all duration-300 transform hover:-translate-y-1" 
+                                        className="p-1 rounded-full text-blue-600 hover:bg-blue-100 hover:scale-110 transition-all duration-300 transform hover:-translate-y-1" 
                                         title="Ver Detalhes"
                                       >
                                         <i className="ion-ios-eye text-sm sm:text-lg"></i>
+                                      </Link>
+                                      <Link 
+                                        href={`/box/editar/${box.idBox}`}
+                                        className="p-1 rounded-full text-yellow-500 hover:bg-yellow-100 hover:scale-110 transition-all duration-300 transform hover:-translate-y-1" 
+                                        title="Editar Box"
+                                      >
+                                        <i className="ion-ios-create text-xs sm:text-sm"></i>
                                       </Link>
                                     </div>
                                   </td>
