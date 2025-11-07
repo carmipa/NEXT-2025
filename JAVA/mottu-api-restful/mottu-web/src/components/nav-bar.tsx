@@ -18,7 +18,9 @@ const navItems: Array<{
     basePath?: string;
     subItems?: SubItem[];
     subGroups?: SubGroup[];
+    isLogo?: boolean; // Marca especial para o logo
 }> = [
+    { href: "/", label: "Mottu Oficina", icon: "", basePath: "/", isLogo: true },
     { href: "/dashboard", label: "Dashboard", icon: "ion-ios-analytics", basePath: "/dashboard" },
     {
         href: "/gerenciamento-patio",
@@ -172,21 +174,29 @@ export default function NavBar({ active }: { active?: string }) {
         // Restaurado o z-50 para garantir que a NavBar e seus dropdowns fiquem acima de todo o conteúdo.
         <header className="w-full sticky top-0 z-50">
             <nav className="w-full bg-[var(--color-mottu-dark)] text-white shadow-md navbar-gradient">
-                <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-                    <div className="flex h-16 items-center justify-between">
-                        <div className="flex items-center gap-3">
-                            <Link href="/" className={`font-bold text-xl px-3 py-2 rounded-lg transition ${pathname === '/' ? 'bg-white text-[var(--color-mottu-dark)] font-semibold' : 'hover:bg-white/10'}`} style={{fontFamily: 'Montserrat, sans-serif'}}>Mottu Oficina</Link>
-                        </div>
-
-                        <div className="hidden md:flex items-center gap-4">
+                <div className="mx-auto max-w-7xl w-full relative">
+                    <div className="flex h-16 items-center justify-center px-4 sm:px-6 lg:px-8">
+                        {/* Menu centralizado - todos os itens incluindo Mottu Oficina */}
+                        <div className="hidden md:flex items-center justify-center w-full pr-24">
                             <ul className="flex items-center gap-2">
                                 {navItems.map((item) => {
                                     const isActive = isItemActive(item);
+                                    // Renderiza itens simples (sem submenus) como Dashboard, Feedback, Contato, Mottu Oficina
                                     if (!(item.subItems || item.subGroups)) {
+                                        // Estilo especial para o logo "Mottu Oficina"
+                                        const isLogoItem = item.isLogo;
                                         return (
-                                            <li key={item.href}>
-                                                <Link href={item.href!} className={`flex items-center gap-2 rounded-lg px-3 py-2 text-base transition ${isActive ? "bg-white text-[var(--color-mottu-dark)] font-semibold" : "hover:bg-white/10"}`} style={{fontFamily: 'Montserrat, sans-serif'}}>
-                                                    <i className={`${item.icon} text-xl`}></i>
+                                            <li key={item.href || item.label}>
+                                                <Link 
+                                                    href={item.href!} 
+                                                    className={`flex items-center gap-2 rounded-lg px-3 py-2 transition font-montserrat ${
+                                                        isLogoItem 
+                                                            ? `font-bold text-xl ${isActive ? 'bg-white text-[var(--color-mottu-dark)] font-semibold' : 'hover:bg-white/10 text-white'}` 
+                                                            : `text-base ${isActive ? "bg-white text-[var(--color-mottu-dark)] font-semibold" : "hover:bg-white/10 text-white"}`
+                                                    }`}
+                                                    style={{fontFamily: 'Montserrat, sans-serif'}}
+                                                >
+                                                    {item.icon && <i className={`${item.icon} text-xl`}></i>}
                                                     <span>{item.label}</span>
                                                 </Link>
                                             </li>
@@ -194,7 +204,7 @@ export default function NavBar({ active }: { active?: string }) {
                                     }
                                     return (
                                         <li key={item.label} className="relative" onMouseEnter={() => setOpenMenu(item.label)} onMouseLeave={() => setOpenMenu(null)}>
-                                            <button className={`flex items-center gap-2 rounded-lg px-3 py-2 text-base transition w-full text-left cursor-pointer ${isActive ? "bg-white text-[var(--color-mottu-dark)] font-semibold" : "hover:bg-white/10"}`} style={{fontFamily: 'Montserrat, sans-serif'}}>
+                                            <button className={`flex items-center gap-2 rounded-lg px-3 py-2 text-base transition w-full text-left cursor-pointer ${isActive ? "bg-white text-[var(--color-mottu-dark)] font-semibold" : "hover:bg-white/10 text-white"}`} style={{fontFamily: 'Montserrat, sans-serif'}}>
                                                 <i className={`${item.icon} text-xl`}></i>
                                                 <span>{item.label}</span>
                                             </button>
@@ -243,13 +253,15 @@ export default function NavBar({ active }: { active?: string }) {
                                     );
                                 })}
                             </ul>
-                            
-                            <div className="w-8"></div>
-                            
+                        </div>
+
+                        {/* Pesquisar à direita - aparece apenas em desktop com espaçamento adequado */}
+                        <div className="hidden md:flex items-center flex-shrink-0 absolute right-4 sm:right-6 lg:right-8">
                             <Pesquisar />
                         </div>
 
-                        <div className="md:hidden">
+                        {/* Botão mobile - aparece apenas em telas pequenas */}
+                        <div className="md:hidden flex items-center justify-end ml-auto">
                             <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="cursor-pointer" style={{fontFamily: 'Montserrat, sans-serif'}}>
                                 {isMobileMenuOpen ? <i className="ion-ios-close text-2xl"></i> : <i className="ion-ios-menu text-2xl"></i>}
                             </button>

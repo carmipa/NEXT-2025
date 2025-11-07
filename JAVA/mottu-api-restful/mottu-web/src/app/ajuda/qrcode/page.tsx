@@ -3,13 +3,17 @@
 
 import Image from 'next/image';
 import '@/types/styles/neumorphic.css';
+import ParticleBackground from '@/components/particula/ParticleBackground';
 
 export default function QRCodePage() {
     return (
         <section className="min-h-screen relative overflow-hidden bg-gradient-to-br from-slate-900 via-emerald-950 to-black">
-            {/* Background com efeito de partículas */}
-            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-emerald-900/20 via-transparent to-transparent"></div>
-            <div className="absolute inset-0 bg-[url('/grid.svg')] bg-center [mask-image:linear-gradient(180deg,white,rgba(255,255,255,0))]"></div>
+            {/* Sistema de Partículas */}
+            <ParticleBackground />
+            
+            {/* Background com efeito de gradiente */}
+            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-emerald-900/20 via-transparent to-transparent z-[1]"></div>
+            <div className="absolute inset-0 bg-[url('/grid.svg')] bg-center [mask-image:linear-gradient(180deg,white,rgba(255,255,255,0))] z-[1]"></div>
 
             <div className="relative z-10 container mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 lg:py-16">
                 {/* Header */}
