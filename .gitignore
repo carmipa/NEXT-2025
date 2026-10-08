@@ -127,3 +127,12 @@ lerna-debug.log
 .storybook-out/
 # Prisma (se usar em Node)
 # prisma/*.db
+
+# Artefatos locais de assistentes de IA: ficam so na maquina, nunca no repositorio.
+.claude/
+.codex/
+.gemini/
+.cursor/
+.windsurf/
+.continue/
+.aider*
